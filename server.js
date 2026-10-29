@@ -146,7 +146,9 @@ app.get('/api/personal', (req, res) => {
         res.json(filas);
     });
 });
-
+app.get('/', (req, res) => {
+    res.send('Servidor KPA WIP funcionando al 100% en la nube 🚀');
+})
 const PUERTO = 3000;
 app.listen(PUERTO, () => {
     console.log(`🚀 KPA BACKEND v11.0 CORRIENDO EN: http://localhost:${PUERTO}`);
