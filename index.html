@@ -378,7 +378,7 @@
 
         async function cargarPersonalBD() {
             try {
-                const res = await fetch('http://localhost:3000/api/personal');
+                const res = await fetch('https://kpa-wip-system.onrender.com/api/personal');
                 if (res.ok) {
                     listaPersonalGlobal = await res.json();
                     renderizarTablaPersonal();
@@ -477,7 +477,7 @@
             const contenedor = document.getElementById('sugerenciasLista');
             if (!contenedor || query.length < 1) { if (contenedor) contenedor.style.display = 'none'; return; }
             try {
-                const res = await fetch(`http://localhost:3000/api/proyecto/${query}`);
+                const res = await fetch(`https://kpa-wip-system.onrender.com/api/sugerencias`);
                 if (res.ok) { mostrarListaSugerencias(await res.json()); return; }
             } catch (err) {}
             contenedor.style.display = 'none';
@@ -525,11 +525,11 @@
             mensaje.textContent = 'Guardando movimiento con fecha de proceso...';
 
             try {
-                const response = await fetch('http://localhost:3000/api/wip', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
+                const response = await fetch('https://kpa-wip-system.onrender.com/api/movimientos', {
+                method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+               });  
                 if (!response.ok) throw new Error();
                 mensaje.style.color = 'var(--kpa-green)';
                 mensaje.textContent = '¡Movimiento guardado con éxito!';
@@ -549,7 +549,7 @@
             if (!query) { alert('Escriba un proyecto'); return; }
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Buscando material...</td></tr>';
             try {
-                const res = await fetch(`http://localhost:3000/api/ubicacion/${query}`);
+                const res = await fetch(`https://kpa-wip-system.onrender.com/api/materiales?proyecto=${encodeURIComponent(query)}`);
                 if (res.ok) {
                     const data = await res.json();
                     tbody.innerHTML = '';
@@ -581,7 +581,7 @@
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Cargando...</td></tr>';
             let registros = [];
             try {
-                const res = await fetch('http://localhost:3000/api/movimientos');
+               const res = await fetch('https://kpa-wip-system.onrender.com/api/historial');
                 if (res.ok) registros = await res.json();
             } catch (e) {}
             tbody.innerHTML = '';
@@ -605,30 +605,32 @@
         }
 
         async function agregarPersonal(e) {
-            e.preventDefault();
-            const rol = document.getElementById('nuevoRolPersonal').value;
-            const nombre = document.getElementById('inputNuevoNombre').value.trim();
-            try {
-                const res = await fetch('http://localhost:3000/api/personal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ rol, nombre })
-                });
-                if (res.ok) {
-                    document.getElementById('inputNuevoNombre').value = '';
-                    const status = document.getElementById('statusPersonal');
-                    status.style.color = 'var(--kpa-green)';
-                    status.textContent = `✅ Operador agregado. Contraseña (Apellido): ${nombre.split(' ').pop()}`;
-                    await cargarPersonalBD();
-                    setTimeout(() => { status.textContent = ''; }, 4000);
-                }
-            } catch (err) {}
+    e.preventDefault();
+    const rol = document.getElementById('nuevoRolPersonal').value;
+    const nombre = document.getElementById('inputNuevoNombre').value.trim();
+    try {
+        const res = await fetch('https://kpa-wip-system.onrender.com/api/personal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rol, nombre })
+        });
+        if (res.ok) {
+            document.getElementById('inputNuevoNombre').value = '';
+            const status = document.getElementById('statusPersonal');
+            status.style.color = 'var(--kpa-green)';
+            status.textContent = `✅ Operador agregado. Contraseña (Apellido): ${nombre.split(' ').pop()}`;
+            await cargarPersonalBD();
+            setTimeout(() => { status.textContent = ''; }, 4000);
         }
+    } catch (err) {
+        console.error(err);
+    }
+}
 
         async function eliminarPersonal(id) {
             if (!confirm('¿Eliminar operador?')) return;
             try {
-                await fetch(`http://localhost:3000/api/personal/${id}`, { method: 'DELETE' });
+               await fetch(`https://kpa-wip-system.onrender.com/api/personal/${id}`, { method: 'DELETE' });
                 await cargarPersonalBD();
             } catch (err) {}
         }
