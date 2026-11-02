@@ -70,12 +70,33 @@
         th { background: var(--bg-input); color: var(--kpa-green); font-weight: 800; }
         tr:hover { background: rgba(255, 255, 255, 0.015); }
 
-        footer { background: linear-gradient(135deg, #020409, #080e1a); border-top: 2px solid var(--border-color); padding: 50px 60px; margin-top: auto; color: var(--text-muted); font-size: 13px; }
-        .footer-content { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
-        .footer-section h3 { color: var(--kpa-green); font-size: 15px; margin-bottom: 12px; text-transform: uppercase; font-weight: 900; }
-        .footer-section p, .footer-section ul { margin: 0; padding: 0; list-style: none; line-height: 1.8; }
-        .footer-section ul li a { color: var(--text-muted); text-decoration: none; }
-        .footer-section ul li a:hover { color: var(--kpa-blue); }
+        footer { 
+    background: linear-gradient(135deg, #020409, #080e1a); 
+    border-top: 2px solid var(--border-color); 
+    padding: 40px 30px; 
+    margin-top: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 40px;
+}
+.footer-section { 
+    flex: 1;
+}
+.footer-section h3 { 
+    color: var(--kpa-green); 
+    font-size: 15px; 
+    margin-bottom: 12px; 
+    text-transform: uppercase; 
+    font-weight: 900; 
+}
+.footer-section p, .footer-section ul { 
+    margin: 0; 
+    padding: 0; 
+    list-style: none; 
+    line-height: 1.8; 
+    color: var(--text-muted);
+}
         .footer-bottom { max-width: 1200px; margin: 30px auto 0 auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; font-size: 12px; color: rgba(255,255,255,0.4); }
     </style>
 </head>
@@ -186,7 +207,7 @@
                     <div class="form-group" id="bloqueOrigen" style="display:none;">
                         <label>Ubicación / Procedencia de Origen:</label>
                         <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                            <select id="origenProcedencia" onchange="verificarProcedenciaOrigen()">
+                             <select id="origenProcedencia" onchange="verificarProcedenciaOrigen()">
                                 <option value="PRODUCCION">PRODUCCIÓN DIRECTA</option>
                                 <option value="LOTE 6">LOTE 6 (ALMACÉN EXTERNO)</option>
                                 <option value="TRAILER / EMBARQUES">TRÁILER / EMBARQUES (CAMIÓN)</option>
@@ -413,14 +434,23 @@
                 }
             } catch (e) {}
         }
-
-        function cambiarPestana(pestana, elemento) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(`tab-${pestana}`).classList.add('active');
-            elemento.classList.add('active');
-            if (pestana === 'historial') cargarHistorial();
-            if (pestana === 'personal') cargarPersonalBD();
+            function verificarProcedenciaOrigen() {
+            const procedencia = document.getElementById('origenProcedencia').value;
+            const detallesRack = document.getElementById('detallesRackOrigen');
+            
+            if (procedencia === 'OTRO RACK WIP') {
+                detallesRack.style.display = 'block';
+            } else {
+                detallesRack.style.display = 'none';
+            }
+        }
+                function cambiarPestana(pestana, elemento) {
+                    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+                    document.getElementById(`tab-${pestana}`).classList.add('active');
+                    elemento.classList.add('active');
+                    if (pestana === 'historial') cargarHistorial();
+                    if (pestana === 'personal') cargarPersonalBD();
         }
 
         function filtrarPersonalPorRol() {

@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * KPA LOGISTICS SYSTEM - BACKEND ARCHITECTURE (NODE.JS & EXPRESS)
+ * KPA PACKAGING & HANDLING SOLUTIONS - BACKEND ARCHITECTURE (NODE.JS & EXPRESS)
  * Versión Final 11.0.0 - Soporte para Fecha de Proceso y Control de Racks
  * ============================================================================
  */
@@ -20,31 +20,27 @@ const dbConfig = {
     database: 'bblrso7apd6u8ura9jhp',
     port: 3306,
     ssl: { rejectUnauthorized: false },
-    connectTimeout: 20000
+    connectTimeout: 20000,
+    waitForConnections: true,
+    connectionLimit: 5,
+    queueLimit: 0
 };
 
-let db = null;
-let estaConectado = false;
+// Usamos un pool en lugar de una conexión única para evitar fugas de memoria RAM
+const db = mysql.createPool(dbConfig);
+let estaConectado = true;
 
-function conectarDB() {
-    db = mysql.createConnection(dbConfig);
-    db.connect((err) => {
-        if (err) {
-            estaConectado = false;
-            setTimeout(conectarDB, 10000);
-        } else {
-            estaConectado = true;
-            console.log(' [KPA Base de Datos]: Conectado exitosamente con Clever Cloud.');
-        }
-    });
-
-    db.on('error', (err) => {
+// Verificamos la conexión inicial del pool
+db.getConnection((err, connection) => {
+    if (err) {
         estaConectado = false;
-        if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ENOTFOUND' || err.code === 'ETIMEDOUT') {
-            setTimeout(conectarDB, 10000);
-        }
-    });
-}
+        console.error(' [KPA Base de Datos]: Error al conectar con Clever Cloud:', err.message);
+    } else {
+        estaConectado = true;
+        console.log(' [KPA Base de Datos]: Conectado exitosamente con Clever Cloud (Pool activo).');
+        connection.release();
+    }
+});
 
 conectarDB();
 
