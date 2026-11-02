@@ -106,7 +106,7 @@
         <!-- PESTAÑA 1: OPERACIÓN WIP -->
         <div id="tab-operacion" class="tab-content active">
 
-            <button type="button" class="btn-admin-fast" onclick="accesoRapidoAdmin()">⚡ Acceso Rápido Administrador (Pruebas)</button>
+           
 
             <div id="stepIdentificacion" class="card">
                 <h2>1. Identificación y Contraseña Segura</h2>
@@ -152,7 +152,9 @@
                     2. Registro de Movimiento WIP, Piezas & Fecha de Proceso
                     <button type="button" onclick="cerrarSesion()" class="btn-danger">Cambiar Usuario</button>
                 </h2>
-
+                <button type="button" onclick="location.reload()" style="background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 18px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin-bottom: 20px; font-weight: 500;">
+                    ← Regresar / Cancelar
+                </button>
                 <div style="margin-bottom: 22px; font-size: 13px; color: var(--text-muted);">
                     Operando como: <strong id="lblInfoOperador" style="color: var(--kpa-green);"></strong>
                 </div>
@@ -374,20 +376,22 @@
 
     </div>
 
-    <footer>
-        <div class="footer-content">
+    <footer class="footer">
             <div class="footer-section">
                 <h3>KPA Packaging & Handling Solutions</h3>
                 <p>Control automatizado de inventario WIP y gestión de racks.</p>
             </div>
-            
             <div class="footer-section">
-                <h3>Soporte Técnico</h3>
-                <p>Emergencias IT: <strong style="color: var(--kpa-green);">442 777 0928</strong></p>
+                <h3>ACCESOS RÁPIDOS</h3>
+                <p>Operación</p>
+                <p>Ubicar Material</p>
+                <p>Movimientos</p>
             </div>
-        </div>
-        <div class="footer-bottom">&copy; 2026 KPA PACKAGING & HANDLING SOLUTIONS S.A. de C.V.</div>
-    </footer>
+            <div class="footer-section">
+                <h3>SOPORTE TÉCNICO</h3>
+                <p>Emergencias IT: 442 777 0928</p>
+            </div>
+        </footer>
 
     <script>
         setInterval(() => {
