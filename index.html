@@ -182,15 +182,33 @@
                     </div>
 
                     <div class="form-group" id="bloqueOrigen" style="display:none;">
-                        <label>Ubicación de Origen:</label>
-                        <div style="display: flex; gap: 15px;">
+                        <label>Ubicación / Procedencia de Origen:</label>
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                            <select id="origenProcedencia">
+                                <option value="RACKS PLANTA">RACKS DE ALMACÉN / RACKS</option>
+                                <option value="PRODUCCION">PRODUCCIÓN DIRECTA</option>
+                                <option value="LOTE 6">LOTE 6 (ALMACÉN EXTERNO)</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                             <select id="rackOrigen">
-                            <option value="">RACK ORIGEN</option>
-                            <script> for(let i=1; i<=19; i++) document.write(`<option value="R${i}">RACK ${i}</option>`); </script>
-                        </select>
+                                <option value="">RACK ORIGEN (1-19)</option>
+                                <script> for(let i=1; i<=19; i++) document.write(`<option value="R${i}">RACK ${i}</option>`); </script>
+                            </select>
                             <select id="nivelOrigen">
-                                <option value="">NIVEL</option>
+                                <option value="">NIVEL (N1-N4)</option>
                                 <option value="N1">N1</option><option value="N2">N2</option><option value="N3">N3</option><option value="N4">N4</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 15px;">
+                            <select id="ladoOrigen">
+                                <option value="">LADO</option>
+                                <option value="IZQUIERDO">IZQUIERDO</option>
+                                <option value="DERECHO">DERECHO</option>
+                            </select>
+                            <select id="apiladoOrigen">
+                                <option value="">POSICIÓN APILADO (1-10)</option>
+                                <script> for(let i=1; i<=10; i++) document.write(`<option value="${i}">POS ${i}</option>`); </script>
                             </select>
                         </div>
                     </div>
@@ -497,8 +515,20 @@
             document.querySelectorAll('.action-btn').forEach(btn => btn.classList.remove('active'));
             elemento.classList.add('active');
             document.getElementById('formMovimiento').style.display = 'block';
-            document.getElementById('bloqueOrigen').style.display = (tipo === 'ENTRADA') ? 'none' : 'block';
-            document.getElementById('bloqueDestino').style.display = (tipo === 'SALIDA') ? 'none' : 'block';
+            
+            const bloqueOrigen = document.getElementById('bloqueOrigen');
+            const bloqueDestino = document.getElementById('bloqueDestino');
+
+            if (tipo === 'ENTRADA') {
+                bloqueOrigen.style.display = 'block'; // 
+                bloqueDestino.style.display = 'block';
+            } else if (tipo === 'SALIDA') {
+                bloqueOrigen.style.display = 'block'; // 
+                bloqueDestino.style.display = 'none';
+            } else if (tipo === 'REUBICACION') {
+                bloqueOrigen.style.display = 'block';
+                bloqueDestino.style.display = 'block';
+            }
         }
 
         async function buscarSugerencias(query) {
@@ -540,8 +570,11 @@
                 proyecto: proyecto,
                 piezas: piezas,
                 fecha_proceso: fechaProceso,
+                procedencia_origen: document.getElementById('origenProcedencia').value || 'RACKS',
                 rack_origen: document.getElementById('rackOrigen').value || 'N/A',
                 nivel_origen: document.getElementById('nivelOrigen').value || 'N/A',
+                lado_origen: document.getElementById('ladoOrigen').value || 'N/A',
+                apilado_origen: document.getElementById('apiladoOrigen').value || 'N/A',
                 rack_destino: document.getElementById('rackDestino').value || 'N/A',
                 nivel_destino: document.getElementById('nivelDestino').value || 'N/A',
                 lado: ladoFinal,
