@@ -34,7 +34,7 @@ function conectarDB() {
             setTimeout(conectarDB, 10000);
         } else {
             estaConectado = true;
-            console.log('✅ [KPA Base de Datos]: Conectado exitosamente con Clever Cloud.');
+            console.log(' [KPA Base de Datos]: Conectado exitosamente con Clever Cloud.');
         }
     });
 
@@ -68,29 +68,33 @@ app.get('/api/proyecto/:query', (req, res) => {
 // Registro de movimientos incluyendo la fecha de proceso solicitada
 app.post('/api/wip', (req, res) => {
     const data = req.body;
+
+    // Construir texto claro para la base de datos con los nuevos campos detallados
+    const procedenciaOrVal = data.procedencia_origen || 'RACKS';
+    const ubicacionOrigenVal = data.rack_origen !== 'N/A' ? `${procedenciaOrVal} - RACK ${data.rack_origen}, ${data.nivel_origen}, Lado: ${data.lado_origen || 'N/A'}, Pos: ${data.apilado_origen || 'N/A'}` : 'N/A';
     
+    const ubicacionDestinoVal = data.rack_destino !== 'N/A' ? `RACK ${data.rack_destino}, ${data.nivel_destino}, Lado: ${data.lado}, Pos: ${data.apilado}` : 'N/A';
+
     const sqlInsert = `INSERT INTO movimientos 
-        (id_material, id_operador, tipo_movimiento, ubicacion_origen, ubicacion_destino, fecha_hora) 
-        VALUES (?, ?, ?, ?, ?, NOW())`;
+        (id_material, id_operador, tipo_movimiento, proyecto, piezas, fecha_proceso, ubicacion_origen, ubicacion_destino, fecha_hora) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
 
     const idMaterialVal = 1; 
-    const idOperadorVal = 1; 
-    const ubicacionOrigenVal = data.rack_origen !== 'N/A' ? `${data.rack_origen}-${data.nivel_origen}` : 'INICIO';
-    const ubicacionDestinoVal = `${data.rack_destino}-${data.nivel_destino} (${data.lado}, Pos:${data.apilado}, Pzas:${data.piezas}, F.Proceso:${data.fecha_proceso})`;
-
-    if (!estaConectado || !db) {
-        return res.json({ success: true, id: 'LOCAL-' + Date.now() });
-    }
+    const idOperadorVal = 1;
 
     db.query(sqlInsert, [
         idMaterialVal,
         idOperadorVal,
         data.tipo_movimiento,
+        data.proyecto || 'GENERAL',
+        data.piezas || 0,
+        data.fecha_proceso || null,
         ubicacionOrigenVal,
         ubicacionDestinoVal
-    ], (error, resultado) => {
-        if (error) {
-            return res.status(500).json({ error: error.message });
+    ], (err, resultado) => {
+        if (err) {
+            console.error("Error al insertar en BD:", err);
+            return res.status(500).json({ success: false, error: err.message });
         }
         res.json({ success: true, id: resultado.insertId });
     });
@@ -151,5 +155,5 @@ app.get('/', (req, res) => {
 })
 const PUERTO = 3000;
 app.listen(PUERTO, () => {
-    console.log(`🚀 KPA BACKEND v11.0 CORRIENDO EN: http://localhost:${PUERTO}`);
+    console.log(` KPA BACKEND v11.0 CORRIENDO EN: http://localhost:${PUERTO}`);
 });
