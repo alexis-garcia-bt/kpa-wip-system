@@ -70,11 +70,14 @@ app.post('/api/movimientos', (req, res) => {
     const data = req.body;
 
     // Construir texto claro para la base de datos con los nuevos campos detallados
-    const procedenciaOrVal = data.procedencia_origen || 'RACKS';
-    const ubicacionOrigenVal = data.rack_origen !== 'N/A' ? `${procedenciaOrVal} - RACK ${data.rack_origen}, ${data.nivel_origen}, Lado: ${data.lado_origen || 'N/A'}, Pos: ${data.apilado_origen || 'N/A'}` : 'N/A';
-    
-    const ubicacionDestinoVal = data.rack_destino !== 'N/A' ? `RACK ${data.rack_destino}, ${data.nivel_destino}, Lado: ${data.lado}, Pos: ${data.apilado}` : 'N/A';
+        const procedenciaOrVal = data.procedencia_origen || 'PRODUCCION';
+        let ubicacionOrigenVal = procedenciaOrVal;
+        
+        if (data.rack_origen && data.rack_origen !== 'N/A') {
+            ubicacionOrigenVal = `${procedenciaOrVal} - RACK ${data.rack_origen}, ${data.nivel_origen}, Lado: ${data.lado_origen || 'N/A'}, Pos: ${data.apilado_origen || 'N/A'}`;
+        }
 
+        const ubicacionDestinoVal = data.rack_destino !== 'N/A' ? `RACK ${data.rack_destino}, ${data.nivel_destino}, Lado: ${data.lado}, Pos: ${data.apilado}` : 'N/A';
     const sqlInsert = `INSERT INTO movimientos 
         (id_material, id_operador, tipo_movimiento, proyecto, piezas, fecha_proceso, ubicacion_origen, ubicacion_destino, fecha_hora) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
