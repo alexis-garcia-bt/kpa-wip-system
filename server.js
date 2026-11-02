@@ -66,7 +66,7 @@ app.get('/api/proyecto/:query', (req, res) => {
 });
 
 // Registro de movimientos incluyendo la fecha de proceso solicitada
-app.post('/api/wip', (req, res) => {
+app.post('/api/movimientos', (req, res) => {
     const data = req.body;
 
     // Construir texto claro para la base de datos con los nuevos campos detallados
