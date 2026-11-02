@@ -97,7 +97,7 @@
         <button class="tab-btn active" onclick="cambiarPestana('operacion', this)">⚙️ Operación WIP</button>
         <button class="tab-btn" onclick="cambiarPestana('ubicar', this)">🔍 Ubicar Material (Inventario)</button>
         <button class="tab-btn" onclick="cambiarPestana('historial', this)">📊 Movimientos</button>
-        <button class="tab-btn" onclick="cambiarPestana('personal', this)">👥 Personal & Accesos</button>
+        <button id="btnTabPersonal" class="tab-btn" onclick="cambiarPestana('personal', this)" style="display: none;">👥 Personal & Accesos</button>
         <button class="tab-btn" onclick="cambiarPestana('contacto', this)">📞 Contacto</button>
     </div>
 
@@ -158,9 +158,9 @@
                 </div>
 
                 <div class="action-grid">
-                    <div class="action-btn" onclick="seleccionarAccion('ENTRADA', this)">📦 ENTRADA</div>
-                    <div class="action-btn" onclick="seleccionarAccion('SALIDA', this)">📤 SALIDA</div>
-                    <div class="action-btn" onclick="seleccionarAccion('REUBICACION', this)">🔄 REUBICACIÓN</div>
+                    <div class="action-btn" onclick="seleccionarAccion('ENTRADA', this)"> ENTRADA</div>
+                    <div class="action-btn" onclick="seleccionarAccion('SALIDA', this)"> SALIDA</div>
+                    <div class="action-btn" onclick="seleccionarAccion('REUBICACION', this)"> REUBICACIÓN</div>
                 </div>
 
                 <form id="formMovimiento" style="display:none;" onsubmit="registrarMovimiento(event)">
@@ -292,43 +292,50 @@
             </div>
         </div>
 
+       
         <!-- PESTAÑA 4: GESTIÓN DE PERSONAL -->
-        <div id="tab-personal" class="card tab-content">
-            <h2>Gestión de Personal (Montacarguistas y Líderes)</h2>
-            <form onsubmit="agregarPersonal(event)" style="margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 25px;">
-                <div class="form-group">
-                    <label for="nuevoRolPersonal">Rol Operativo:</label>
-                    <select id="nuevoRolPersonal" required>
-                        <option value="MONTACARGUISTA">MONTACARGUISTA</option>
-                        <option value="LIDER">LÍDER DE ÁREA</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="nuevoNombrePersonal">Nombre Completo (Su apellido será su contraseña automática):</label>
-                    <input type="text" id="inputNuevoNombre" placeholder="EJ. JUAN PÉREZ" required oninput="this.value = this.value.toUpperCase()">
-                </div>
-                <button type="submit" class="btn-primary">Registrar Operador</button>
-                <div id="statusPersonal" style="margin-top: 15px; font-weight: bold; text-align: center;"></div>
-            </form>
-
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Rol</th>
-                            <th>Nombre Completo</th>
-                            <th>Contraseña (Apellido)</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tablaPersonalBody">
-                        <tr><td colspan="5" style="text-align: center;">Cargando personal...</td></tr>
-                    </tbody>
-                </table>
+<div id="tab-personal" class="tab-content">
+    <div id="contenidoPersonalAdmin" class="card" style="display: none;">
+        <h2>Gestión de Personal (Montacarguistas y Líderes)</h2>
+        <form onsubmit="agregarPersonal(event)" style="margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 25px;">
+            <div class="form-group">
+                <label for="nuevoRolPersonal">Rol Operativo:</label>
+                <select id="nuevoRolPersonal" required>
+                    <option value="MONTACARGUISTA">MONTACARGUISTA</option>
+                    <option value="LIDER">LÍDER DE ÁREA</option>
+                </select>
             </div>
-        </div>
+            <div class="form-group">
+                <label for="nuevoNombrePersonal">Nombre Completo (Su apellido será su contraseña automática):</label>
+                <input type="text" id="inputNuevoNombre" placeholder="EJ. JUAN PÉREZ" required oninput="this.value = this.value.toUpperCase()">
+            </div>
+            <button type="submit" class="btn-primary">Registrar Operador</button>
+            <div id="statusPersonal" style="margin-top: 15px; font-weight: bold; text-align: center;"></div>
+        </form>
 
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Rol</th>
+                        <th>Nombre Completo</th>
+                        <th>Contraseña (Apellido)</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaPersonalBody">
+                    <tr><td colspan="5" style="text-align: center;">Cargando personal...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="mensajeAccesoDenegado" class="card" style="text-align: center; padding: 50px;">
+        <h2 style="color: var(--danger); justify-content: center;">⚠️ Acceso Restringido</h2>
+        <p style="color: var(--text-muted);">Esta sección es exclusiva para el <strong>Administrador</strong> del sistema.</p>
+    </div>
+</div>
         <!-- PESTAÑA 5: CONTACTO -->
         <div id="tab-contacto" class="card tab-content">
             <h2>Panel de Contacto y Emergencias KPA</h2>
@@ -405,12 +412,17 @@
             });
         }
 
-        function accesoRapidoAdmin() {
+       function accesoRapidoAdmin() {
             usuarioActual = { rol: 'ADMIN', nombre: 'ALEXIS GARCIA', turno: '1er Turno (07:00 - 15:00)' };
             document.getElementById('lblUsuarioActivo').textContent = `${usuarioActual.nombre} (ADMIN)`;
             document.getElementById('lblInfoOperador').textContent = `${usuarioActual.nombre} [ADMIN] - ${usuarioActual.turno}`;
             document.getElementById('stepIdentificacion').style.display = 'none';
             document.getElementById('stepOperacion').style.display = 'block';
+
+            // MOSTRAR PESTAÑA PERSONAL SOLO PARA ADMIN
+            document.getElementById('btnTabPersonal').style.display = 'block';
+            document.getElementById('contenidoPersonalAdmin').style.display = 'block';
+            document.getElementById('mensajeAccesoDenegado').style.display = 'none';
         }
 
         function evitarEnterEnvio(event) {
@@ -455,6 +467,17 @@
             document.getElementById('lblInfoOperador').textContent = `${nombre} [${rol}] - ${turno}`;
             document.getElementById('stepIdentificacion').style.display = 'none';
             document.getElementById('stepOperacion').style.display = 'block';
+
+            // VALIDAR SI ES ADMIN PARA MOSTRAR LA PESTAÑA DE PERSONAL
+            if (rol === 'ADMIN') {
+                document.getElementById('btnTabPersonal').style.display = 'block';
+                document.getElementById('contenidoPersonalAdmin').style.display = 'block';
+                document.getElementById('mensajeAccesoDenegado').style.display = 'none';
+            } else {
+                document.getElementById('btnTabPersonal').style.display = 'none';
+                document.getElementById('contenidoPersonalAdmin').style.display = 'none';
+                document.getElementById('mensajeAccesoDenegado').style.display = 'block';
+            }
         }
 
         function cerrarSesion() {
@@ -462,6 +485,11 @@
             document.getElementById('stepOperacion').style.display = 'none';
             document.getElementById('formMovimiento').style.display = 'none';
             document.getElementById('inputPassword').value = '';
+            
+            // OCULTAR PERSONAL AL CERRAR SESIÓN
+            document.getElementById('btnTabPersonal').style.display = 'none';
+            document.getElementById('contenidoPersonalAdmin').style.display = 'none';
+            document.getElementById('mensajeAccesoDenegado').style.display = 'block';
         }
 
         function seleccionarAccion(tipo, elemento) {
@@ -605,36 +633,43 @@
         }
 
         async function agregarPersonal(e) {
-    e.preventDefault();
-    const rol = document.getElementById('nuevoRolPersonal').value;
-    const nombre = document.getElementById('inputNuevoNombre').value.trim();
-    try {
-        const res = await fetch('https://kpa-wip-system.onrender.com/api/personal', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rol, nombre })
-        });
-        if (res.ok) {
-            document.getElementById('inputNuevoNombre').value = '';
-            const status = document.getElementById('statusPersonal');
-            status.style.color = 'var(--kpa-green)';
-            status.textContent = `✅ Operador agregado. Contraseña (Apellido): ${nombre.split(' ').pop()}`;
-            await cargarPersonalBD();
-            setTimeout(() => { status.textContent = ''; }, 4000);
+            e.preventDefault();
+            if (usuarioActual.rol !== 'ADMIN') {
+                alert('Acceso denegado. Solo el administrador puede registrar personal.');
+                return;
+            }
+            const rol = document.getElementById('nuevoRolPersonal').value;
+            const nombre = document.getElementById('inputNuevoNombre').value.trim();
+            try {
+                const res = await fetch('https://kpa-wip-system.onrender.com/api/personal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rol, nombre })
+                });
+                if (res.ok) {
+                    document.getElementById('inputNuevoNombre').value = '';
+                    const status = document.getElementById('statusPersonal');
+                    status.style.color = 'var(--kpa-green)';
+                    status.textContent = `Operador agregado. Contraseña (Apellido): ${nombre.split(' ').pop()}`;
+                    await cargarPersonalBD();
+                    setTimeout(() => { status.textContent = ''; }, 4000);
+                }
+            } catch (err) {
+                console.error(err);
+            }
         }
-    } catch (err) {
-        console.error(err);
-    }
-}
 
         async function eliminarPersonal(id) {
+            if (usuarioActual.rol !== 'ADMIN') {
+                alert('Acceso denegado. Solo el administrador puede eliminar personal.');
+                return;
+            }
             if (!confirm('¿Eliminar operador?')) return;
             try {
                await fetch(`https://kpa-wip-system.onrender.com/api/personal/${id}`, { method: 'DELETE' });
                 await cargarPersonalBD();
             } catch (err) {}
         }
-
         async function renderizarTablaPersonal() {
             const tbody = document.getElementById('tablaPersonalBody');
             tbody.innerHTML = '';
