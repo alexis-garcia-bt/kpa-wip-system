@@ -47,7 +47,9 @@ db.getConnection((err, connection) => {
     }
 });
 
-conectarDB();
+// Usamos un pool en lugar de una conexión única para evitar fugas de memoria RAM
+const db = mysql.createPool(dbConfig);
+let estaConectado = true;
 
 // Endpoints de la API
 app.get('/api/proyecto/:query', (req, res) => {
