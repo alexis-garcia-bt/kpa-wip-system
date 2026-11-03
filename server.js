@@ -118,6 +118,15 @@ app.get('/api/ubicacion/:proyecto', (req, res) => {
         res.json(filas);
     });
 });
+// Ruta alias para el historial de movimientos que pide el frontend
+app.get('/api/historial', (req, res) => {
+    const sqlUbic = "SELECT * FROM movimientos ORDER BY fecha_hora DESC LIMIT 20";
+    if (!estaConectado || !db) return res.json([]);
+    db.query(sqlUbic, (error, filas) => {
+        if (error) return res.json([]);
+        res.json(filas);
+    });
+});
 
 app.get('/api/personal', (req, res) => {
     const operadoresCompletos = [
