@@ -65,6 +65,22 @@ app.get('/api/proyecto/:query', (req, res) => {
     });
 });
 
+// Ruta para buscar materiales o proyectos en el inventario/ubicaciones
+app.get('/api/materiales', (req, res) => {
+    const queryBusqueda = req.query.p || req.query.q || '';
+    const sqlSearch = `SELECT * FROM movimientos WHERE proyecto LIKE ? OR ubicacion_destino LIKE ? ORDER BY fecha_hora DESC LIMIT 20`;
+    
+    if (!estaConectado || !db) return res.json([]);
+    
+    db.query(sqlSearch, [`%${queryBusqueda}%`, `%${queryBusqueda}%`], (error, filas) => {
+        if (error) {
+            console.error("Error en búsqueda:", error.message);
+            return res.json([]);
+        }
+        res.json(filas);
+    });
+});
+
 // Registro de movimientos incluyendo la fecha de proceso solicitada
 // Registro de movimientos incluyendo la fecha de proceso solicitada y manejo seguro de nulos
 app.post('/api/movimientos', (req, res) => {
