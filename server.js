@@ -16,10 +16,10 @@ app.use(cors());
 app.use(express.static(__dirname));
 
 const dbConfig = {
-    host: 'bblrso7apd6u8ura9jhp-mysql.services.clever-cloud.com',
+    host: 'blrlso7apd6u8ura9jhp-mysql.services.clever-cloud.com',
     user: 'ud8kufsf7k8ovhp8',
-    password: 'fujMvII1T9ZDMUJQ8TPTC',
-    database: 'bblrso7apd6u8ura9jhp',
+    password: 'fujMvI1T9ZBMUjQ8TPTC',
+    database: 'blrlso7apd6u8ura9jhp',
     port: 3306,
     ssl: { rejectUnauthorized: false },
     connectTimeout: 20000,
