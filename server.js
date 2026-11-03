@@ -77,27 +77,36 @@ app.get('/api/materiales', (req, res) => {
         if (err) return res.json([]);
         
         const formateados = filas.map(item => {
-            // Extraer el rack de la columna limpia o de la cadena ubicacion_destino
             let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
             if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
-                rackVal = item.ubicacion_destino.split(',')[0].replace('RACK', '').trim();
+                let partes = item.ubicacion_destino.split(',');
+                rackVal = partes[0].trim();
             }
-
-            const nombreOp = item.nombre_operador && item.nombre_operador !== 'Operador KPA'
-                ? item.nombre_operador
-                : (item.id_operador == 2 ? 'CAROLINA ROMERO' : 'CRISTIAN RAMIREZ');
 
             return {
                 ...item,
-                operador: nombreOp,
-                personal: nombreOp,
-                nombre_operador: nombreOp,
+                operador: item.nombre_operador || 'S/N',
+                personal: item.nombre_operador || 'S/N',
                 rack: rackVal,
                 lado: item.lado || 'N/A'
             };
         });
 
         res.json(formateados);
+    });
+});
+
+app.get('/api/historial', (req, res) => {
+    const sql = `SELECT * FROM movimientos ORDER BY fecha_hora DESC LIMIT 50`;
+    if (!estaConectado || !db) return res.json([]);
+    
+    db.query(sql, (err, filas) => {
+        if (err) return res.json([]);
+        res.json(filas.map(item => ({
+            ...item,
+            operador: item.nombre_operador || 'S/N',
+            personal: item.nombre_operador || 'S/N'
+        })));
     });
 });
 
@@ -112,7 +121,6 @@ app.post('/api/movimientos', (req, res) => {
         ubicacionOrigenVal = `${procedenciaOrVal} RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'A'}`;
     }
 
-    // Armamos ubicacion_destino asegurando valores por defecto claros sin N/A vacíos
     const rackDestino = data.rack_destino || data.rack || 'N/A';
     const nivelDestino = data.nivel_destino || data.nivel || 'N1';
     const ladoDestino = data.lado_destino || data.lado || 'IZQUIERDO';
@@ -122,9 +130,9 @@ app.post('/api/movimientos', (req, res) => {
         ? `RACK ${rackDestino}, Nivel: ${nivelDestino}, Lado: ${ladoDestino}, Pos: ${posDestino}`
         : 'N/A';
 
-    const idMaterialVal = data.id_material || data.idMaterial || 1;
-    const idOperadorVal = data.id_operador || data.idOperador || 1;
-    const nombreOperadorVal = data.nombre_operador || (idOperadorVal == 2 ? 'CAROLINA ROMERO' : 'CRISTIAN RAMIREZ');
+    // Capturamos EXACTAMENTE el nombre del operador que manda la interfaz en línea
+    const nombreOperadorVal = data.nombre_operador || data.operador || 'S/N';
+    const idOperadorVal = data.id_operador || 1;
 
     let fechaProcesoVal = data.fecha_proceso;
     if (!fechaProcesoVal || fechaProcesoVal.includes('1111') || fechaProcesoVal.length < 8) {
@@ -138,7 +146,7 @@ app.post('/api/movimientos', (req, res) => {
     `;
 
     db.query(sqlInsert, [
-        idMaterialVal,
+        data.id_material || 1,
         idOperadorVal,
         data.tipo_movimiento || 'REGISTRO',
         data.proyecto || 'GENERAL',
@@ -165,25 +173,6 @@ app.get('/api/ubicacion/:proyecto', (req, res) => {
     db.query(sqlUbic, (error, filas) => {
         if (error) return res.json([]);
         res.json(filas);
-    });
-});
-// Ruta alias para el historial de movimientos que pide el frontend
-app.get('/api/historial', (req, res) => {
-    const sql = `SELECT * FROM movimientos ORDER BY fecha_hora DESC LIMIT 50`;
-    if (!estaConectado || !db) return res.json([]);
-    
-    db.query(sql, (err, filas) => {
-        if (err) return res.json([]);
-        res.json(filas.map(item => {
-            const nombreOp = item.nombre_operador && item.nombre_operador !== 'Operador KPA'
-                ? item.nombre_operador
-                : (item.id_operador == 2 ? 'CAROLINA ROMERO' : 'CRISTIAN RAMIREZ');
-            return {
-                ...item,
-                operador: nombreOp,
-                personal: nombreOp
-            };
-        }));
     });
 });
 
