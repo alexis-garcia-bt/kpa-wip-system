@@ -27,6 +27,7 @@ const dbConfig = {
     connectionLimit: 5,
     queueLimit: 0
 };
+
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
@@ -46,10 +47,6 @@ db.getConnection((err, connection) => {
         connection.release();
     }
 });
-
-// Usamos un pool en lugar de una conexión única para evitar fugas de memoria RAM
-const db = mysql.createPool(dbConfig);
-let estaConectado = true;
 
 // Endpoints de la API
 app.get('/api/proyecto/:query', (req, res) => {
@@ -72,15 +69,14 @@ app.get('/api/proyecto/:query', (req, res) => {
 app.post('/api/movimientos', (req, res) => {
     const data = req.body;
 
-    // Construir texto claro para la base de datos con los nuevos campos detallados
-        const procedenciaOrVal = data.procedencia_origen || 'PRODUCCION';
-        let ubicacionOrigenVal = procedenciaOrVal;
-        
-        if (data.rack_origen && data.rack_origen !== 'N/A') {
-            ubicacionOrigenVal = `${procedenciaOrVal} - RACK ${data.rack_origen}, ${data.nivel_origen}, Lado: ${data.lado_origen || 'N/A'}, Pos: ${data.apilado_origen || 'N/A'}`;
-        }
+    const procedenciaOrVal = data.procedencia_origen || 'PRODUCCION';
+    let ubicacionOrigenVal = procedenciaOrVal;
+    
+    if (data.rack_origen && data.rack_origen !== 'N/A') {
+        ubicacionOrigenVal = `${procedenciaOrVal} - RACK ${data.rack_origen}, ${data.nivel_origen}, Lado: ${data.lado_origen || 'N/A'}, Pos: ${data.apilado_origen || 'N/A'}`;
+    }
 
-        const ubicacionDestinoVal = data.rack_destino !== 'N/A' ? `RACK ${data.rack_destino}, ${data.nivel_destino}, Lado: ${data.lado}, Pos: ${data.apilado}` : 'N/A';
+    const ubicacionDestinoVal = data.rack_destino !== 'N/A' ? `RACK ${data.rack_destino}, ${data.nivel_destino}, Lado: ${data.lado}, Pos: ${data.apilado}` : 'N/A';
     const sqlInsert = `INSERT INTO movimientos 
         (id_material, id_operador, tipo_movimiento, proyecto, piezas, fecha_proceso, ubicacion_origen, ubicacion_destino, fecha_hora) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
@@ -141,7 +137,6 @@ app.get('/api/personal', (req, res) => {
             { id_operador: 11, rol: 'LIDER', nombre: 'CAROLINA ROMERO' },
             { id_operador: 12, rol: 'LIDER', nombre: 'MAGDALENA ROMERO' },
             { id_operador: 13, rol: 'LIDER', nombre: 'KAREN AGUILLON' },
-            
         ]);
     }
     db.query(sqlPers, (error, filas) => {
@@ -155,9 +150,6 @@ app.get('/api/personal', (req, res) => {
         }
         res.json(filas);
     });
-});
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
 });
 
 const PUERTO = process.env.PORT || 3000;
