@@ -78,15 +78,14 @@ app.get('/api/materiales', (req, res) => {
             return res.json([]);
         }
 
-        // Mapeamos los datos para asegurar que el frontend reciba las llaves esperadas
         const respuestaFormateada = filas.map(item => {
             return {
                 ...item,
-                // Si operador viene numérico o nulo, asignamos el activo o tomamos el nombre guardado
-                operador: item.operador || item.nombre_operador || (item.id_operador === 1 ? 'CRISTIAN RAMIREZ' : `Operador ${item.id_operador}`),
-                // Si la ubicación viene consolidada en ubicacion_destino, la aseguramos para que el frontend la lea
+                // Mapeamos el operador para que muestre el nombre correcto según el id o el campo guardado
+                operador: item.operador || (item.id_operador === 1 ? 'CRISTIAN RAMIREZ' : `Operador ${item.id_operador}`),
+                // Aseguramos que el rack y las ubicaciones se lean del destino guardado
                 rack: item.rack || item.ubicacion_destino || 'N/A',
-                lado: item.lado || 'IZQUIERDO' // o la propiedad correspondiente según el formulario
+                lado: item.lado || item.ubicacion_origen || 'N/A'
             };
         });
 
