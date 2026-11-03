@@ -88,13 +88,17 @@ app.post('/api/movimientos', (req, res) => {
     const idMaterialVal = data.id_material || data.idMaterial || 1;
     const idOperadorVal = data.id_operador || data.idOperador || 1;
 
+    let fechaProcesoVal = data.fecha_proceso;
+    if (!fechaProcesoVal || fechaProcesoVal.includes('1111') || fechaProcesoVal.length < 8) {
+        fechaProcesoVal = null;
+    }
     db.query(sqlInsert, [
         idMaterialVal,
         idOperadorVal,
         data.tipo_movimiento || 'REGISTRO',
         data.proyecto || 'GENERAL',
         data.piezas || 0,
-        data.fecha_proceso || null,
+        fechaProcesoVal,
         ubicacionOrigenVal,
         ubicacionDestinoVal
     ], (err, resultado) => {
