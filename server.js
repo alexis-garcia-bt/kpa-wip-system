@@ -106,12 +106,17 @@ app.post('/api/movimientos', (req, res) => {
     });
 });
 
-app.get('/api/movimientos', (req, res) => {
-    const sqlGet = "SELECT * FROM movimientos ORDER BY fecha_hora DESC LIMIT 100";
-    if (!estaConectado || !db) return res.json([]);
-    db.query(sqlGet, (error, filas) => {
-        if (error) return res.json([]);
-        res.json(filas);
+app.post('/api/movimientos', (req, res) => {
+    const { fecha_proceso, origen, destino_rack, destino_nivel, destino_izq_der, destino_pos, operador } = req.body;
+    
+    const query = "INSERT INTO movimientos (fecha_proceso, origen, destino_rack, destino_nivel, destino_izq_der, destino_pos, operador) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    
+    db.query(query, [fecha_proceso, origen, destino_rack, destino_nivel, destino_izq_der, destino_pos, operador], (err, result) => {
+        if (err) {
+            console.error("Error al guardar movimiento:", err);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ success: true, message: "Movimiento guardado correctamente" });
     });
 });
 
