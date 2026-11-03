@@ -157,7 +157,8 @@ app.get('/api/personal', (req, res) => {
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
+
 const PUERTO = process.env.PORT || 3000;
 app.listen(PUERTO, () => {
-    console.log(` KPA BACKEND v11.0 CORRIENDO EN PUERTO: ${PUERTO}`);
-});        
+    console.log(`🚀 KPA BACKEND v11.0 CORRIENDO EN PUERTO: ${PUERTO}`);
+});
