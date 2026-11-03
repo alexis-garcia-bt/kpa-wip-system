@@ -125,37 +125,43 @@ app.get('/api/ubicacion/:proyecto', (req, res) => {
 });
 
 app.get('/api/personal', (req, res) => {
+    const operadoresCompletos = [
+        { id_operador: 1, rol: 'ADMIN', nombre: 'ALEXIS GARCIA', turno: 'MATUTINO' },
+        { id_operador: 2, rol: 'ADMIN', nombre: 'LIZETH FRANCO', turno: 'MATUTINO' },
+        { id_operador: 3, rol: 'MONTACARGUISTA', nombre: 'CRISTIAN RAMIREZ', turno: 'MATUTINO' },
+        { id_operador: 4, rol: 'MONTACARGUISTA', nombre: 'MARCOS BASILIO', turno: 'MATUTINO' },
+        { id_operador: 5, rol: 'MONTACARGUISTA', nombre: 'PABLO MENDOZA', turno: 'MATUTINO' },
+        { id_operador: 6, rol: 'MONTACARGUISTA', nombre: 'ISABEL BALDERAS', turno: 'MATUTINO' },
+        { id_operador: 7, rol: 'MONTACARGUISTA', nombre: 'JOAQUIN SUAREZ', turno: 'MATUTINO' },
+        { id_operador: 8, rol: 'MONTACARGUISTA', nombre: 'JUAN SANCHEZ', turno: 'MATUTINO' },
+        { id_operador: 9, rol: 'MONTACARGUISTA', nombre: 'RICARDO MORENO', turno: 'MATUTINO' },
+        { id_operador: 10, rol: 'LIDER', nombre: 'JOEL RIVERA', turno: 'MATUTINO' },
+        { id_operador: 11, rol: 'LIDER', nombre: 'CAROLINA ROMERO', turno: 'MATUTINO' },
+        { id_operador: 12, rol: 'LIDER', nombre: 'MAGDALENA ROMERO', turno: 'MATUTINO' },
+        { id_operador: 13, rol: 'LIDER', nombre: 'KAREN AGUILLON', turno: 'MATUTINO' }
+    ];
+
     const sqlPers = "SELECT * FROM operadores";
+    
     if (!estaConectado || !db) {
-        return res.json([
-            { id_operador: 1, rol: 'ADMIN', nombre: 'ALEXIS GARCIA' },
-            { id_operador: 2, rol: 'ADMIN', nombre: 'LIZETH FRANCO' },
-            { id_operador: 3, rol: 'MONTACARGUISTA', nombre: 'CRISTIAN RAMIREZ' },
-            { id_operador: 4, rol: 'MONTACARGUISTA', nombre: 'MARCOS BASILIO' },
-            { id_operador: 5, rol: 'MONTACARGUISTA', nombre: 'PABLO MENDOZA' },
-            { id_operador: 6, rol: 'MONTACARGUISTA', nombre: 'ISABEL BALDERAS' },
-            { id_operador: 7, rol: 'MONTACARGUISTA', nombre: 'JOAQUIN SUAREZ' },
-            { id_operador: 8, rol: 'MONTACARGUISTA', nombre: 'JUAN SANCHEZ' },
-            { id_operador: 9, rol: 'MONTACARGUISTA', nombre: 'RICARDO MORENO' },
-            { id_operador: 10, rol: 'LIDER', nombre: 'JOEL RIVERA' },
-            { id_operador: 11, rol: 'LIDER', nombre: 'CAROLINA ROMERO' },
-            { id_operador: 12, rol: 'LIDER', nombre: 'MAGDALENA ROMERO' },
-            { id_operador: 13, rol: 'LIDER', nombre: 'KAREN AGUILLON' },
-        ]);
+        return res.json(operadoresCompletos);
     }
+
     db.query(sqlPers, (error, filas) => {
         if (error || !filas || filas.length === 0) {
-            return res.json([
-                { id_operador: 1, rol: 'MONTACARGUISTA', nombre: 'CRISTIAN RAMIREZ' },
-                { id_operador: 2, rol: 'MONTACARGUISTA', nombre: 'MARCOS BASILIO' },
-                { id_operador: 3, rol: 'LIDER', nombre: 'JOEL RIVERA' },
-                { id_operador: 4, rol: 'ADMIN', nombre: 'ALEXIS GARCIA' }
-            ]);
+            return res.json(operadoresCompletos);
         }
-        res.json(filas);
+        
+        const operadoresMapeados = filas.map(op => ({
+            id_operador: op.id_operador || op.id || 1,
+            rol: (op.rol || op.tipo || 'MONTACARGUISTA').toUpperCase(),
+            nombre: (op.nombre || op.nombre_operador || 'OPERADOR').toUpperCase(),
+            turno: op.turno || 'MATUTINO'
+        }));
+
+        res.json(operadoresMapeados.length > 0 ? operadoresMapeados : operadoresCompletos);
     });
 });
-
 const PUERTO = process.env.PORT || 3000;
 app.listen(PUERTO, () => {
     console.log(`🚀 KPA BACKEND v11.0 CORRIENDO EN PUERTO: ${PUERTO}`);
