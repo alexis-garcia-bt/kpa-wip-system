@@ -655,16 +655,18 @@
                         return;
                     }
                     data.forEach(item => {
-                        tbody.innerHTML += `
-                            <tr>
-                                <td><strong>${item.proyecto}</strong></td>
-                                <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento}</span></td>
-                                <td><strong style="color:var(--warning);">${item.piezas || 'N/A'} pzas</strong></td>
-                                <td>${item.rack_destino || 'N/A'}</td>
-                                <td>${item.ubicacion_destino || 'N/A'}</td>
-                                <td>${item.personal || 'Operador KPA'}</td>
-                                <td>${item.fecha_hora ? item.fecha_hora : 'Reciente'}</td>
-                            </tr>
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${item.proyecto}</strong></td>
+                        <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento}</span></td>
+                        <td><strong style="color:var(--warning);">${item.piezas || 'N/A'} pzas</strong></td>
+                        <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino && item.rack_destino !== 'N/A' ? item.rack_destino : 'N/A')}</td>
+                        <td>${item.ubicacion_destino || 'N/A'} <br><small style="color: var(--kpa-blue);">F. Proceso: ${item.fecha_proceso ? item.fecha_proceso.split('T')[0] : 'N/A'}</small></td>
+                        <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
+                        <td>${item.fecha_hora ? item.fecha_hora : 'Reciente'}</td>
+                    </tr>
+                `;
+            });
                         `;
                     });
                 }
