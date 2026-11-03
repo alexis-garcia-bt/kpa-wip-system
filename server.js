@@ -66,6 +66,7 @@ app.get('/api/proyecto/:query', (req, res) => {
 });
 
 // Ruta para buscar materiales e inventario procesando operador y ubicaciones
+// Ruta para buscar materiales extrayendo rack y lado del texto guardado
 app.get('/api/materiales', (req, res) => {
     const queryBusqueda = req.query.p || req.query.q || '';
     const sqlSearch = `SELECT * FROM movimientos WHERE proyecto LIKE ? OR ubicacion_destino LIKE ? ORDER BY fecha_hora DESC LIMIT 20`;
@@ -79,13 +80,29 @@ app.get('/api/materiales', (req, res) => {
         }
 
         const respuestaFormateada = filas.map(item => {
+            // Separamos la ubicación guardada para extraer el Rack y el Lado de forma limpia
+            let textoUbicacion = item.ubicacion_destino || '';
+            let rackExtraido = 'N/A';
+            let ladoExtraido = 'N/A';
+
+            if (textoUbicacion.includes('RACK')) {
+                rackExtraido = textoUbicacion.split(',')[0].trim();
+            }
+            if (textoUbicacion.includes('Lado:')) {
+                let partes = textoUbicacion.split('Lado:');
+                if (partes[1]) {
+                    ladoExtraido = partes[1].split(',')[0].trim();
+                }
+            }
+
+            // Asignamos el nombre correcto del operador según el ID
+            let nombreOp = item.id_operador == 2 ? 'CAROLINA ROMERO' : (item.id_operador == 1 ? 'CRISITAN RAMIREZ' : `Operador ${item.id_operador}`);
+
             return {
                 ...item,
-                // Mapeamos el operador para que muestre el nombre correcto según el id o el campo guardado
-                operador: item.operador || (item.id_operador === 1 ? 'CRISTIAN RAMIREZ' : `Operador ${item.id_operador}`),
-                // Aseguramos que el rack y las ubicaciones se lean del destino guardado
-                rack: item.rack || item.ubicacion_destino || 'N/A',
-                lado: item.lado || item.ubicacion_origen || 'N/A'
+                operador: item.nombre_operador || nombreOp,
+                rack: rackExtraido,
+                lado: ladoExtraido
             };
         });
 
