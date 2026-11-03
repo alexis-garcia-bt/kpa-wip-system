@@ -153,6 +153,11 @@ app.get('/api/personal', (req, res) => {
         res.json(operadoresMapeados.length > 0 ? operadoresMapeados : operadoresCompletos);
     });
 });
+
+// Ruta para evitar el error 404 de sugerencias
+app.get('/api/sugerencias', (req, res) => {
+    res.json([]);
+});
 const PUERTO = process.env.PORT || 3000;
 app.listen(PUERTO, () => {
     console.log(`🚀 KPA BACKEND v11.0 CORRIENDO EN PUERTO: ${PUERTO}`);
