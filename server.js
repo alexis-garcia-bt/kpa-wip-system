@@ -68,25 +68,25 @@ app.get('/api/proyecto/:query', (req, res) => {
 // Registro de movimientos incluyendo la fecha de proceso solicitada
 // Registro de movimientos incluyendo la fecha de proceso solicitada y manejo seguro de nulos
 app.post('/api/movimientos', (req, res) => {
-    const data = req.body;
-
+    const data = req.body || {};
+    
     const procedenciaOrVal = data.procedencia_origen || 'PRODUCCION';
     let ubicacionOrigenVal = procedenciaOrVal;
     
     if (data.rack_origen && data.rack_origen !== 'N/A') {
-        ubicacionOrigenVal = `${procedenciaOrVal} - RACK ${data.rack_origen}, ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'N/A'}, Pos: ${data.apilado_origen || 'N/A'}`;
+        ubicacionOrigenVal = `${procedenciaOrVal} RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'N/A'}`;
     }
 
-    const ubicacionDestinoVal = (data.rack_destino && data.rack_destino !== 'N/A') 
-        ? `RACK ${data.rack_destino}, ${data.nivel_destino || 'N/A'}, Lado: ${data.lado || 'N/A'}, Pos: ${data.apilado || 'N/A'}` 
+    const ubicacionDestinoVal = (data.rack_destino && data.rack_destino !== 'N/A')
+        ? `RACK ${data.rack_destino}, Nivel: ${data.nivel_destino || 'N/A'}, Lado: ${data.lado_destino || 'N/A'}, Pos: ${data.apilado || 'N/A'}`
         : 'N/A';
 
     const sqlInsert = `INSERT INTO movimientos 
         (id_material, id_operador, tipo_movimiento, proyecto, piezas, fecha_proceso, ubicacion_origen, ubicacion_destino, fecha_hora) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
 
-    const idMaterialVal = data.id_material || 1; 
-    const idOperadorVal = data.id_operador || 1;
+    const idMaterialVal = data.id_material || data.idMaterial || 1;
+    const idOperadorVal = data.id_operador || data.idOperador || 1;
 
     db.query(sqlInsert, [
         idMaterialVal,
@@ -103,20 +103,6 @@ app.post('/api/movimientos', (req, res) => {
             return res.status(500).json({ success: false, error: err.message });
         }
         res.json({ success: true, id: resultado.insertId });
-    });
-});
-
-app.post('/api/movimientos', (req, res) => {
-    const { fecha_proceso, origen, destino_rack, destino_nivel, destino_izq_der, destino_pos, operador } = req.body;
-    
-    const query = "INSERT INTO movimientos (fecha_proceso, origen, destino_rack, destino_nivel, destino_izq_der, destino_pos, operador) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    
-    db.query(query, [fecha_proceso, origen, destino_rack, destino_nivel, destino_izq_der, destino_pos, operador], (err, result) => {
-        if (err) {
-            console.error("Error al guardar movimiento:", err);
-            return res.status(500).json({ error: err.message });
-        }
-        res.json({ success: true, message: "Movimiento guardado correctamente" });
     });
 });
 
