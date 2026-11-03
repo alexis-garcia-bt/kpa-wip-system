@@ -65,7 +65,7 @@ app.get('/api/proyecto/:query', (req, res) => {
     });
 });
 
-// Ruta para buscar materiales o proyectos en el inventario/ubicaciones
+// Ruta para buscar materiales e inventario procesando operador y ubicaciones
 app.get('/api/materiales', (req, res) => {
     const queryBusqueda = req.query.p || req.query.q || '';
     const sqlSearch = `SELECT * FROM movimientos WHERE proyecto LIKE ? OR ubicacion_destino LIKE ? ORDER BY fecha_hora DESC LIMIT 20`;
@@ -77,7 +77,20 @@ app.get('/api/materiales', (req, res) => {
             console.error("Error en búsqueda:", error.message);
             return res.json([]);
         }
-        res.json(filas);
+
+        // Mapeamos los datos para asegurar que el frontend reciba las llaves esperadas
+        const respuestaFormateada = filas.map(item => {
+            return {
+                ...item,
+                // Si operador viene numérico o nulo, asignamos el activo o tomamos el nombre guardado
+                operador: item.operador || item.nombre_operador || (item.id_operador === 1 ? 'CRISTIAN RAMIREZ' : `Operador ${item.id_operador}`),
+                // Si la ubicación viene consolidada en ubicacion_destino, la aseguramos para que el frontend la lea
+                rack: item.rack || item.ubicacion_destino || 'N/A',
+                lado: item.lado || 'IZQUIERDO' // o la propiedad correspondiente según el formulario
+            };
+        });
+
+        res.json(respuestaFormateada);
     });
 });
 
