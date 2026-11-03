@@ -13,6 +13,8 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+app.use(express.static(__dirname));
+
 const dbConfig = {
     host: 'bblrso7apd6u8ura9jhp-mysql.services.clever-cloud.com',
     user: 'ud8kufsf7k8ovhp8',
@@ -25,6 +27,9 @@ const dbConfig = {
     connectionLimit: 5,
     queueLimit: 0
 };
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
 
 // Usamos un pool en lugar de una conexión única para evitar fugas de memoria RAM
 const db = mysql.createPool(dbConfig);
@@ -150,9 +155,9 @@ app.get('/api/personal', (req, res) => {
     });
 });
 app.get('/', (req, res) => {
-    res.send('Servidor KPA WIP funcionando al 100% en la nube 🚀');
-})
-const PUERTO = 3000;
+    res.sendFile(__dirname + '/index.html');
+});
+const PUERTO = process.env.PORT || 3000;
 app.listen(PUERTO, () => {
-    console.log(` KPA BACKEND v11.0 CORRIENDO EN: http://localhost:${PUERTO}`);
+    console.log(` KPA BACKEND v11.0 CORRIENDO EN PUERTO: ${PUERTO}`);
 });
