@@ -80,13 +80,18 @@ app.get('/api/materiales', (req, res) => {
             let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
             if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
                 let partes = item.ubicacion_destino.split(',');
-                rackVal = partes[0].trim();
+                rackVal = partes[0].replace('RACK', '').trim();
             }
+
+            const operadorDinamico = item.nombre_operador && item.nombre_operador.trim() !== '' 
+                ? item.nombre_operador 
+                : 'OPERADOR GENERAL';
 
             return {
                 ...item,
-                operador: item.nombre_operador || 'S/N',
-                personal: item.nombre_operador || 'S/N',
+                operador: operadorDinamico,
+                personal: operadorDinamico,
+                nombre_operador: operadorDinamico,
                 rack: rackVal,
                 lado: item.lado || 'N/A'
             };
@@ -102,15 +107,21 @@ app.get('/api/historial', (req, res) => {
     
     db.query(sql, (err, filas) => {
         if (err) return res.json([]);
-        res.json(filas.map(item => ({
-            ...item,
-            operador: item.nombre_operador || 'S/N',
-            personal: item.nombre_operador || 'S/N'
-        })));
+        res.json(filas.map(item => {
+            const operadorDinamico = item.nombre_operador && item.nombre_operador.trim() !== '' 
+                ? item.nombre_operador 
+                : 'OPERADOR GENERAL';
+            return {
+                ...item,
+                operador: operadorDinamico,
+                personal: operadorDinamico,
+                nombre_operador: operadorDinamico
+            };
+        }));
     });
 });
 
-// Registro de movimientos incluyendo la fecha de proceso solicitada
+
 // Registro de movimientos incluyendo la fecha de proceso solicitada y manejo seguro de nulos
 app.post('/api/movimientos', (req, res) => {
     const data = req.body || {};
@@ -121,18 +132,19 @@ app.post('/api/movimientos', (req, res) => {
         ubicacionOrigenVal = `${procedenciaOrVal} RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'A'}`;
     }
 
-    const rackDestino = data.rack_destino || data.rack || 'N/A';
+    // Extracción limpia del rack destino
+    const rackDestino = data.rack_destino || data.rack || (data.ubicacion_destino && data.ubicacion_destino.includes('RACK') ? data.ubicacion_destino.split(',')[0].replace('RACK', '').trim() : 'N/A');
     const nivelDestino = data.nivel_destino || data.nivel || 'N1';
     const ladoDestino = data.lado_destino || data.lado || 'IZQUIERDO';
     const posDestino = data.apilado || data.posicion || '1';
 
     const ubicacionDestinoVal = (rackDestino !== 'N/A')
         ? `RACK ${rackDestino}, Nivel: ${nivelDestino}, Lado: ${ladoDestino}, Pos: ${posDestino}`
-        : 'N/A';
+        : (data.ubicacion_destino || 'N/A');
 
-    // Capturamos EXACTAMENTE el nombre del operador que manda la interfaz en línea
-    const nombreOperadorVal = data.nombre_operador || data.operador || 'S/N';
-    const idOperadorVal = data.id_operador || 1;
+    // 100% DINÁMICO: Captura cualquier operador actual sin nombres fijos
+    const nombreOperadorVal = data.nombre_operador || data.operador || 'OPERADOR GENERAL';
+    const idOperadorVal = data.id_operador || data.idOperador || 1;
 
     let fechaProcesoVal = data.fecha_proceso;
     if (!fechaProcesoVal || fechaProcesoVal.includes('1111') || fechaProcesoVal.length < 8) {
@@ -215,7 +227,7 @@ app.get('/api/personal', (req, res) => {
     });
 });
 
-// Ruta para evitar el error 404 de sugerencias
+
 app.get('/api/sugerencias', (req, res) => {
     res.json([]);
 });
