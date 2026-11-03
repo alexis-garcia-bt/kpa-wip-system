@@ -596,8 +596,10 @@
             const ambosLados = document.getElementById('ambosLadosCheck').checked;
             const ladoFinal = ambosLados ? 'AMBOS (IZQ Y DER - MANGA LARGA)' : (document.getElementById('ladoDestino').value || 'N/A');
 
+            // Aseguramos que viajen explícitamente el nombre del operador activo y el rack destino
             const payload = {
-                personal: `${usuarioActual.nombre} (${usuarioActual.rol})`,
+                nombre_operador: usuarioActual.nombre ? `${usuarioActual.nombre} (${usuarioActual.rol})` : 'OPERADOR GENERAL',
+                personal: usuarioActual.nombre ? `${usuarioActual.nombre} (${usuarioActual.rol})` : 'OPERADOR GENERAL',
                 turno: usuarioActual.turno,
                 tipo_movimiento: tipoMovimientoSeleccionado,
                 proyecto: proyecto,
@@ -609,6 +611,7 @@
                 lado_origen: document.getElementById('ladoOrigen').value || 'N/A',
                 apilado_origen: document.getElementById('apiladoOrigen').value || 'N/A',
                 rack_destino: document.getElementById('rackDestino').value || 'N/A',
+                rack: document.getElementById('rackDestino').value || 'N/A', // Clave para que el servidor lo lea directo
                 nivel_destino: document.getElementById('nivelDestino').value || 'N/A',
                 lado: ladoFinal,
                 apilado: document.getElementById('apiladoDestino').value || '1'
