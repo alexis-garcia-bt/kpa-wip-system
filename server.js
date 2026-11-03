@@ -78,33 +78,13 @@ app.get('/api/materiales', (req, res) => {
             console.error("Error en búsqueda:", error.message);
             return res.json([]);
         }
-
-        const respuestaFormateada = filas.map(item => {
-            // Separamos la ubicación guardada para extraer el Rack y el Lado de forma limpia
-            let textoUbicacion = item.ubicacion_destino || '';
-            let rackExtraido = 'N/A';
-            let ladoExtraido = 'N/A';
-
-            if (textoUbicacion.includes('RACK')) {
-                rackExtraido = textoUbicacion.split(',')[0].trim();
-            }
-            if (textoUbicacion.includes('Lado:')) {
-                let partes = textoUbicacion.split('Lado:');
-                if (partes[1]) {
-                    ladoExtraido = partes[1].split(',')[0].trim();
-                }
-            }
-
-            // Asignamos el nombre correcto del operador según el ID
-            let nombreOp = item.id_operador == 2 ? 'CAROLINA ROMERO' : (item.id_operador == 1 ? 'CRISITAN RAMIREZ' : `Operador ${item.id_operador}`);
-
-            return {
-                ...item,
-                operador: item.nombre_operador || nombreOp,
-                rack: rackExtraido,
-                lado: ladoExtraido
-            };
-        });
+        
+        const respuestaFormateada = filas.map(item => ({
+            ...item,
+            operador: item.nombre_operador || 'CRISTIAN RAMIREZ',
+            rack: item.rack || 'N/A',
+            lado: item.lado || 'N/A'
+        }));
 
         res.json(respuestaFormateada);
     });
@@ -126,17 +106,25 @@ app.post('/api/movimientos', (req, res) => {
         ? `RACK ${data.rack_destino}, Nivel: ${data.nivel_destino || 'N/A'}, Lado: ${data.lado_destino || 'N/A'}, Pos: ${data.apilado || 'N/A'}`
         : 'N/A';
 
-    const sqlInsert = `INSERT INTO movimientos 
-        (id_material, id_operador, tipo_movimiento, proyecto, piezas, fecha_proceso, ubicacion_origen, ubicacion_destino, fecha_hora) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`;
+    const sqlInsert = `
+        INSERT INTO movimientos 
+        (id_material, id_operador, tipo_movimiento, proyecto, piezas, fecha_proceso, ubicacion_origen, ubicacion_destino, rack, nivel, lado, posicion, nombre_operador) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
 
     const idMaterialVal = data.id_material || data.idMaterial || 1;
     const idOperadorVal = data.id_operador || data.idOperador || 1;
+
+    // Determinamos el nombre del operador según el ID recibido
+    let nombreOpVal = 'CRISITAN RAMIREZ';
+    if (idOperadorVal == 2) nombreOpVal = 'CAROLINA ROMERO';
+    else if (idOperadorVal > 2) nombreOpVal = `Operador ${idOperadorVal}`;
 
     let fechaProcesoVal = data.fecha_proceso;
     if (!fechaProcesoVal || fechaProcesoVal.includes('1111') || fechaProcesoVal.length < 8) {
         fechaProcesoVal = null;
     }
+
     db.query(sqlInsert, [
         idMaterialVal,
         idOperadorVal,
@@ -145,7 +133,12 @@ app.post('/api/movimientos', (req, res) => {
         data.piezas || 0,
         fechaProcesoVal,
         ubicacionOrigenVal,
-        ubicacionDestinoVal
+        ubicacionDestinoVal,
+        data.rack_destino || 'N/A',
+        data.nivel_destino || 'N/A',
+        data.lado_destino || 'N/A',
+        data.apilado || 'N/A',
+        nombreOpVal
     ], (err, resultado) => {
         if (err) {
             console.error("Error detallado al insertar en BD:", err.message);
