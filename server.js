@@ -135,13 +135,22 @@ app.post('/api/movimientos', (req, res) => {
     }
 
     // Capturamos el destino (si es salida, será Basura, Producción o Embarques; si es rack, será su ubicación)
-    const rackDestino = data.rack_destino || data.rackDestino || data.rack || 'N/A';
+    const rackDestinoRaw = data.rack_destino || data.rackDestino || data.rack || 'N/A';
     
+    let rackDestino = rackDestinoRaw;
+    let nivelDestino = data.nivel_destino || data.nivelDestino || data.nivel || 'N1';
+    let ladoDestino = data.lado_destino || data.ladoDestino || data.lado || 'IZQUIERDO';
+    let posDestino = data.apilado || data.posicion || data.pos || '1';
+
     let ubicacionDestinoVal = '';
     if (data.tipo_movimiento === 'SALIDA') {
-        ubicacionDestinoVal = `Destino Externo: ${rackDestino}`;
+        ubicacionDestinoVal = `Destino Externo: ${rackDestinoRaw}`;
+        rackDestino = 'N/A'; 
+        nivelDestino = 'N/A';
+        ladoDestino = 'N/A';
+        posDestino = '1';
     } else if (rackDestino !== 'N/A') {
-        ubicacionDestinoVal = `RACK ${rackDestino}, Nivel: ${data.nivel_destino || 'N1'}, Lado: ${data.lado_destino || 'IZQUIERDO'}, Pos: ${data.apilado || '1'}`;
+        ubicacionDestinoVal = `RACK ${rackDestino}, Nivel: ${nivelDestino}, Lado: ${ladoDestino}, Pos: ${posDestino}`;
     } else {
         ubicacionDestinoVal = data.ubicacion_destino || 'N/A';
     }
