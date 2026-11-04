@@ -67,37 +67,67 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 // Ruta para buscar materiales e inventario procesando operador y ubicaciones
 // Ruta para buscar materiales extrayendo rack y lado del texto guardado
+// Ruta para buscar materiales en inventario con todo el detalle de ubicación (Nivel, Lado, Apilado) y filtro de SALIDAS
 app.get('/api/materiales', (req, res) => {
     const q = req.query.p || req.query.q || '';
-    const sql = `SELECT * FROM movimientos WHERE proyecto LIKE ? OR ubicacion_destino LIKE ? ORDER BY fecha_hora DESC LIMIT 20`;
+    const sql = `SELECT * FROM movimientos WHERE proyecto LIKE ? OR ubicacion_destino LIKE ? ORDER BY fecha_hora DESC`;
     
     if (!estaConectado || !db) return res.json([]);
     
     db.query(sql, [`%${q}%`, `%${q}%`], (err, filas) => {
         if (err) return res.json([]);
         
-        const formateados = filas.map(item => {
-            let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
-            if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
-                let partes = item.ubicacion_destino.split(',');
-                rackVal = partes[0].replace('RACK', '').trim();
+        const inventarioMap = new Map();
+
+        // Agrupamos para obtener siempre el movimiento más reciente de cada proyecto
+        filas.forEach(item => {
+            const clave = (item.proyecto || 'GENERAL').toUpperCase().trim();
+            if (!inventarioMap.has(clave)) {
+                inventarioMap.set(clave, item);
             }
-
-            const operadorDinamico = item.nombre_operador && item.nombre_operador.trim() !== '' 
-                ? item.nombre_operador 
-                : 'OPERADOR GENERAL';
-
-            return {
-                ...item,
-                operador: operadorDinamico,
-                personal: operadorDinamico,
-                nombre_operador: operadorDinamico,
-                rack: rackVal,
-                lado: item.lado || 'N/A'
-            };
         });
 
-        res.json(formateados);
+        const activos = [];
+        inventarioMap.forEach((item, clave) => {
+            // SÓLO agregamos al inventario si su movimiento MÁS RECIENTE NO ES UNA SALIDA
+            if (item.tipo_movimiento && item.tipo_movimiento.toUpperCase() !== 'SALIDA') {
+                let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
+                let nivelVal = item.nivel && item.nivel !== 'N/A' ? item.nivel : 'N1';
+                let ladoVal = item.lado && item.lado !== 'N/A' ? item.lado : 'IZQUIERDO';
+                let apiladoVal = item.apilado && item.apilado !== 'N/A' ? item.apilado : '1';
+
+                // Si por alguna razón el rack está en N/A pero viene en la cadena de ubicación destino, lo desglosamos
+                if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
+                    // Ejemplo: "RACK R14, Nivel: N2, Lado: IZQUIERDO, Pos: 7"
+                    let partes = item.ubicacion_destino.split(',');
+                    partes.forEach(part => {
+                        let p = part.trim();
+                        if (p.includes('RACK')) rackVal = p.replace('RACK', '').trim();
+                        if (p.includes('Nivel:')) nivelVal = p.replace('Nivel:', '').trim();
+                        if (p.includes('Lado:')) ladoVal = p.replace('Lado:', '').trim();
+                        if (p.includes('Pos:')) apiladoVal = p.replace('Pos:', '').trim();
+                    });
+                }
+
+                const operadorDinamico = item.nombre_operador && item.nombre_operador.trim() !== '' 
+                    ? item.nombre_operador 
+                    : 'OPERADOR GENERAL';
+
+                activos.push({
+                    ...item,
+                    operador: operadorDinamico,
+                    personal: operadorDinamico,
+                    nombre_operador: operadorDinamico,
+                    rack: rackVal,
+                    nivel: nivelVal,
+                    lado: ladoVal,
+                    apilado: apiladoVal
+                });
+            }
+        });
+
+        // Devolvemos todo el inventario activo de la planta sin restricciones
+        res.json(activos);
     });
 });
 
