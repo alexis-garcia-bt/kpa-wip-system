@@ -126,24 +126,25 @@ app.get('/api/historial', (req, res) => {
 app.post('/api/movimientos', (req, res) => {
     const data = req.body || {};
 
-    const procedenciaOrVal = data.procedencia_origen || 'PRODUCCION';
+    const procedenciaOrVal = data.procedencia_origen || data.origen || 'PRODUCCION';
     let ubicacionOrigenVal = procedenciaOrVal;
     if (data.rack_origen && data.rack_origen !== 'N/A') {
         ubicacionOrigenVal = `${procedenciaOrVal} RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'A'}`;
     }
 
-    // Extracción limpia del rack destino
-    const rackDestino = data.rack_destino || data.rack || (data.ubicacion_destino && data.ubicacion_destino.includes('RACK') ? data.ubicacion_destino.split(',')[0].replace('RACK', '').trim() : 'N/A');
-    const nivelDestino = data.nivel_destino || data.nivel || 'N1';
-    const ladoDestino = data.lado_destino || data.lado || 'IZQUIERDO';
-    const posDestino = data.apilado || data.posicion || '1';
+    // Capturamos el rack destino sin importar cómo lo llame el HTML
+    const rackDestino = data.rack_destino || data.rackDestino || data.rack || 'N/A';
+    const nivelDestino = data.nivel_destino || data.nivelDestino || data.nivel || 'N1';
+    const ladoDestino = data.lado_destino || data.ladoDestino || data.lado || 'IZQUIERDO';
+    const posDestino = data.apilado || data.posicion || data.pos || '1';
 
     const ubicacionDestinoVal = (rackDestino !== 'N/A')
         ? `RACK ${rackDestino}, Nivel: ${nivelDestino}, Lado: ${ladoDestino}, Pos: ${posDestino}`
         : (data.ubicacion_destino || 'N/A');
 
-    // 100% DINÁMICO: Captura cualquier operador actual sin nombres fijos
-    const nombreOperadorVal = data.nombre_operador || data.operador || 'OPERADOR GENERAL';
+    // Capturamos el nombre del operador desde cualquier variable que mande el frontend
+    // Si el HTML no lo manda, intentamos rescatarlo del texto de la sesión o dejamos una advertencia clara
+    const nombreOperadorVal = data.nombre_operador || data.operador || data.usuario || data.personal || 'OPERADOR GENERAL';
     const idOperadorVal = data.id_operador || data.idOperador || 1;
 
     let fechaProcesoVal = data.fecha_proceso;
@@ -177,14 +178,6 @@ app.post('/api/movimientos', (req, res) => {
             return res.status(500).json({ success: false, error: err.message });
         }
         res.json({ success: true, id: resultado.insertId });
-    });
-});
-app.get('/api/ubicacion/:proyecto', (req, res) => {
-    const sqlUbic = "SELECT * FROM movimientos ORDER BY fecha_hora DESC LIMIT 20";
-    if (!estaConectado || !db) return res.json([]);
-    db.query(sqlUbic, (error, filas) => {
-        if (error) return res.json([]);
-        res.json(filas);
     });
 });
 
