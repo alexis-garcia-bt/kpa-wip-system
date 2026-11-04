@@ -285,7 +285,7 @@
 
                     
                         <div class="form-group" id="bloqueDestino">
-                        <!-- CONTENEDOR A: Destino a Racks (Para Entradas y Reubicaciones) -->
+                        <!-- CONTENEDOR A: Destino a Racks (Únicamente para Entradas y Reubicaciones) -->
                         <div id="destinoRackContainer">
                             <label>Ubicación de Destino / Almacenamiento:</label>
                             <div style="display: flex; gap: 15px; margin-bottom: 15px;">
@@ -311,17 +311,16 @@
                             </div>
                         </div>
 
-                        <!-- CONTENEDOR B: Destino de Salida (Solo para Salidas: Producción, Embarques, Basura) -->
+                        <!-- CONTENEDOR B: Destino de Salida (Únicamente para Salidas: Producción, Embarques, Basura) -->
                         <div id="destinoSalidaContainer" style="display: none;">
-                            <label for="destinoSalidaSelect">Destino de la Salida:</label>
-                            <select id="destinoSalidaSelect">
+                            <label for="destinoSalidaSelect">¿A dónde se dirige la Salida?:</label>
+                            <select id="destinoSalidaSelect" style="width: 100%; padding: 12px; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 8px;">
                                 <option value="PRODUCCION">PRODUCCIÓN</option>
                                 <option value="EMBARQUES / TRAILER">EMBARQUES / TRÁILER / CAMIÓN</option>
                                 <option value="BASURA / SCRAP">BASURA / SCRAP</option>
                             </select>
                         </div>
                     </div>
-
                     
                     <div class="form-group">
                         <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; background: var(--bg-input); padding: 14px 18px; border-radius: 12px; border: 1px solid var(--border-color);">
@@ -605,7 +604,6 @@
        function seleccionarAccion(tipo, elemento) {
             tipoMovimientoSeleccionado = tipo;
             
-            // Limpia y activa solo el botón presionado
             document.querySelectorAll('.action-btn').forEach(btn => btn.classList.remove('active'));
             if (elemento) elemento.classList.add('active');
             
@@ -616,32 +614,46 @@
             const labelOrigen = document.getElementById('labelOrigenDestino');
             const selectProcedencia = document.getElementById('origenProcedencia');
             const detallesRackOrigen = document.getElementById('detallesRackOrigen');
+            
+            const destinoRackContainer = document.getElementById('destinoRackContainer');
+            const destinoSalidaContainer = document.getElementById('destinoSalidaContainer');
 
             if (tipo === 'ENTRADA') {
                 bloqueOrigen.style.display = 'block';
                 bloqueDestino.style.display = 'block';
+                destinoRackContainer.style.display = 'block';
+                destinoSalidaContainer.style.display = 'none';
+
                 if (labelOrigen) labelOrigen.innerText = "Ubicación / Procedencia de Origen (De dónde entra):";
                 if (selectProcedencia) {
                     selectProcedencia.value = "PRODUCCION";
-                    selectProcedencia.disabled = false; // Habilitado para entradas
+                    selectProcedencia.disabled = false;
                 }
                 if (detallesRackOrigen) detallesRackOrigen.style.display = 'none';
+
             } else if (tipo === 'SALIDA') {
                 bloqueOrigen.style.display = 'block';   
                 bloqueDestino.style.display = 'block';  
-                if (labelOrigen) labelOrigen.innerText = "Rack de Origen en WIP (De dónde se retira el material):";
+                destinoRackContainer.style.display = 'none';     // Oculta los racks de destino
+                destinoSalidaContainer.style.display = 'block';  // Muestra Producción / Embarques / Basura
+
+                if (labelOrigen) labelOrigen.innerText = "Rack de Origen en WIP (De qué rack se retira el material):";
                 if (selectProcedencia) {
                     selectProcedencia.value = "OTRO RACK WIP";
-                    selectProcedencia.disabled = true; // Bloqueado porque por fuerza sale de WIP
+                    selectProcedencia.disabled = true; 
                 }
-                if (detallesRackOrigen) detallesRackOrigen.style.display = 'block'; // Muestra obligado el rack de donde sale
+                if (detallesRackOrigen) detallesRackOrigen.style.display = 'block'; 
+
             } else if (tipo === 'REUBICACION') {
                 bloqueOrigen.style.display = 'block';
                 bloqueDestino.style.display = 'block';
+                destinoRackContainer.style.display = 'block';    // Pide rack destino porque es reubicación interna
+                destinoSalidaContainer.style.display = 'none';
+
                 if (labelOrigen) labelOrigen.innerText = "Rack de Origen (De dónde se mueve):";
                 if (selectProcedencia) {
                     selectProcedencia.value = "OTRO RACK WIP";
-                    selectProcedencia.disabled = true; // Bloqueado en reubicación
+                    selectProcedencia.disabled = true;
                 }
                 if (detallesRackOrigen) detallesRackOrigen.style.display = 'block';
             }
