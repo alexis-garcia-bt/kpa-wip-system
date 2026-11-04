@@ -13,9 +13,9 @@
             --border-color: #2a3b55;
             --text-main: #f8fafc;
             --text-muted: #b5bbc5;
-            --kpa-blue: #1e3a8a;       /* Azul marino institucional de KPA */
-            --kpa-blue-hover: #1d4ed8; /* Azul brillante para hover/activo */
-            --kpa-gray: #64748b;       /* Gris corporativo elegante */
+            --kpa-blue: #1a2d64;       /* Azul marino institucional de KPA */
+            --kpa-blue-hover: #0e3ab4; /* Azul brillante para hover/activo */
+            --kpa-gray: #505b6b;       /* Gris corporativo elegante */
             --kpa-gray-light: #cbd5e1; /* Gris claro secundario */
             --kpa-green: #10b981;
             --kpa-green-hover: #059669;
@@ -23,6 +23,39 @@
             --danger-hover: #dc2626;
             --warning: #f59e0b;
         }
+
+
+    /* Estilos globales para los botones de acción del sistema WIP */
+    .action-grid { 
+        display: grid; 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 20px; 
+        margin-bottom: 30px; 
+    }
+
+    .action-btn { 
+        background-color: #121824 !important; 
+        color: #94a3b8 !important; 
+        border: 2px solid #2a3b55 !important; 
+        padding: 20px; 
+        border-radius: 12px; 
+        font-weight: 700; 
+        cursor: pointer; 
+        transition: all 0.2s ease-in-out; 
+    }
+
+    .action-btn:hover { 
+        border-color: #1e3a8a; 
+        color: #f8fafc; 
+    }
+
+    .action-btn.active { 
+        background-color: #1e3a8a !important; 
+        border-color: #94a3b8 !important; 
+        color: #ffffff !important; 
+        box-shadow: 0 0 15px rgba(30, 58, 138, 0.8) !important; 
+    }
+
         * { box-sizing: border-box; transition: all 0.2s ease-in-out; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg-base); color: var(--text-main); margin: 0; padding: 0; min-height: 100vh; display: flex; flex-direction: column; }
 
@@ -213,12 +246,7 @@
                     Operando como: <strong id="lblInfoOperador" style="color: var(--kpa-green);"></strong>
                 </div>
 
-                <div class="action-grid">
-                <button type="button" class="action-btn" onclick="seleccionarAccion('ENTRADA', this)">ENTRADA</button>
-                <button type="button" class="action-btn" onclick="seleccionarAccion('SALIDA', this)">SALIDA</button>
-                <button type="button" class="action-btn" onclick="seleccionarAccion('REUBICACION', this)">REUBICACIÓN</button>
-            </div>
-
+         
                 <form id="formMovimiento" style="display:none;" onsubmit="registrarMovimiento(event)">
                     
                     <div class="form-group">
@@ -581,8 +609,11 @@
 
        function seleccionarAccion(tipo, elemento) {
             tipoMovimientoSeleccionado = tipo;
+            
+            // Limpia y activa solo el botón presionado
             document.querySelectorAll('.accion-btn').forEach(btn => btn.classList.remove('active'));
             if (elemento) elemento.classList.add('active');
+            
             document.getElementById('formMovimiento').style.display = 'block';
 
             const bloqueOrigen = document.getElementById('bloqueOrigen');
@@ -598,11 +629,11 @@
                 if (selectProcedencia) selectProcedencia.value = "PRODUCCION";
                 if (detallesRackOrigen) detallesRackOrigen.style.display = 'none';
             } else if (tipo === 'SALIDA') {
-                bloqueOrigen.style.display = 'block';
-                bloqueDestino.style.display = 'none';
-                if (labelOrigen) labelOrigen.innerText = "Rack de Origen (De qué rack se retira el material):";
+                bloqueOrigen.style.display = 'block';   // Viene de un rack de WIP
+                bloqueDestino.style.display = 'block';  // Va hacia Producción o Basura
+                if (labelOrigen) labelOrigen.innerText = "Rack de Origen en WIP (De qué rack se retira el material):";
                 if (selectProcedencia) selectProcedencia.value = "OTRO RACK WIP";
-                if (detallesRackOrigen) detallesRackOrigen.style.display = 'block';
+                if (detallesRackOrigen) detallesRackOrigen.style.display = 'block'; // Muestra los detalles del rack de WIP
             } else if (tipo === 'REUBICACION') {
                 bloqueOrigen.style.display = 'block';
                 bloqueDestino.style.display = 'block';
