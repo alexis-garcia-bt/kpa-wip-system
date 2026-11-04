@@ -181,10 +181,10 @@
                 </div>
 
                 <div class="action-grid">
-                    <div class="action-btn" onclick="seleccionarAccion('ENTRADA', this)"> ENTRADA</div>
-                    <div class="action-btn" onclick="seleccionarAccion('SALIDA', this)"> SALIDA</div>
-                    <div class="action-btn" onclick="seleccionarAccion('REUBICACION', this)"> REUBICACIÓN</div>
-                </div>
+                <button type="button" class="action-btn" onclick="seleccionarAccion('ENTRADA', this)">ENTRADA</button>
+                <button type="button" class="action-btn" onclick="seleccionarAccion('SALIDA', this)">SALIDA</button>
+                <button type="button" class="action-btn" onclick="seleccionarAccion('REUBICACION', this)">REUBICACIÓN</button>
+            </div>
 
                 <form id="formMovimiento" style="display:none;" onsubmit="registrarMovimiento(event)">
                     
@@ -546,28 +546,36 @@
             document.getElementById('mensajeAccesoDenegado').style.display = 'block';
         }
 
-        function seleccionarAccion(tipo, elemento) {
+       function seleccionarAccion(tipo, elemento) {
             tipoMovimientoSeleccionado = tipo;
             document.querySelectorAll('.accion-btn').forEach(btn => btn.classList.remove('active'));
-            elemento.classList.add('active');
+            if (elemento) elemento.classList.add('active');
             document.getElementById('formMovimiento').style.display = 'block';
 
             const bloqueOrigen = document.getElementById('bloqueOrigen');
             const bloqueDestino = document.getElementById('bloqueDestino');
             const labelOrigen = document.getElementById('labelOrigenDestino');
+            const selectProcedencia = document.getElementById('origenProcedencia');
+            const detallesRackOrigen = document.getElementById('detallesRackOrigen');
 
             if (tipo === 'ENTRADA') {
                 bloqueOrigen.style.display = 'block';
                 bloqueDestino.style.display = 'block';
                 if (labelOrigen) labelOrigen.innerText = "Ubicación / Procedencia de Origen (De dónde entra):";
+                if (selectProcedencia) selectProcedencia.value = "PRODUCCION";
+                if (detallesRackOrigen) detallesRackOrigen.style.display = 'none';
             } else if (tipo === 'SALIDA') {
                 bloqueOrigen.style.display = 'block';
                 bloqueDestino.style.display = 'none';
-                if (labelOrigen) labelOrigen.innerText = "Ubicación del Rack en WIP (De qué rack se retira para producción):";
+                if (labelOrigen) labelOrigen.innerText = "Rack de Origen (De qué rack se retira el material):";
+                if (selectProcedencia) selectProcedencia.value = "OTRO RACK WIP";
+                if (detallesRackOrigen) detallesRackOrigen.style.display = 'block';
             } else if (tipo === 'REUBICACION') {
                 bloqueOrigen.style.display = 'block';
                 bloqueDestino.style.display = 'block';
                 if (labelOrigen) labelOrigen.innerText = "Rack de Origen (De dónde se mueve):";
+                if (selectProcedencia) selectProcedencia.value = "OTRO RACK WIP";
+                if (detallesRackOrigen) detallesRackOrigen.style.display = 'block';
             }
         }
         async function buscarSugerencias(query) {
