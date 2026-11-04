@@ -128,19 +128,23 @@ app.post('/api/movimientos', (req, res) => {
 
     const procedenciaOrVal = data.procedencia_origen || data.origen || 'PRODUCCION';
     let ubicacionOrigenVal = procedenciaOrVal;
+    
+    // Si viene de un rack de WIP (como en Salida o Reubicación), guardamos el detalle completo exacto
     if (data.rack_origen && data.rack_origen !== 'N/A') {
-        ubicacionOrigenVal = `${procedenciaOrVal} RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'A'}`;
+        ubicacionOrigenVal = `Retirado de: RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'A'}, Pos: ${data.apilado_origen || '1'}`;
     }
 
-    // Capturamos el rack destino sin importar cómo lo llame el HTML
+    // Capturamos el destino (si es salida, será Basura, Producción o Embarques; si es rack, será su ubicación)
     const rackDestino = data.rack_destino || data.rackDestino || data.rack || 'N/A';
-    const nivelDestino = data.nivel_destino || data.nivelDestino || data.nivel || 'N1';
-    const ladoDestino = data.lado_destino || data.ladoDestino || data.lado || 'IZQUIERDO';
-    const posDestino = data.apilado || data.posicion || data.pos || '1';
-
-    const ubicacionDestinoVal = (rackDestino !== 'N/A')
-        ? `RACK ${rackDestino}, Nivel: ${nivelDestino}, Lado: ${ladoDestino}, Pos: ${posDestino}`
-        : (data.ubicacion_destino || 'N/A');
+    
+    let ubicacionDestinoVal = '';
+    if (data.tipo_movimiento === 'SALIDA') {
+        ubicacionDestinoVal = `Destino Externo: ${rackDestino}`;
+    } else if (rackDestino !== 'N/A') {
+        ubicacionDestinoVal = `RACK ${rackDestino}, Nivel: ${data.nivel_destino || 'N1'}, Lado: ${data.lado_destino || 'IZQUIERDO'}, Pos: ${data.apilado || '1'}`;
+    } else {
+        ubicacionDestinoVal = data.ubicacion_destino || 'N/A';
+    }
 
     // Capturamos el nombre del operador desde cualquier variable que mande el frontend
     // Si el HTML no lo manda, intentamos rescatarlo del texto de la sesión o dejamos una advertencia clara
