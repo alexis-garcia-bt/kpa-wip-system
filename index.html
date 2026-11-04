@@ -690,7 +690,17 @@
                 return;
             }
             registros.forEach(item => {
-                const rackLimpio = item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino && item.rack_destino.includes('RACK') ? item.rack_destino.split(',')[0].trim() : 'N/A');
+                const esSalida = item.tipo_movimiento === 'SALIDA';
+                
+                // Si es salida, mostramos el origen; si es entrada/reubicación, mostramos el destino
+                const rackLimpio = esSalida 
+                    ? 'SALIDA' 
+                    : (item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino && item.rack_destino.includes('RACK') ? item.rack_destino.split(',')[0].trim() : 'N/A'));
+                
+                const detalleUbicacion = esSalida 
+                    ? `Salió de: ${item.ubicacion_origen || 'Almacén / Producción'}` 
+                    : (item.ubicacion_destino || 'N/A');
+
                 const operadorReal = item.nombre_operador || item.personal || 'Operador KPA';
                 const piezasReal = item.piezas ? `${item.piezas} pzas` : 'N/A';
 
@@ -698,12 +708,12 @@
                     <tr>
                         <td>#${item.id || item.id_movimiento || 'KPA'}</td>
                         <td><strong>${item.proyecto || 'EXP'}</strong></td>
-                        <td><span style="color: var(--kpa-green); font-weight: bold;">${item.tipo_movimiento}</span></td>
+                        <td><span style="color: ${esSalida ? 'var(--danger)' : 'var(--kpa-green)'}; font-weight: bold;">${item.tipo_movimiento}</span></td>
                         <td><strong style="color: var(--warning);">${piezasReal}</strong></td>
                         <td>${operadorReal}</td>
                         <td>
-                            <strong style="color: var(--kpa-blue);">Rack: ${rackLimpio}</strong><br>
-                            ${item.ubicacion_destino || 'N/A'}
+                            <strong style="color: ${esSalida ? 'var(--danger)' : 'var(--kpa-blue);'}">${esSalida ? 'Retiro de Inventario' : 'Rack: ' + rackLimpio}</strong><br>
+                            ${detalleUbicacion}
                             ${item.fecha_proceso ? `<br><small style="color: var(--kpa-green);">F. Proceso: ${item.fecha_proceso.split('T')[0]}</small>` : ''}
                         </td>
                         <td>${item.fecha_hora ? item.fecha_hora : 'Reciente'}</td>
