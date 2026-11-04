@@ -132,15 +132,15 @@
             <div id="stepIdentificacion" class="card">
                 <h2>1. Identificación y Contraseña Segura</h2>
                 <form id="formIdentificacion" onsubmit="continuarAlSistema(event)">
-                    <div class="form-group">
-                        <label for="tipoRol">Seleccionar Rol:</label>
-                        <select id="tipoRol" required onchange="filtrarPersonalPorRol()">
-                            <option value="">-- SELECCIONE ROL --</option>
-                            <option value="MONTACARGUISTA">MONTACARGUISTA</option>
-                            <option value="LIDER">LÍDER DE ÁREA</option>
-                            <option value="ADMIN">ADMINISTRADOR</option>
-                        </select>
-                    </div>
+                                    <div class="form-group">
+                    <label for="tipoRol">Seleccionar Rol:</label>
+                    <select id="tipoRol" required onchange="filtrarPersonalPorRol()">
+                        <option value="">-- SELECCIONE ROL --</option>
+                        <option value="MONTACARGUISTA">MONTACARGUISTA</option>
+                        <option value="LIDER">LÍDER DE ÁREA</option>
+                        <option value="ADMIN">ADMINISTRADOR</option>
+                    </select>
+                </div>
 
                     <div class="form-group">
                         <label for="selectPersonal">Nombre del Operador:</label>
@@ -367,7 +367,7 @@
                         <th>ID</th>
                         <th>Rol</th>
                         <th>Nombre Completo</th>
-                        <th>Contraseña (Apellido)</th>
+                        <th>Contraseña</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -426,14 +426,17 @@
         window.onload = async () => { await cargarPersonalBD(); };
 
         async function cargarPersonalBD() {
-            try {
-                const res = await fetch('https://kpa-wip-system.onrender.com/api/personal');
-                if (res.ok) {
-                    listaPersonalGlobal = await res.json();
-                    renderizarTablaPersonal();
-                }
-            } catch (e) {}
+    try {
+        const res = await fetch('https://kpa-wip-system.onrender.com/api/personal');
+        if (res.ok) {
+            listaPersonalGlobal = await res.json();
+            renderizarTablaPersonal();
+            filtrarPersonalPorRol(); // <-- Esta línea es clave para refrescar el selector
         }
+    } catch (e) {
+        console.error("Error cargando personal:", e);
+    }
+}
             function verificarProcedenciaOrigen() {
             const procedencia = document.getElementById('origenProcedencia').value;
             const detallesRack = document.getElementById('detallesRackOrigen');
@@ -508,7 +511,7 @@
                 const partesNombre = nombre.trim().split(' ');
                 const apellidoReal = partesNombre[partesNombre.length - 1];
                 if (passwordIngresada !== apellidoReal) {
-                    alert(`Contraseña incorrecta. Para este operador su contraseña es su apellido: "${apellidoReal}"`);
+                    alert(`Contraseña incorrecta: "${apellidoReal}"`);
                     return;
                 }
             }
@@ -655,18 +658,16 @@
                         return;
                     }
                     data.forEach(item => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${item.proyecto}</strong></td>
-                        <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento}</span></td>
-                        <td><strong style="color:var(--warning);">${item.piezas || 'N/A'} pzas</strong></td>
-                        <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino && item.rack_destino !== 'N/A' ? item.rack_destino : 'N/A')}</td>
-                        <td>${item.ubicacion_destino || 'N/A'} <br><small style="color: var(--kpa-blue);">F. Proceso: ${item.fecha_proceso ? item.fecha_proceso.split('T')[0] : 'N/A'}</small></td>
-                        <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
-                        <td>${item.fecha_hora ? item.fecha_hora : 'Reciente'}</td>
-                    </tr>
-                `;
-            });
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><strong>${item.proyecto}</strong></td>
+                                <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento}</span></td>
+                                <td><strong style="color:var(--warning);">${item.piezas || 'N/A'} pzas</strong></td>
+                                <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino && item.rack_destino !== 'N/A' ? item.rack_destino : 'N/A')}</td>
+                                <td>${item.ubicacion_destino || 'N/A'} <br><small style="color: var(--kpa-blue);">F. Proceso: ${item.fecha_proceso ? item.fecha_proceso.split('T')[0] : 'N/A'}</small></td>
+                                <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
+                                <td>${item.fecha_hora ? item.fecha_hora : 'Reciente'}</td>
+                            </tr>
                         `;
                     });
                 }
