@@ -704,15 +704,15 @@
                 nivel_origen: document.getElementById('nivelOrigen').value || 'N/A',
                 lado_origen: document.getElementById('ladoOrigen').value || 'N/A',
                 apilado_origen: document.getElementById('apiladoOrigen').value || 'N/A',
-              rack_destino: tipoMovimientoSeleccionado === 'SALIDA' 
-                ? document.getElementById('destinoSalidaSelect').value 
-                : (document.getElementById('rackDestino').value || 'N/A'),
-            rack: tipoMovimientoSeleccionado === 'SALIDA' 
-                ? document.getElementById('destinoSalidaSelect').value 
-                : (document.getElementById('rackDestino').value || 'N/A'), 
-            nivel_destino: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (document.getElementById('nivelDestino').value || 'N1'),
-            lado: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : ladoFinal,
-            apilado: tipoMovimientoSeleccionado === 'SALIDA' ? '1' : (document.getElementById('apiladoDestino').value || '1')
+                rack_destino: tipoMovimientoSeleccionado === 'SALIDA' 
+                    ? (document.getElementById('destinoSalidaSelect') ? document.getElementById('destinoSalidaSelect').value : 'BASURA / SCRAP') 
+                    : (document.getElementById('rackDestino').value || 'N/A'),
+                rack: tipoMovimientoSeleccionado === 'SALIDA' 
+                    ? 'N/A' 
+                    : (document.getElementById('rackDestino').value || 'N/A'),
+                nivel_destino: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (document.getElementById('nivelDestino').value || 'N1'),
+                lado: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : ladoFinal,
+                apilado: tipoMovimientoSeleccionado === 'SALIDA' ? '1' : (document.getElementById('apiladoDestino').value || '1')
             }
 
 
