@@ -205,7 +205,7 @@
                     </div>
 
                     <div class="form-group" id="bloqueOrigen" style="display:none;">
-                        <label>Ubicación / Procedencia de Origen:</label>
+                        <label id="labelOrigenDestino">Ubicación / Procedencia de Origen:</label>
                         <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                              <select id="origenProcedencia" onchange="verificarProcedenciaOrigen()">
                                 <option value="PRODUCCION">PRODUCCIÓN DIRECTA</option>
@@ -548,25 +548,28 @@
 
         function seleccionarAccion(tipo, elemento) {
             tipoMovimientoSeleccionado = tipo;
-            document.querySelectorAll('.action-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.accion-btn').forEach(btn => btn.classList.remove('active'));
             elemento.classList.add('active');
             document.getElementById('formMovimiento').style.display = 'block';
-            
+
             const bloqueOrigen = document.getElementById('bloqueOrigen');
             const bloqueDestino = document.getElementById('bloqueDestino');
+            const labelOrigen = document.getElementById('labelOrigenDestino');
 
             if (tipo === 'ENTRADA') {
-                bloqueOrigen.style.display = 'block'; // 
+                bloqueOrigen.style.display = 'block';
                 bloqueDestino.style.display = 'block';
+                if (labelOrigen) labelOrigen.innerText = "Ubicación / Procedencia de Origen (De dónde entra):";
             } else if (tipo === 'SALIDA') {
-                bloqueOrigen.style.display = 'block'; // 
+                bloqueOrigen.style.display = 'block';
                 bloqueDestino.style.display = 'none';
+                if (labelOrigen) labelOrigen.innerText = "Ubicación del Rack en WIP (De qué rack se retira para producción):";
             } else if (tipo === 'REUBICACION') {
                 bloqueOrigen.style.display = 'block';
                 bloqueDestino.style.display = 'block';
+                if (labelOrigen) labelOrigen.innerText = "Rack de Origen (De dónde se mueve):";
             }
         }
-
         async function buscarSugerencias(query) {
             const contenedor = document.getElementById('sugerenciasLista');
             if (!contenedor || query.length < 1) { if (contenedor) contenedor.style.display = 'none'; return; }
