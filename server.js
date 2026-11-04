@@ -154,17 +154,24 @@ app.get('/api/historial', (req, res) => {
 
 // Registro de movimientos incluyendo la fecha de proceso solicitada y manejo seguro de nulos
 app.post('/api/movimientos', (req, res) => {
-    const data = req.body || {};
-
-    const procedenciaOrVal = data.procedencia_origen || data.origen || 'PRODUCCION';
-    let ubicacionOrigenVal = procedenciaOrVal;
-    
-    // Si viene de un rack de WIP (como en Salida o Reubicación), guardamos el detalle completo exacto
-    if (data.rack_origen && data.rack_origen !== 'N/A') {
-        ubicacionOrigenVal = `Retirado de: RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'A'}, Pos: ${data.apilado_origen || '1'}`;
+    if (!db) {
+        return res.status(500).json({ success: false, error: 'Base de datos no conectada' });
     }
 
-    // Capturamos el destino (si es salida, será Basura, Producción o Embarques; si es rack, será su ubicación)
+    const data = req.body || {};
+
+    // 1. ORIGEN: Capturamos de dónde viene en las entradas o reubicaciones
+    let procedenciaOrVal = data.procedencia_origen || data.origen || 'PRODUCCIÓN';
+    let ubicacionOrigenVal = procedenciaOrVal;
+    
+    if (data.rack_origen && data.rack_origen !== 'N/A') {
+        ubicacionOrigenVal = `Retirado de: RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'A'}, Pos: ${data.apilado_origen || '1'}`;
+    } else {
+        // Si es una entrada normal, dejamos constancia de su procedencia exacta (ej. Producción, Lote G, etc.)
+        ubicacionOrigenVal = `Procedencia: ${procedenciaOrVal}`;
+    }
+
+    // 2. DESTINO: Si es SALIDA, forzamos a que guarde el destino externo exacto que eligió el usuario
     const rackDestinoRaw = data.rack_destino || data.rackDestino || data.rack || 'N/A';
     
     let rackDestino = rackDestinoRaw;
@@ -174,6 +181,7 @@ app.post('/api/movimientos', (req, res) => {
 
     let ubicacionDestinoVal = '';
     if (data.tipo_movimiento === 'SALIDA') {
+        // Aquí aseguramos que viaje el texto real (Basura, Embarques o Producción) sin que se sobrescriba
         ubicacionDestinoVal = `Destino Externo: ${rackDestinoRaw}`;
         rackDestino = 'N/A'; 
         nivelDestino = 'N/A';
@@ -185,8 +193,6 @@ app.post('/api/movimientos', (req, res) => {
         ubicacionDestinoVal = data.ubicacion_destino || 'N/A';
     }
 
-    // Capturamos el nombre del operador desde cualquier variable que mande el frontend
-    // Si el HTML no lo manda, intentamos rescatarlo del texto de la sesión o dejamos una advertencia clara
     const nombreOperadorVal = data.nombre_operador || data.operador || data.usuario || data.personal || 'OPERADOR GENERAL';
     const idOperadorVal = data.id_operador || data.idOperador || 1;
 
@@ -223,7 +229,6 @@ app.post('/api/movimientos', (req, res) => {
         res.json({ success: true, id: resultado.insertId });
     });
 });
-
 app.get('/api/personal', (req, res) => {
     const operadoresCompletos = [
         { id_operador: 1, rol: 'ADMIN', nombre: 'ALEXIS GARCIA', turno: 'MATUTINO' },
