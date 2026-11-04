@@ -221,7 +221,7 @@
                 <div style="margin-bottom: 22px; font-size: 13px; color: var(--text-muted);">
                     Operando como: <strong id="lblInfoOperador" style="color: var(--kpa-green);"></strong>
                 </div>
-                
+
                     <div class="action-grid">
                     <button type="button" class="action-btn" onclick="seleccionarAccion('ENTRADA', this)">ENTRADA</button>
                     <button type="button" class="action-btn" onclick="seleccionarAccion('SALIDA', this)">SALIDA</button>
@@ -590,8 +590,8 @@
        function seleccionarAccion(tipo, elemento) {
             tipoMovimientoSeleccionado = tipo;
             
-            // Limpia y activa solo el botón presionado
-            document.querySelectorAll('.accion-btn').forEach(btn => btn.classList.remove('active'));
+            // Limpia y activa solo el botón presionado (corregido a .action-btn)
+            document.querySelectorAll('.action-btn').forEach(btn => btn.classList.remove('active'));
             if (elemento) elemento.classList.add('active');
             
             document.getElementById('formMovimiento').style.display = 'block';
