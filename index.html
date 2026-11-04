@@ -692,13 +692,14 @@
             registros.forEach(item => {
                 const esSalida = item.tipo_movimiento === 'SALIDA';
                 
-                // Si es salida, mostramos el origen; si es entrada/reubicación, mostramos el destino
+                // Si es salida, indicamos que va hacia producción/salida; si es entrada, mostramos su rack
                 const rackLimpio = esSalida 
-                    ? 'SALIDA' 
+                    ? 'SALIDA A PRODUCCIÓN' 
                     : (item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino && item.rack_destino.includes('RACK') ? item.rack_destino.split(',')[0].trim() : 'N/A'));
                 
+                // Detalle inteligente según el tipo de movimiento
                 const detalleUbicacion = esSalida 
-                    ? `Salió de: ${item.ubicacion_origen || 'Almacén / Producción'}` 
+                    ? `Retirado de: ${item.procedencia_origen || 'Inventario WIP'} ➔ <strong>Destino: Producción</strong>` 
                     : (item.ubicacion_destino || 'N/A');
 
                 const operadorReal = item.nombre_operador || item.personal || 'Operador KPA';
@@ -712,7 +713,7 @@
                         <td><strong style="color: var(--warning);">${piezasReal}</strong></td>
                         <td>${operadorReal}</td>
                         <td>
-                            <strong style="color: ${esSalida ? 'var(--danger)' : 'var(--kpa-blue);'}">${esSalida ? 'Retiro de Inventario' : 'Rack: ' + rackLimpio}</strong><br>
+                            <strong style="color: ${esSalida ? 'var(--danger)' : 'var(--kpa-blue);'}">${esSalida ? 'Retiro de Rack' : 'Rack: ' + rackLimpio}</strong><br>
                             ${detalleUbicacion}
                             ${item.fecha_proceso ? `<br><small style="color: var(--kpa-green);">F. Proceso: ${item.fecha_proceso.split('T')[0]}</small>` : ''}
                         </td>
