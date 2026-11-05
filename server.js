@@ -70,37 +70,48 @@ app.get('/api/proyecto/:query', (req, res) => {
 // Ruta para buscar materiales en inventario con todo el detalle de ubicación (Nivel, Lado, Apilado) y filtro de SALIDAS
 app.get('/api/materiales', (req, res) => {
     const q = req.query.p || req.query.q || '';
-    const sql = `SELECT * FROM movimientos WHERE proyecto LIKE ? OR ubicacion_destino LIKE ? ORDER BY fecha_hora DESC`;
+    const sql = `SELECT * FROM movimientos ORDER BY fecha_hora DESC`;
     
     if (!estaConectado || !db) return res.json([]);
     
-    db.query(sql, [`%${q}%`, `%${q}%`], (err, filas) => {
+    db.query(sql, (err, filas) => {
         if (err) return res.json([]);
         
+        // Mapeamos por el ID único de la fila (id) para tratar cada entrada de tarima como un ente independiente
         const inventarioMap = new Map();
 
-        // Agrupamos de forma infalible: si hay id_material lo usamos, si no, usamos el ID único de la fila en la tabla
         filas.forEach(item => {
-            const idUnicoFila = item.id || item.id_movimiento;
-            const claveId = (item.id_material && item.id_material !== 0 && item.id_material !== null) 
-                ? item.id_material 
-                : `row_${idUnicoFila}`;
-
-            if (!inventarioMap.has(claveId)) {
-                inventarioMap.set(claveId, item);
+            // Si el movimiento es una ENTRADA o REGISTRO inicial, crea el activo basado en su ID único de fila
+            // Si es una SALIDA, podemos rastrear qué ID original está cerrando
+            const idFilaUnica = item.id;
+            
+            // Si es una entrada, la registramos en el mapa si no existe
+            if (item.tipo_movimiento && item.tipo_movimiento.toUpperCase() === 'ENTRADA') {
+                if (!inventarioMap.has(idFilaUnica)) {
+                    inventarioMap.set(idFilaUnica, { ...item, estado: 'ACTIVO' });
+                }
+            } 
+            // Si es una SALIDA, buscamos si corresponde a alguna entrada previa para retirarla del inventario
+            else if (item.tipo_movimiento && item.tipo_movimiento.toUpperCase() === 'SALIDA') {
+                // Aquí marcamos como salida (por proyecto o si coincide el material)
+                inventarioMap.forEach((val, key) => {
+                    if (val.proyecto && item.proyecto && val.proyecto.toUpperCase().trim() === item.proyecto.toUpperCase().trim()) {
+                        // Si hay una salida reciente para este proyecto/material, actualizamos su estado
+                        val.estado = 'SALIDA';
+                    }
+                });
             }
         });
 
+        // Filtramos únicamente los que siguen con estado ACTIVO
         const activos = [];
-        inventarioMap.forEach((item, claveId) => {
-            // SÓLO agregamos al inventario si su movimiento MÁS RECIENTE NO ES UNA SALIDA
-            if (item.tipo_movimiento && item.tipo_movimiento.toUpperCase() !== 'SALIDA') {
+        inventarioMap.forEach((item) => {
+            if (item.estado === 'ACTIVO') {
                 let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
                 let nivelVal = item.nivel && item.nivel !== 'N/A' ? item.nivel : 'N1';
                 let ladoVal = item.lado && item.lado !== 'N/A' ? item.lado : 'IZQUIERDO';
                 let apiladoVal = item.apilado && item.apilado !== 'N/A' ? item.apilado : '1';
 
-                // Si el rack está en N/A pero viene en la cadena de ubicación destino, lo desglosamos
                 if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
                     let partes = item.ubicacion_destino.split(',');
                     partes.forEach(part => {
@@ -129,7 +140,7 @@ app.get('/api/materiales', (req, res) => {
             }
         });
 
-        // Filtro opcional por texto en el buscador
+        // Aplicamos búsqueda por texto si el usuario escribió algo
         const queryFiltro = q.toUpperCase().trim();
         const resultadosFinales = queryFiltro === '' ? activos : activos.filter(mat => 
             (mat.proyecto && mat.proyecto.toUpperCase().includes(queryFiltro)) ||
