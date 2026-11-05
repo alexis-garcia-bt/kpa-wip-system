@@ -79,16 +79,16 @@ app.get('/api/materiales', (req, res) => {
         
         const inventarioMap = new Map();
 
-        // Agrupamos para obtener siempre el movimiento más reciente de cada proyecto
+        // Agrupamos por el ID único del material (id_material) para que cada artículo mantenga su propio estado
         filas.forEach(item => {
-            const clave = (item.proyecto || 'GENERAL').toUpperCase().trim();
-            if (!inventarioMap.has(clave)) {
-                inventarioMap.set(clave, item);
+            const claveId = item.id_material || item.id || item.proyecto; 
+            if (!inventarioMap.has(claveId)) {
+                inventarioMap.set(claveId, item);
             }
         });
 
         const activos = [];
-        inventarioMap.forEach((item, clave) => {
+        inventarioMap.forEach((item, claveId) => {
             // SÓLO agregamos al inventario si su movimiento MÁS RECIENTE NO ES UNA SALIDA
             if (item.tipo_movimiento && item.tipo_movimiento.toUpperCase() !== 'SALIDA') {
                 let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
@@ -96,9 +96,8 @@ app.get('/api/materiales', (req, res) => {
                 let ladoVal = item.lado && item.lado !== 'N/A' ? item.lado : 'IZQUIERDO';
                 let apiladoVal = item.apilado && item.apilado !== 'N/A' ? item.apilado : '1';
 
-                // Si por alguna razón el rack está en N/A pero viene en la cadena de ubicación destino, lo desglosamos
+                // Si el rack está en N/A pero viene en la cadena de ubicación destino, lo desglosamos
                 if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
-                    // Ejemplo: "RACK R14, Nivel: N2, Lado: IZQUIERDO, Pos: 7"
                     let partes = item.ubicacion_destino.split(',');
                     partes.forEach(part => {
                         let p = part.trim();
@@ -126,8 +125,15 @@ app.get('/api/materiales', (req, res) => {
             }
         });
 
-        // Devolvemos todo el inventario activo de la planta sin restricciones
-        res.json(activos);
+        // Aplicamos un filtro extra por si el usuario buscó texto específico en el buscador
+        const queryFiltro = q.toUpperCase().trim();
+        const resultadosFinales = queryFiltro === '' ? activos : activos.filter(mat => 
+            (mat.proyecto && mat.proyecto.toUpperCase().includes(queryFiltro)) ||
+            (mat.rack && mat.rack.toUpperCase().includes(queryFiltro)) ||
+            (mat.ubicacion_destino && mat.ubicacion_destino.toUpperCase().includes(queryFiltro))
+        );
+
+        res.json(resultadosFinales);
     });
 });
 
@@ -159,74 +165,96 @@ app.post('/api/movimientos', (req, res) => {
     }
 
     const data = req.body || {};
+    const tipoMov = (data.tipo_movimiento || 'REGISTRO').toUpperCase();
 
-    // 1. ORIGEN: Capturamos de dónde viene en las entradas o reubicaciones
-    let procedenciaOrVal = data.procedencia_origen || data.origen || 'PRODUCCIÓN';
-    let ubicacionOrigenVal = procedenciaOrVal;
-    
-    if (data.rack_origen && data.rack_origen !== 'N/A') {
-        ubicacionOrigenVal = `Retirado de: RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'A'}, Pos: ${data.apilado_origen || '1'}`;
-    } else {
-        // Si es una entrada normal, dejamos constancia de su procedencia exacta (ej. Producción, Lote G, etc.)
-        ubicacionOrigenVal = `Procedencia: ${procedenciaOrVal}`;
-    }
-
-    // 2. DESTINO: Si es SALIDA, forzamos a que guarde el destino externo exacto que eligió el usuario
-    const rackDestinoRaw = data.rack_destino || data.rackDestino || data.rack || 'N/A';
-    
-    let rackDestino = rackDestinoRaw;
-    let nivelDestino = data.nivel_destino || data.nivelDestino || data.nivel || 'N1';
-    let ladoDestino = data.lado_destino || data.ladoDestino || data.lado || 'IZQUIERDO';
-    let posDestino = data.apilado || data.posicion || data.pos || '1';
-
-    let ubicacionDestinoVal = '';
-    if (data.tipo_movimiento === 'SALIDA') {
-        // Aquí aseguramos que viaje el texto real (Basura, Embarques o Producción) sin que se sobrescriba
-        ubicacionDestinoVal = `Destino Externo: ${rackDestinoRaw}`;
-        rackDestino = 'N/A'; 
-        nivelDestino = 'N/A';
-        ladoDestino = 'N/A';
-        posDestino = '1';
-    } else if (rackDestino !== 'N/A') {
-        ubicacionDestinoVal = `RACK ${rackDestino}, Nivel: ${nivelDestino}, Lado: ${ladoDestino}, Pos: ${posDestino}`;
-    } else {
-        ubicacionDestinoVal = data.ubicacion_destino || 'N/A';
-    }
-
-    const nombreOperadorVal = data.nombre_operador || data.operador || data.usuario || data.personal || 'OPERADOR GENERAL';
-    const idOperadorVal = data.id_operador || data.idOperador || 1;
-
-    let fechaProcesoVal = data.fecha_proceso;
-    if (!fechaProcesoVal || fechaProcesoVal.includes('1111') || fechaProcesoVal.length < 8) {
-        fechaProcesoVal = null;
-    }
-
-    const sqlInsert = `
-        INSERT INTO movimientos 
-        (id_material, id_operador, tipo_movimiento, proyecto, piezas, fecha_proceso, ubicacion_origen, ubicacion_destino, rack, nivel, lado, posicion, nombre_operador) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    db.query(sqlInsert, [
-        data.id_material || 1,
-        idOperadorVal,
-        data.tipo_movimiento || 'REGISTRO',
-        data.proyecto || 'GENERAL',
-        data.piezas || 0,
-        fechaProcesoVal,
-        ubicacionOrigenVal,
-        ubicacionDestinoVal,
-        rackDestino,
-        nivelDestino,
-        ladoDestino,
-        posDestino,
-        nombreOperadorVal
-    ], (err, resultado) => {
-        if (err) {
-            console.error("Error al insertar en BD:", err.message);
-            return res.status(500).json({ success: false, error: err.message });
+    // 1. VALIDACIÓN DE SEGURIDAD: Si es SALIDA o REUBICACIÓN, verificamos que el material exista previamente en el inventario activo
+    const validarExistencia = (callback) => {
+        if (tipoMov === 'SALIDA' || tipoMov === 'REUBICACION') {
+            const idMatQuery = data.id_material || 1;
+            // Consultamos el historial para ver si su último movimiento no fue una salida
+            const sqlCheck = `SELECT * FROM movimientos WHERE id_material = ? ORDER BY fecha_hora DESC LIMIT 1`;
+            db.query(sqlCheck, [idMatQuery], (err, filas) => {
+                if (err || filas.length === 0) {
+                    return res.status(400).json({ success: false, error: 'Error: El material no existe en el inventario activo.' });
+                }
+                const ultimoMov = filas[0];
+                if (ultimoMov.tipo_movimiento && ultimoMov.tipo_movimiento.toUpperCase() === 'SALIDA') {
+                    return res.status(400).json({ success: false, error: 'Operación denegada: Este material ya fue dado de salida anteriormente.' });
+                }
+                callback();
+            });
+        } else {
+            callback();
         }
-        res.json({ success: true, id: resultado.insertId });
+    };
+
+    validarExistencia(() => {
+        // 2. ORIGEN: Capturamos de dónde viene en las entradas o reubicaciones
+        let procedenciaOrVal = data.procedencia_origen || data.origen || 'PRODUCCIÓN';
+        let ubicacionOrigenVal = procedenciaOrVal;
+        
+        if (data.rack_origen && data.rack_origen !== 'N/A') {
+            ubicacionOrigenVal = `Retirado de: RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'A'}, Pos: ${data.apilado_origen || '1'}`;
+        } else {
+            ubicacionOrigenVal = `Procedencia: ${procedenciaOrVal}`;
+        }
+
+        // 3. DESTINO: Si es SALIDA, guardamos el destino externo exacto
+        const rackDestinoRaw = data.rack_destino || data.rackDestino || data.rack || 'N/A';
+        
+        let rackDestino = rackDestinoRaw;
+        let nivelDestino = data.nivel_destino || data.nivelDestino || data.nivel || 'N1';
+        let ladoDestino = data.lado_destino || data.ladoDestino || data.lado || 'IZQUIERDO';
+        let posDestino = data.apilado || data.posicion || data.pos || '1';
+
+        let ubicacionDestinoVal = '';
+        if (tipoMov === 'SALIDA') {
+            ubicacionDestinoVal = `Destino Externo: ${rackDestinoRaw}`;
+            rackDestino = 'N/A'; 
+            nivelDestino = 'N/A';
+            ladoDestino = 'N/A';
+            posDestino = '1';
+        } else if (rackDestino !== 'N/A') {
+            ubicacionDestinoVal = `RACK ${rackDestino}, Nivel: ${nivelDestino}, Lado: ${ladoDestino}, Pos: ${posDestino}`;
+        } else {
+            ubicacionDestinoVal = data.ubicacion_destino || 'N/A';
+        }
+
+        const nombreOperadorVal = data.nombre_operador || data.operador || data.usuario || data.personal || 'OPERADOR GENERAL';
+        const idOperadorVal = data.id_operador || data.idOperador || 1;
+
+        let fechaProcesoVal = data.fecha_proceso;
+        if (!fechaProcesoVal || fechaProcesoVal.includes('1111') || fechaProcesoVal.length < 8) {
+            fechaProcesoVal = null;
+        }
+
+        const sqlInsert = `
+            INSERT INTO movimientos 
+            (id_material, id_operador, tipo_movimiento, proyecto, piezas, fecha_proceso, ubicacion_origen, ubicacion_destino, rack, nivel, lado, posicion, nombre_operador) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+
+        db.query(sqlInsert, [
+            data.id_material || 1,
+            idOperadorVal,
+            tipoMov,
+            data.proyecto || 'GENERAL',
+            data.piezas || 0,
+            fechaProcesoVal,
+            ubicacionOrigenVal,
+            ubicacionDestinoVal,
+            rackDestino,
+            nivelDestino,
+            ladoDestino,
+            posDestino,
+            nombreOperadorVal
+        ], (err, resultado) => {
+            if (err) {
+                console.error("Error al insertar en BD:", err.message);
+                return res.status(500).json({ success: false, error: err.message });
+            }
+            res.json({ success: true, id: resultado.insertId });
+        });
     });
 });
 app.get('/api/personal', (req, res) => {
@@ -274,5 +302,5 @@ app.get('/api/sugerencias', (req, res) => {
 });
 const PUERTO = process.env.PORT || 3000;
 app.listen(PUERTO, () => {
-    console.log(`🚀 KPA BACKEND v11.0 CORRIENDO EN PUERTO: ${PUERTO}`);
+    console.log(` KPA BACKEND v11.0 CORRIENDO EN PUERTO: ${PUERTO}`);
 });
