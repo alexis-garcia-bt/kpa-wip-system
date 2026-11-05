@@ -79,9 +79,13 @@ app.get('/api/materiales', (req, res) => {
         
         const inventarioMap = new Map();
 
-        // Agrupamos por el ID único del material (id_material) para que cada artículo mantenga su propio estado
+        // Agrupamos de forma infalible: si hay id_material lo usamos, si no, usamos el ID único de la fila en la tabla
         filas.forEach(item => {
-            const claveId = item.id_material || item.id || item.proyecto; 
+            const idUnicoFila = item.id || item.id_movimiento;
+            const claveId = (item.id_material && item.id_material !== 0 && item.id_material !== null) 
+                ? item.id_material 
+                : `row_${idUnicoFila}`;
+
             if (!inventarioMap.has(claveId)) {
                 inventarioMap.set(claveId, item);
             }
@@ -125,7 +129,7 @@ app.get('/api/materiales', (req, res) => {
             }
         });
 
-        // Aplicamos un filtro extra por si el usuario buscó texto específico en el buscador
+        // Filtro opcional por texto en el buscador
         const queryFiltro = q.toUpperCase().trim();
         const resultadosFinales = queryFiltro === '' ? activos : activos.filter(mat => 
             (mat.proyecto && mat.proyecto.toUpperCase().includes(queryFiltro)) ||
@@ -136,7 +140,6 @@ app.get('/api/materiales', (req, res) => {
         res.json(resultadosFinales);
     });
 });
-
 app.get('/api/historial', (req, res) => {
     const sql = `SELECT * FROM movimientos ORDER BY fecha_hora DESC LIMIT 50`;
     if (!estaConectado || !db) return res.json([]);
