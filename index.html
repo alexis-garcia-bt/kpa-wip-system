@@ -157,11 +157,11 @@
     </header>
 
     <div class="nav-tabs">
-        <button class="tab-btn active" onclick="cambiarPestana('operacion', this)">⚙️ Operación WIP</button>
-        <button class="tab-btn" onclick="cambiarPestana('ubicar', this)">🔍 Ubicar Material (Inventario)</button>
-        <button class="tab-btn" onclick="cambiarPestana('historial', this)">📊 Movimientos</button>
-        <button id="btnTabPersonal" class="tab-btn" onclick="cambiarPestana('personal', this)" style="display: none;">👥 Personal & Accesos</button>
-        <button class="tab-btn" onclick="cambiarPestana('contacto', this)">📞 Contacto</button>
+        <button class="tab-btn active" onclick="cambiarPestana('operacion', this)"> Operación WIP</button>
+        <button class="tab-btn" onclick="cambiarPestana('ubicar', this)"> Inventario WIP</button>
+        <button class="tab-btn" onclick="cambiarPestana('historial', this)"> Movimientos</button>
+        <button id="btnTabPersonal" class="tab-btn" onclick="cambiarPestana('personal', this)" style="display: none;"> Personal & Accesos</button>
+        <button class="tab-btn" onclick="cambiarPestana('contacto', this)"> Contacto</button>
     </div>
 
     <div class="main-container">
@@ -192,7 +192,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="inputPassword">Contraseña (Apellido del operador o clave de Admin):</label>
+                        <label for="inputPassword">Contraseña:</label>
                         <input type="password" id="inputPassword" placeholder="INGRESE SU CONTRASEÑA" required autocomplete="current-password">
                     </div>
 
@@ -206,7 +206,7 @@
                         </select>
                     </div>
 
-                    <button type="submit" class="btn-primary">Entrar al Sistema WIP</button>
+                    <button type="submit" class="btn-primary">Entrar</button>
                 </form>
             </div>
 
@@ -246,13 +246,13 @@
                     </div>
 
                     <div class="form-group" id="bloqueOrigen" style="display:none;">
-                        <label id="labelOrigenDestino">Ubicación / Procedencia de Origen:</label>
+                        <label id="labelOrigenDestino">Ubicación de Origen:</label>
                         <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                              <select id="origenProcedencia" onchange="verificarProcedenciaOrigen()">
                                 <option value="PRODUCCION">PRODUCCIÓN DIRECTA</option>
-                                <option value="LOTE 6">LOTE 6 (ALMACÉN EXTERNO)</option>
-                                <option value="TRAILER / EMBARQUES">TRÁILER / EMBARQUES (CAMIÓN)</option>
-                                <option value="OTRO RACK WIP">OTRO RACK DE ALMACÉN (REUBICACIÓN)</option>
+                                <option value="LOTE 6">LOTE 6</option>
+                                <option value="TRAILER / EMBARQUES">EMBARQUES (CAMIÓN)</option>
+                                <option value="OTRO RACK WIP">OTRO RACK DE WIP (REUBICACIÓN)</option>
                             </select>
                         </div>
 
@@ -317,7 +317,7 @@
                             <select id="destinoSalidaSelect">
                             <option value="PRODUCCIÓN">PRODUCCIÓN</option>
                             <option value="EMBARQUES / TRÁILER">EMBARQUES / TRÁILER / CAMIÓN</option>
-                            <option value="BASURA / SCRAP">BASURA / SCRAP</option>
+                            <option value="BASURA / SCRAP">BASURA </option>
                         </select>
                         </div>
                     </div>
@@ -325,7 +325,7 @@
                     <div class="form-group">
                         <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; background: var(--bg-input); padding: 14px 18px; border-radius: 12px; border: 1px solid var(--border-color);">
                             <input type="checkbox" id="ambosLadosCheck" style="width: 20px; height: 20px; accent-color: var(--kpa-blue);">
-                            <span>Ocupar ambos lados (Izquierdo y Derecho - Manga Larga)</span>
+                            <span>Ocupar ambos lados (Manga)</span>
                         </label>
                     </div>
 
@@ -398,7 +398,7 @@
         <!-- PESTAÑA 4: GESTIÓN DE PERSONAL -->
 <div id="tab-personal" class="tab-content">
     <div id="contenidoPersonalAdmin" class="card" style="display: none;">
-        <h2>Gestión de Personal (Montacarguistas y Líderes)</h2>
+        <h2>Gestión de Personal</h2>
         <form onsubmit="agregarPersonal(event)" style="margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 25px;">
             <div class="form-group">
                 <label for="nuevoRolPersonal">Rol Operativo:</label>
@@ -408,7 +408,7 @@
                 </select>
             </div>
             <div class="form-group">
-                <label for="nuevoNombrePersonal">Nombre Completo (Su apellido será su contraseña automática):</label>
+                <label for="nuevoNombrePersonal">Nombre Completo:</label>
                 <input type="text" id="inputNuevoNombre" placeholder="EJ. JUAN PÉREZ" required oninput="this.value = this.value.toUpperCase()">
             </div>
             <button type="submit" class="btn-primary">Registrar Operador</button>
@@ -434,13 +434,13 @@
     </div>
 
     <div id="mensajeAccesoDenegado" class="card" style="text-align: center; padding: 50px;">
-        <h2 style="color: var(--danger); justify-content: center;">⚠️ Acceso Restringido</h2>
+        <h2 style="color: var(--danger); justify-content: center;">Acceso Restringido</h2>
         <p style="color: var(--text-muted);">Esta sección es exclusiva para el <strong>Administrador</strong> del sistema.</p>
     </div>
 </div>
         <!-- PESTAÑA 5: CONTACTO -->
         <div id="tab-contacto" class="card tab-content">
-            <h2>Panel de Contacto y Emergencias KPA</h2>
+            <h2>Panel de Contacto KPA</h2>
             <p style="color: var(--text-muted); line-height: 1.8;">Soporte técnico directo y administración de sistemas en planta.</p>
             <div style="background: var(--bg-input); padding: 20px; border-radius: 14px; border: 1px solid var(--border-color); margin-top: 15px;">
                 <h3 style="color: var(--kpa-green); margin-top: 0;">Administrador General</h3>
