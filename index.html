@@ -229,6 +229,33 @@
         overflow-x: auto !important;
         white-space: nowrap !important;
     }
+
+    /* CORRECCIÓN EXCLUSIVA PARA EL FOOTER Y EL NÚMERO DE TELÉFONO */
+    footer, .footer, div[style*="background"], div[style*="padding"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        word-break: break-word !important;
+        white-space: normal !important;
+    }
+
+    /* Forzamos que las columnas del pie de página se apilen verticalmente y centradas */
+    footer div, .footer div, div[style*="display: grid"], div[style*="grid"] {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Aseguramos que los textos y el número de teléfono bajen de línea correctamente sin cortarse */
+    footer span, footer p, .footer span, .footer p, a[href*="tel"] {
+        display: block !important;
+        width: 100% !important;
+        white-space: normal !important;
+        word-break: break-word !important;
+    }
 }
 
     </style>
