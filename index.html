@@ -775,51 +775,70 @@
         }
 
         async function cargarHistorial() {
-            const tbody = document.getElementById('tablaHistorialBody');
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Cargando movimientos...</td></tr>';
-            let registros = [];
-            try {
-               const res = await fetch('https://kpa-wip-system.onrender.com/api/historial');
-                if (res.ok) registros = await res.json();
-            } catch (e) {}
-            tbody.innerHTML = '';
-            if (registros.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Sin movimientos registrados.</td></tr>';
-                return;
-            }
-            registros.forEach(item => {
-                const esSalida = item.tipo_movimiento === 'SALIDA';
-                
-                // Si es salida, indicamos que va hacia producción/salida; si es entrada, mostramos su rack
-                const rackLimpio = esSalida 
-                    ? 'SALIDA A PRODUCCIÓN' 
-                    : (item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino && item.rack_destino.includes('RACK') ? item.rack_destino.split(',')[0].trim() : 'N/A'));
-                
-                // Detalle inteligente según el tipo de movimiento
-                const detalleUbicacion = esSalida 
-                    ? `Retirado de: ${item.procedencia_origen || 'Inventario WIP'} ➔ <strong>Destino: Producción</strong>` 
-                    : (item.ubicacion_destino || 'N/A');
-
-                const operadorReal = item.nombre_operador || item.personal || 'Operador KPA';
-                const piezasReal = item.piezas ? `${item.piezas} pzas` : 'N/A';
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td>#${item.id || item.id_movimiento || 'KPA'}</td>
-                        <td><strong>${item.proyecto || 'EXP'}</strong></td>
-                        <td><span style="color: ${esSalida ? 'var(--danger)' : 'var(--kpa-green)'}; font-weight: bold;">${item.tipo_movimiento}</span></td>
-                        <td><strong style="color: var(--warning);">${piezasReal}</strong></td>
-                        <td>${operadorReal}</td>
-                        <td>
-                            <strong style="color: ${esSalida ? 'var(--danger)' : 'var(--kpa-blue);'}">${esSalida ? 'Retiro de Rack' : 'Rack: ' + rackLimpio}</strong><br>
-                            ${detalleUbicacion}
-                            ${item.fecha_proceso ? `<br><small style="color: var(--kpa-green);">F. Proceso: ${item.fecha_proceso.split('T')[0]}</small>` : ''}
-                        </td>
-                        <td>${item.fecha_hora ? item.fecha_hora : 'Reciente'}</td>
-                    </tr>
-                `;
-            });
+    const tbody = document.getElementById('tablaHistorialBody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Cargando movimientos...</td></tr>';
+    let registros = [];
+    try {
+        const res = await fetch('https://kpa-wip-system.onrender.com/api/historial');
+        if (res.ok) registros = await res.json();
+    } catch (e) {}
+    tbody.innerHTML = '';
+    if (registros.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Sin movimientos registrados.</td></tr>';
+        return;
+    }
+    registros.forEach(item => {
+        const esSalida = item.tipo_movimiento && item.tipo_movimiento.toUpperCase() === 'SALIDA';
+        
+        // Detalle inteligente: si es salida muestra el destino real (Basura, Embarques, etc.), si es entrada/reubicación muestra su ubicación
+        let detalleUbicacion = '';
+        if (esSalida) {
+            detalleUbicacion = `Retirado de Inventario WIP <br>→ Destino: <strong style="color: var(--kpa-danger);">${item.ubicacion_destino || 'BASURA / SCRAP'}</strong>`;
+        } else {
+            detalleUbicacion = item.ubicacion_destino || 'N/A';
         }
+
+        const operadorReal = item.nombre_operador || item.personal || 'Operador KPA';
+        const piezasReal = item.piezas ? `${item.piezas} pzas` : 'N/A';
+
+        // Convertimos la fecha UTC de la base de datos a hora local de México legible con AM/PM
+        let fechaLegible = 'Reciente';
+        if (item.fecha_hora) {
+            const fechaObj = new Date(item.fecha_hora);
+            if (!isNaN(fechaObj.getTime())) {
+                fechaLegible = fechaObj.toLocaleString('es-MX', {
+                    timeZone: 'America/Mexico_City',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+            } else {
+                fechaLegible = item.fecha_hora;
+            }
+        }
+
+        tbody.innerHTML += `
+            <tr>
+                <td>#${item.id || item.id_movimiento || 'KPA'}</td>
+                <td><strong>${item.tipo_proyecto || item.proyecto || 'EXP'}</strong></td>
+                <td><span style="color: ${esSalida ? 'var(--kpa-danger)' : 'var(--kpa-green)'}; font-weight: bold;">${item.tipo_movimiento}</span></td>
+                <td><strong style="color: var(--warning);">${piezasReal}</strong></td>
+                <td>${operadorReal}</td>
+                <td>
+                    <strong style="color: ${esSalida ? 'var(--kpa-danger)' : 'var(--kpa-blue);'}">${esSalida ? 'Retiro de Rack' : 'Rack:'}</strong>
+                    ${detalleUbicacion}
+                    ${item.fecha_proceso ? `<br><small style="color: var(--kpa-green);">F. Proceso: ${item.fecha_proceso.split('T')[0]}</small>` : ''}
+                </td>
+                <td>${fechaLegible}</td>
+            </tr>
+        `;
+    });
+}
         async function agregarPersonal(e) {
             e.preventDefault();
             if (usuarioActual.rol !== 'ADMIN') {
