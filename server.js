@@ -87,20 +87,22 @@ app.get('/api/materiales', (req, res) => {
             filas.forEach(item => {
                 if (!item) return;
                 
-                // Forzamos el nombre del proyecto a mayúsculas para evitar diferencias por minúsculas
-                const proj = String(item.proyecto || '').toUpperCase().trim();
+                // Buscamos con qué nombre viene la columna del proyecto en tu base de datos
+                const rawProyecto = item.proyecto || item.codigo_material || item.material || item.nombre_proyecto || 'GENERAL';
+                const proj = String(rawProyecto).toUpperCase().trim();
                 if (!proj) return;
                 
-                const tipo = String(item.tipo_movimiento || '').toUpperCase();
+                const rawTipo = item.tipo_movimiento || item.tipo || item.movimiento || 'ENTRADA';
+                const tipo = String(rawTipo).toUpperCase();
 
                 if (tipo.includes('SALIDA') || tipo.includes('RETIRO')) {
                     inventarioMap.delete(proj);
                 } else {
                     inventarioMap.set(proj, {
                         ...item,
-                        proyecto: proj,
-                        tipo_movimiento: item.tipo_movimiento || 'ENTRADA',
-                        piezas: item.piezas || 0,
+                        proyecto: rawProyecto,
+                        tipo_movimiento: rawTipo,
+                        piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
                         rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
                         ubicacion_destino: item.ubicacion_destino || 'N/A',
                         personal: item.nombre_operador || item.personal || 'OPERADOR GENERAL',
