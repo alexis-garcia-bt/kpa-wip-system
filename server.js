@@ -75,37 +75,87 @@ app.get('/api/materiales', (req, res) => {
             return res.json([]);
         }
 
-        const proyectoFiltro = req.query.proyecto ? req.query.proyecto.trim().toUpperCase() : null;
+        // Consultamos todos los movimientos en orden cronológico para calcular el saldo real
+        const sql = `SELECT * FROM movimientos ORDER BY fecha_hora ASC, 1 ASC`;
 
-        // Usamos fecha_hora DESC o 1 DESC (primera columna primaria) para evitar error si no existe 'id'
-        let sql = `SELECT * FROM movimientos`;
-        let params = [];
-
-        if (proyectoFiltro) {
-            sql += ` WHERE UPPER(proyecto) LIKE ? ORDER BY fecha_hora DESC LIMIT 50`;
-            params.push(`%${proyectoFiltro}%`);
-        } else {
-            sql += ` ORDER BY fecha_hora DESC LIMIT 100`;
-        }
-
-        db.query(sql, params, (err, filas) => {
+        db.query(sql, (err, filas) => {
             if (err) {
                 console.error("Error al consultar movimientos:", err.message);
-                // Respaldo con la tabla materiales si existiera
-                db.query(`SELECT * FROM materiales LIMIT 100`, (err2, filas2) => {
-                    if (err2 || !filas2 || !Array.isArray(filas2)) {
-                        return res.json([]);
-                    }
-                    return enviarRespuestaSegura(filas2, res);
-                });
-                return;
+                return res.json([]);
             }
 
             if (!filas || filas.length === 0) {
                 return res.json([]);
             }
 
-            return enviarRespuestaSegura(filas, res);
+            // Mapa para calcular inventario neto por proyecto
+            const inventarioMap = {};
+
+            filas.forEach(item => {
+                const proy = (item.proyecto || item.codigo_material || item.material || 'GENERAL').toUpperCase().trim();
+                const tipo = (item.tipo_movimiento || 'ENTRADA').toUpperCase().trim();
+                const cant = parseInt(item.piezas !== undefined ? item.piezas : (item.cantidad || 0), 10) || 0;
+
+                if (!inventarioMap[proy]) {
+                    inventarioMap[proy] = {
+                        id: item.id || item.id_movimiento || 0,
+                        proyecto: proy,
+                        piezas: 0,
+                        rack: (item.rack && item.rack !== 'N/A') ? item.rack : 'N/A',
+                        ubicacion_destino: item.ubicacion_destino || 'N/A',
+                        personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR KPA',
+                        fecha_hora: item.fecha_hora || 'Reciente',
+                        fecha_proceso: item.fecha_proceso || ''
+                    };
+                }
+
+                if (tipo === 'ENTRADA') {
+                    // SUMA piezas y actualiza ubicación y fecha de proceso
+                    inventarioMap[proy].piezas += cant;
+                    if (item.rack && item.rack !== 'N/A') {
+                        inventarioMap[proy].rack = item.rack;
+                    }
+                    if (item.ubicacion_destino && item.ubicacion_destino !== 'N/A') {
+                        inventarioMap[proy].ubicacion_destino = item.ubicacion_destino;
+                    }
+                    if (item.fecha_proceso) {
+                        inventarioMap[proy].fecha_proceso = item.fecha_proceso;
+                    }
+                    inventarioMap[proy].personal = item.nombre_operador || item.personal || inventarioMap[proy].personal;
+                    inventarioMap[proy].fecha_hora = item.fecha_hora || inventarioMap[proy].fecha_hora;
+
+                } else if (tipo === 'SALIDA') {
+                    // RESTA piezas en inventario activo
+                    inventarioMap[proy].piezas -= cant;
+                    inventarioMap[proy].personal = item.nombre_operador || item.personal || inventarioMap[proy].personal;
+                    inventarioMap[proy].fecha_hora = item.fecha_hora || inventarioMap[proy].fecha_hora;
+
+                } else if (tipo === 'REUBICACION') {
+                    // Solo actualiza la nueva posición en racks
+                    if (item.rack && item.rack !== 'N/A') {
+                        inventarioMap[proy].rack = item.rack;
+                    }
+                    if (item.ubicacion_destino && item.ubicacion_destino !== 'N/A') {
+                        inventarioMap[proy].ubicacion_destino = item.ubicacion_destino;
+                    }
+                    inventarioMap[proy].personal = item.nombre_operador || item.personal || inventarioMap[proy].personal;
+                    inventarioMap[proy].fecha_hora = item.fecha_hora || inventarioMap[proy].fecha_hora;
+                }
+            });
+
+            // FILTRO DE INVENTARIO VIVO: Solo dejamos los materiales que tengan piezas > 0
+            let listaActiva = Object.values(inventarioMap).filter(item => item.piezas > 0);
+
+            // Si hay búsqueda por texto desde la URL (?proyecto=...)
+            const proyectoFiltro = req.query.proyecto ? req.query.proyecto.trim().toUpperCase() : null;
+            if (proyectoFiltro) {
+                listaActiva = listaActiva.filter(item => item.proyecto.includes(proyectoFiltro));
+            }
+
+            // Ordenamos para que los que tuvieron movimientos más recientes salgan arriba
+            listaActiva.sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora));
+
+            res.json(listaActiva);
         });
     } catch (error) {
         console.error("Excepción crítica en /api/materiales:", error);
@@ -113,31 +163,7 @@ app.get('/api/materiales', (req, res) => {
     }
 });
 
-function enviarRespuestaSegura(filas, res) {
-    try {
-        const listaActiva = filas.map(item => {
-            if (!item) return null;
-            return {
-                id: item.id || item.id_movimiento || 0,
-                proyecto: item.proyecto || item.codigo_material || item.material || 'GENERAL',
-                tipo_movimiento: item.tipo_movimiento || item.tipo || 'ENTRADA',
-                piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
-                rack: (item.rack && item.rack !== 'N/A') ? item.rack : (item.rack_destino || 'N/A'),
-                rack_destino: item.rack_destino || item.rack || 'N/A',
-                ubicacion_destino: item.ubicacion_destino || item.ubicacion || 'N/A',
-                personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR KPA',
-                nombre_operador: item.nombre_operador || item.personal || item.operador || 'OPERADOR KPA',
-                fecha_hora: item.fecha_hora || item.fecha_proceso || 'Reciente',
-                fecha_proceso: item.fecha_proceso || ''
-            };
-        }).filter(Boolean);
 
-        res.json(listaActiva);
-    } catch (e) {
-        console.error("Error mapeando materiales:", e);
-        res.json([]);
-    }
-}
 function enviarRespuestaMateriales(filas, res) {
     const listaActiva = filas.map(item => {
         if (!item) return null;
