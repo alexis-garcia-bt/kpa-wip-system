@@ -619,8 +619,7 @@
             } else {
                 detallesRack.style.display = 'none';
             }
-        }
-               function cambiarPestana(pestana, elemento) {
+        }function cambiarPestana(pestana, elemento) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     
@@ -631,20 +630,30 @@
     if (pestana === 'historial') cargarHistorial();
     if (pestana === 'personal') cargarPersonalBD();
     
-    // Lo disparamos directamente para que cargue los materiales al cambiar de pestaña
+    // Forzamos la carga al cambiar a cualquier pestaña
     cargarInventarioCompleto();
 }
-
        async function cargarInventarioCompleto() {
+    console.log("-> 1. Entró a la función cargarInventarioCompleto()");
+    
     const tbody = document.getElementById('tablaUbicacionBody');
-    if (!tbody) return;
+    if (!tbody) {
+        console.error("-> ERROR CRÍTICO: No se encontró ningun elemento con ID 'tablaUbicacionBody' en el HTML.");
+        return;
+    }
+    console.log("-> 2. Tbody encontrado exitosamente:", tbody);
     
     tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Cargando inventario WIP...</td></tr>`;
+    
     try {
-        // Usamos ruta relativa para que funcione perfecto tanto local como en Render
+        console.log("-> 3. Intentando hacer fetch a /api/materiales...");
         const res = await fetch('/api/materiales');
+        console.log("-> 4. Respuesta del servidor recibida, status:", res.status);
+        
         if (res.ok) {
             const data = await res.json();
+            console.log("-> 5. Datos obtenidos de la base de datos:", data);
+            
             tbody.innerHTML = '';
             
             if (!data || data.length === 0) {
@@ -665,14 +674,21 @@
                     </tr>
                 `;
             });
+            console.log("-> 6. ¡Tabla pintada con éxito!");
         } else {
+            console.error("-> Error: El servidor respondió con un status inválido:", res.status);
             tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error al consultar el servidor.</td></tr>`;
         }
     } catch (e) {
+        console.error("-> EXCEPCIÓN en el fetch:", e);
         tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error al consultar inventario.</td></tr>`;
     }
 }
 
+// Disparador universal: Carga al abrir la página y al cambiar de pestaña
+document.addEventListener("DOMContentLoaded", () => {
+    cargarInventarioCompleto();
+});
         function filtrarPersonalPorRol() {
             const rol = document.getElementById('tipoRol').value;
             const selectPersonal = document.getElementById('selectPersonal');
