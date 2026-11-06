@@ -70,29 +70,69 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 app.get('/api/materiales', (req, res) => {
     try {
-        // Consultamos directamente la tabla 'movimientos' que es la que tiene tus 7 registros reales
-        const sql = `SELECT * FROM movimientos ORDER BY id DESC`;
-        
         if (!estaConectado || !db) {
+            console.error("Base de datos no conectada en /api/materiales");
             return res.json([]);
         }
+
+        // Consultamos primero la tabla 'movimientos' ordenada por ID descendente
+        const sql = `SELECT * FROM movimientos ORDER BY id DESC`;
         
         db.query(sql, (err, filas) => {
-            if (err || !filas || filas.length === 0) {
-                // Si por algo 'movimientos' viniera vacío, intentamos con 'materiales' como respaldo
+            if (err) {
+                console.error("Error al consultar movimientos:", err.message);
+                // Respaldo automático con la tabla 'materiales' si llega a fallar
                 db.query(`SELECT * FROM materiales ORDER BY id DESC`, (err2, filas2) => {
-                    if (err2 || !filas2 || !Array.isArray(filas2)) return res.json([]);
-                    enviarRespuestaMateriales(filas2, res);
+                    if (err2 || !filas2 || !Array.isArray(filas2)) {
+                        return res.json([]);
+                    }
+                    return enviarRespuestaSegura(filas2, res);
                 });
                 return;
             }
-            enviarRespuestaMateriales(filas, res);
+
+            if (!filas || filas.length === 0) {
+                // Si movimientos está vacío, intentamos con la tabla materiales
+                db.query(`SELECT * FROM materiales ORDER BY id DESC`, (err2, filas2) => {
+                    if (err2 || !filas2 || !Array.isArray(filas2)) {
+                        return res.json([]);
+                    }
+                    return enviarRespuestaSegura(filas2, res);
+                });
+                return;
+            }
+
+            return enviarRespuestaSegura(filas, res);
         });
     } catch (error) {
+        console.error("Excepción crítica en /api/materiales:", error);
         res.json([]);
     }
 });
 
+function enviarRespuestaSegura(filas, res) {
+    try {
+        const listaActiva = filas.map(item => {
+            if (!item) return null;
+            return {
+                id: item.id || item.id_movimiento || 0,
+                proyecto: item.proyecto || item.codigo_material || item.material || 'GENERAL',
+                tipo_movimiento: item.tipo_movimiento || item.tipo || 'ENTRADA',
+                piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
+                rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
+                ubicacion_destino: item.ubicacion_destino || item.ubicacion || 'N/A',
+                personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR',
+                fecha_hora: item.fecha_hora || item.fecha_proceso || 'Reciente',
+                fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
+            };
+        }).filter(Boolean);
+
+        res.json(listaActiva);
+    } catch (e) {
+        console.error("Error mapeando materiales:", e);
+        res.json([]);
+    }
+}
 function enviarRespuestaMateriales(filas, res) {
     const listaActiva = filas.map(item => {
         if (!item) return null;
