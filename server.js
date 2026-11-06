@@ -87,19 +87,18 @@ app.get('/api/materiales', (req, res) => {
             filas.forEach(item => {
                 if (!item) return;
                 
+                // Forzamos el nombre del proyecto a mayúsculas para evitar diferencias por minúsculas
                 const proj = String(item.proyecto || '').toUpperCase().trim();
                 if (!proj) return;
                 
                 const tipo = String(item.tipo_movimiento || '').toUpperCase();
 
-                // Lógica FIFO / Estado: Si es salida, lo borramos del inventario activo
                 if (tipo.includes('SALIDA') || tipo.includes('RETIRO')) {
                     inventarioMap.delete(proj);
                 } else {
-                    // Si es entrada o reubicación, se queda (o se actualiza) en el inventario activo
                     inventarioMap.set(proj, {
                         ...item,
-                        proyecto: item.proyecto,
+                        proyecto: proj,
                         tipo_movimiento: item.tipo_movimiento || 'ENTRADA',
                         piezas: item.piezas || 0,
                         rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
@@ -113,7 +112,6 @@ app.get('/api/materiales', (req, res) => {
 
             let activos = Array.from(inventarioMap.values());
 
-            // Filtro de búsqueda si el usuario escribió algo
             if (q !== '') {
                 activos = activos.filter(mat => {
                     const pStr = String(mat.proyecto || '').toUpperCase();
