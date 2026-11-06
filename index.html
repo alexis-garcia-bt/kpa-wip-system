@@ -630,36 +630,43 @@
             if (pestana === 'ubicar') cargarInventarioCompleto(); // <-- Carga automática al entrar a Inventario WIP
         }
 
-        async function cargarInventarioCompleto() {
-            const tbody = document.getElementById('tablaUbicacionBody');
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Cargando inventario WIP...</td></tr>';
-            try {
-                const res = await fetch('https://kpa-wip-system.onrender.com/api/materiales');
-                if (res.ok) {
-                    const data = await res.json();
-                    tbody.innerHTML = '';
-                    if (!data || data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No hay materiales activos en inventario WIP.</td></tr>';
-                        return;
-                    }
-                    data.forEach(item => {
-                        tbody.innerHTML += `
-                            <tr>
-                                <td><strong>${item.proyecto}</strong></td>
-                                <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento}</span></td>
-                                <td><strong style="color:var(--warning);">${item.piezas || 'N/A'} pzas</strong></td>
-                                <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino && item.rack_destino !== 'N/A' ? item.rack_destino : 'N/A')}</td>
-                                <td>${item.ubicacion_destino || 'N/A'} <br><small style="color: var(--kpa-blue);">F. Proceso: ${item.fecha_proceso ? item.fecha_proceso.split('T')[0] : 'N/A'}</small></td>
-                                <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
-                                <td>${item.fecha_hora ? item.fecha_hora : 'Reciente'}</td>
-                            </tr>
-                        `;
-                    });
-                }
-            } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color:var(--danger);">Error al consultar inventario.</td></tr>';
+       async function cargarInventarioCompleto() {
+    const tbody = document.getElementById('tablaUbicacionBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Cargando inventario WIP...</td></tr>`;
+    try {
+        // Usamos ruta relativa para que funcione perfecto tanto local como en Render
+        const res = await fetch('/api/materiales');
+        if (res.ok) {
+            const data = await res.json();
+            tbody.innerHTML = '';
+            
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No hay materiales activos en inventario WIP.</td></tr>`;
+                return;
             }
+            
+            data.forEach(item => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${item.proyecto || ''}</strong></td>
+                        <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento || ''}</span></td>
+                        <td><strong style="color:var(--warning);">${item.piezas || 0} pzas</strong></td>
+                        <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A')}</td>
+                        <td>${item.ubicacion_destino || 'N/A'}<br><small style="color: var(--kpa-blue);">F. Proceso: ${item.fecha_proceso || item.fecha_hora || 'Reciente'}</small></td>
+                        <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
+                        <td>${item.fecha_hora || 'Reciente'}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error al consultar el servidor.</td></tr>`;
         }
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error al consultar inventario.</td></tr>`;
+    }
+}
 
         function filtrarPersonalPorRol() {
             const rol = document.getElementById('tipoRol').value;

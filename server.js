@@ -69,30 +69,70 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 
 app.get('/api/materiales', (req, res) => {
-    const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
-    
-    if (!estaConectado || !db) {
-        return res.json([]);
-    }
-    
-    db.query(sql, (err, filas) => {
-        if (err || !filas || !Array.isArray(filas)) {
+    try {
+        const q = String(req.query.proyecto || req.query.p || req.query.q || '').toUpperCase().trim();
+        const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
+        
+        if (!estaConectado || !db) {
             return res.json([]);
         }
+        
+        db.query(sql, (err, filas) => {
+            if (err || !filas || !Array.isArray(filas)) {
+                return res.json([]);
+            }
 
-        // Mapeo directo y plano sin borrar nada, para forzar que pinte todo en la tabla
-        const listaPlana = filas.map(item => ({
-            proyecto: item.proyecto || item.codigo_material || 'GENERAL',
-            tipo_movimiento: item.tipo_movimiento || 'ENTRADA',
-            piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
-            rack: item.rack && item.rack !== 'N/A' ? item.rack : 'N/A',
-            ubicacion_destino: item.ubicacion_destino || 'N/A',
-            personal: item.nombre_operador || item.personal || 'OPERADOR',
-            fecha_hora: item.fecha_hora || 'Reciente'
-        }));
+            const inventarioMap = new Map();
 
-        res.json(listaPlana);
-    });
+            filas.forEach(item => {
+                if (!item) return;
+                
+                // Normalizamos el nombre del proyecto a mayúsculas para unificar el mapa
+                const rawProj = item.proyecto || item.codigo_material || item.material || item.nombre_proyecto || 'GENERAL';
+                const projKey = String(rawProj).toUpperCase().trim();
+                if (!projKey) return;
+                
+                const rawTipo = item.tipo_movimiento || item.tipo || item.movimiento || 'ENTRADA';
+                const tipo = String(rawTipo).toUpperCase();
+
+                // Lógica FIFO: Si es salida o retiro, se elimina del inventario activo
+                if (tipo.includes('SALIDA') || tipo.includes('RETIRO')) {
+                    inventarioMap.delete(projKey);
+                } else {
+                    // Si es entrada, se queda registrado en el mapa con sus alias listos
+                    inventarioMap.set(projKey, {
+                        id: item.id,
+                        proyecto: rawProj,
+                        tipo_movimiento: rawTipo,
+                        movimiento: rawTipo,
+                        piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
+                        cantidad: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
+                        rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
+                        ubicacion_destino: item.ubicacion_destino || 'N/A',
+                        personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR GENERAL',
+                        nombre_operador: item.nombre_operador || item.personal || item.operador || 'OPERADOR GENERAL',
+                        fecha_hora: item.fecha_hora || item.fecha_proceso || 'Reciente',
+                        fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
+                    });
+                }
+            });
+
+            let activos = Array.from(inventarioMap.values());
+
+            // Filtro por si se manda parámetro de búsqueda
+            if (q !== '') {
+                activos = activos.filter(mat => {
+                    const pStr = String(mat.proyecto || '').toUpperCase();
+                    const rStr = String(mat.rack || '').toUpperCase();
+                    return pStr.includes(q) || rStr.includes(q);
+                });
+            }
+
+            res.json(activos);
+        });
+    } catch (error) {
+        res.json([]);
+    }
 });
 app.get('/api/historial', (req, res) => {
     const sql = `SELECT * FROM movimientos ORDER BY fecha_hora DESC LIMIT 50`;
