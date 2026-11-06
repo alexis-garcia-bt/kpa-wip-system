@@ -458,9 +458,17 @@
             <div class="card">
                 <h2>Buscador de Inventario y Ubicación de Material</h2>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Consulta el inventario actual, piezas, fecha de proceso y ubicación exacta en racks.</p>
-                <div style="display: flex; gap: 15px; margin-bottom: 25px;">
-                    <input type="text" id="inputBuscarMaterial" placeholder="ESCRIBA EL PROYECTO O MATERIAL (EJ. EXP0001)...">
-                    <button onclick="buscarUbicacionMaterial()" class="btn-primary" style="max-width: 200px; padding: 12px;">Buscar</button>
+                <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
+                    <input type="text" id="inputBuscarMaterial" placeholder="BUSCAR PROYECTO O MATERIAL..." oninput="aplicarFiltrosInventario()" style="flex: 2; min-width: 220px;">
+                    <select id="filtroRackInventario" onchange="aplicarFiltrosInventario()" style="flex: 1; min-width: 180px;">
+                        <option value="">TODOS LOS RACKS (1-19)</option>
+                        <script>
+                            for(let i=1; i<=19; i++) {
+                                document.write(`<option value="RACK ${i}">RACK ${i}</option>`);
+                            }
+                        </script>
+                    </select>
+                    <button type="button" onclick="cargarInventarioCompleto()" class="btn-primary" style="flex: 0 0 140px; padding: 12px;">Actualizar</button>
                 </div>
                 <div style="overflow-x: auto;">
                     <table>
@@ -474,7 +482,7 @@
                             </tr>
                         </thead>
                         <tbody id="tablaUbicacionBody">
-                            <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Ingrese un proyecto para consultar el inventario.</td></tr>
+                            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Ingrese un proyecto para consultar el inventario.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -597,6 +605,7 @@
         let listaPersonalGlobal = [];
         let usuarioActual = { rol: '', nombre: '', turno: '' };
         let tipoMovimientoSeleccionado = '';
+        let listaInventarioGlobal = [];
 
         window.onload = async () => { 
             await cargarPersonalBD(); 
@@ -624,7 +633,96 @@
             } else {
                 detallesRack.style.display = 'none';
             }
-        }function cambiarPestana(pestana, elemento) {
+        }
+
+        async function cargarInventarioCompleto() {
+            const tbody = document.getElementById('tablaUbicacionBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Cargando inventario WIP...</td></tr>`;
+            
+            try {
+                const res = await fetch(`${API_URL}/api/materiales`);
+                if (res.ok) {
+                    listaInventarioGlobal = await res.json();
+                    aplicarFiltrosInventario();
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error al consultar el servidor.</td></tr>`;
+                }
+            } catch (e) {
+                console.error("EXCEPCIÓN en cargarInventarioCompleto:", e);
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error de conexión con la base de datos.</td></tr>`;
+            }
+        }
+
+        function aplicarFiltrosInventario() {
+            const tbody = document.getElementById('tablaUbicacionBody');
+            if (!tbody) return;
+
+            const texto = (document.getElementById('inputBuscarMaterial').value || '').trim().toUpperCase();
+            const rackSeleccionado = (document.getElementById('filtroRackInventario').value || '').trim().toUpperCase();
+
+            if (!listaInventarioGlobal || listaInventarioGlobal.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No hay materiales en inventario WIP.</td></tr>`;
+                return;
+            }
+
+            // Filtramos en memoria al instante (por texto y por rack a la vez)
+            const filtrados = listaInventarioGlobal.filter(item => {
+                const proyecto = (item.proyecto || '').toUpperCase();
+                const operador = (item.personal || item.nombre_operador || '').toUpperCase();
+                
+                let ubicacionLimpia = (item.ubicacion_destino || 'N/A')
+                    .replace(/RACK\s+R/gi, 'RACK ')
+                    .replace(/Nivel:\s*N/gi, 'Nivel ')
+                    .replace(/Pos:\s*/gi, 'Posición ')
+                    .toUpperCase();
+
+                const coincideTexto = !texto || proyecto.includes(texto) || operador.includes(texto);
+                const coincideRack = !rackSeleccionado || ubicacionLimpia.includes(rackSeleccionado);
+
+                return coincideTexto && coincideRack;
+            });
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No se encontraron materiales con esos filtros.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filtrados.forEach(item => {
+                let ubicacionLimpia = (item.ubicacion_destino || 'N/A')
+                    .replace(/RACK\s+R/gi, 'RACK ')
+                    .replace(/Nivel:\s*N/gi, 'Nivel ')
+                    .replace(/Pos:\s*/gi, 'Posición ');
+
+                let fProceso = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'No asignada';
+                let fRegistro = 'Reciente';
+                if (item.fecha_hora && item.fecha_hora !== 'Reciente') {
+                    const d = new Date(item.fecha_hora);
+                    fRegistro = !isNaN(d.getTime()) ? d.toLocaleDateString('es-MX') : String(item.fecha_hora).split('T')[0];
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong style="font-size: 14px; letter-spacing: 0.5px;">${(item.proyecto || 'GENERAL').toUpperCase()}</strong></td>
+                        <td><strong style="color:var(--warning); font-size: 15px;">${item.piezas || 0} pzas</strong></td>
+                        <td>
+                            <span style="color: #60a5fa; font-weight: bold;">${ubicacionLimpia}</span>
+                        </td>
+                        <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
+                        <td>
+                            <div style="margin-bottom: 4px;"><strong>Fecha Registro:</strong> ${fRegistro}</div>
+                            <small style="color: var(--kpa-green); font-weight: bold; font-size: 12px;">Fecha Proceso: ${fProceso}</small>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        
+        
+        function cambiarPestana(pestana, elemento) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
     
@@ -638,67 +736,7 @@
     // Forzamos la carga al cambiar a cualquier pestaña
     cargarInventarioCompleto();
 }
-       async function cargarInventarioCompleto() {
-            const tbody = document.getElementById('tablaUbicacionBody');
-            if (!tbody) return;
-            
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Cargando inventario WIP...</td></tr>`;
-            
-            try {
-                const res = await fetch(`${API_URL}/api/materiales`);
-                
-                if (res.ok) {
-                    const data = await res.json();
-                    tbody.innerHTML = '';
-                    
-                    if (!data || data.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No hay materiales en inventario WIP.</td></tr>`;
-                        return;
-                    }
-                    
-                    data.forEach(item => {
-                        // 1. Limpieza de texto para evitar "RACK R1" o "Nivel: N4"
-                        let ubicacionLimpia = (item.ubicacion_destino || 'N/A')
-                            .replace(/RACK\s+R/gi, 'RACK ')
-                            .replace(/Nivel:\s*N/gi, 'Nivel ')
-                            .replace(/Pos:\s*/gi, 'Posición ');
-
-                        // 2. Formato limpio de fechas
-                        let fProceso = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'No asignada';
-                        let fRegistro = 'Reciente';
-                        if (item.fecha_hora && item.fecha_hora !== 'Reciente') {
-                            const d = new Date(item.fecha_hora);
-                            fRegistro = !isNaN(d.getTime()) ? d.toLocaleDateString('es-MX') : String(item.fecha_hora).split('T')[0];
-                        }
-
-                        tbody.innerHTML += `
-                            <tr>
-                                <td><strong style="font-size: 14px; letter-spacing: 0.5px;">${(item.proyecto || 'GENERAL').toUpperCase()}</strong></td>
-                                <td><strong style="color:var(--warning); font-size: 15px;">${item.piezas || 0} pzas</strong></td>
-                                <td>
-                                    <span style="color: #60a5fa; font-weight: bold;">${ubicacionLimpia}</span>
-                                </td>
-                                <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
-                               <td>
-                                    <div style="margin-bottom: 4px;"><strong>Fecha Registro:</strong> ${fRegistro}</div>
-                                    <small style="color: var(--kpa-green); font-weight: bold; font-size: 12px;">Fecha Proceso: ${fProceso}</small>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                } else {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error al consultar el servidor.</td></tr>`;
-                }
-            } catch (e) {
-                console.error("EXCEPCIÓN en cargarInventarioCompleto:", e);
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error de conexión con la base de datos.</td></tr>`;
-            }
-        }
-
-// Disparador universal: Carga al abrir la página y al cambiar de pestaña
-document.addEventListener("DOMContentLoaded", () => {
-    cargarInventarioCompleto();
-});
+      
         function filtrarPersonalPorRol() {
             const rol = document.getElementById('tipoRol').value;
             const selectPersonal = document.getElementById('selectPersonal');
@@ -929,56 +967,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        async function buscarUbicacionMaterial() {
-            const query = document.getElementById('inputBuscarMaterial').value.trim().toUpperCase();
-            const tbody = document.getElementById('tablaUbicacionBody');
-            if (!query) {
-                cargarInventarioCompleto();
-                return;
-            }
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Buscando material...</td></tr>';
-            try {
-                const res = await fetch(`${API_URL}/api/materiales?proyecto=${encodeURIComponent(query)}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    tbody.innerHTML = '';
-                    if (!data || data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No se encontraron registros coincidentes.</td></tr>';
-                        return;
-                    }
-                    data.forEach(item => {
-                        let ubicacionLimpia = (item.ubicacion_destino || 'N/A')
-                            .replace(/RACK\s+R/gi, 'RACK ')
-                            .replace(/Nivel:\s*N/gi, 'Nivel ')
-                            .replace(/Pos:\s*/gi, 'Posición ');
-
-                        let fProceso = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'No asignada';
-                        let fRegistro = 'Reciente';
-                        if (item.fecha_hora && item.fecha_hora !== 'Reciente') {
-                            const d = new Date(item.fecha_hora);
-                            fRegistro = !isNaN(d.getTime()) ? d.toLocaleDateString('es-MX') : String(item.fecha_hora).split('T')[0];
-                        }
-
-                        tbody.innerHTML += `
-                            <tr>
-                                <td><strong style="font-size: 14px; letter-spacing: 0.5px;">${(item.proyecto || 'GENERAL').toUpperCase()}</strong></td>
-                                <td><strong style="color:var(--warning); font-size: 15px;">${item.piezas || 0} pzas</strong></td>
-                                <td>
-                                    <span style="color: #60a5fa; font-weight: bold;">${ubicacionLimpia}</span>
-                                </td>
-                                <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
-                                <td>
-                                    <div style="margin-bottom: 4px;"><strong>Fecha Registro:</strong> ${fRegistro}</div>
-                                    <small style="color: var(--kpa-green); font-weight: bold; font-size: 12px;">Fecha Proceso: ${fProceso}</small>
-                                </td>
-                            </tr>
-                        `;
-                    });
-                }
-            } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error al buscar registros.</td></tr>';
-            }
-        }
+    
         async function cargarHistorial() {
     const tbody = document.getElementById('tablaHistorialBody');
     if (!tbody) return;
