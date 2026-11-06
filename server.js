@@ -70,7 +70,6 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 app.get('/api/materiales', (req, res) => {
     try {
-        // Aceptamos cualquier nombre de parámetro que el frontend pueda mandar en la URL
         const q = String(req.query.p || req.query.q || req.query.search || req.query.query || req.query.proyecto || req.query.term || '').toUpperCase().trim();
         const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
         
@@ -95,9 +94,11 @@ app.get('/api/materiales', (req, res) => {
                 const rawTipo = item.tipo_movimiento || item.tipo || item.movimiento || 'ENTRADA';
                 const tipo = String(rawTipo).toUpperCase();
 
-                if (tipo.includes('SALIDA')) {
+                // Si es una salida, borramos el proyecto del mapa activo
+                if (tipo.includes('SALIDA') || tipo.includes('RETIRO')) {
                     inventarioMap.delete(proj);
                 } else {
+                    // Para cualquier entrada o registro, lo guardamos o actualizamos en el inventario activo
                     let rackVal = item.rack && String(item.rack) !== 'N/A' ? String(item.rack) : 'N/A';
                     let nivelVal = item.nivel && String(item.nivel) !== 'N/A' ? String(item.nivel) : 'N1';
                     let ladoVal = item.lado && String(item.lado) !== 'N/A' ? String(item.lado) : 'IZQUIERDO';
@@ -141,7 +142,6 @@ app.get('/api/materiales', (req, res) => {
 
             let activos = Array.from(inventarioMap.values());
 
-            // Si hay texto de búsqueda, filtramos; si está vacío, devolvemos los activos para que la tabla no luzca muerta
             if (q !== '') {
                 activos = activos.filter(mat => {
                     const pStr = String(mat.proyecto || '').toUpperCase();
@@ -151,13 +151,7 @@ app.get('/api/materiales', (req, res) => {
                 });
             }
 
-            // TRUCO MAESTRO: Devolvemos un arreglo que también sirve como objeto con propiedades.
-            // Así, si el frontend lee directo el array o busca data.materiales / data.data, funcionará perfecto siempre.
-            const respuestaFlexible = activos;
-            respuestaFlexible.materiales = activos;
-            respuestaFlexible.data = activos;
-            
-            res.json(respuestaFlexible);
+            res.json(activos);
         });
     } catch (error) {
         res.json([]);
