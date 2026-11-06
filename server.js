@@ -1,8 +1,8 @@
 /**
- * ============================================================================
+ 
  * KPA PACKAGING & HANDLING SOLUTIONS - BACKEND ARCHITECTURE (NODE.JS & EXPRESS)
  * Versión Final 11.0.0 - Soporte para Fecha de Proceso y Control de Racks
- * ============================================================================
+ 
  */
 
 const express = require('express');
@@ -65,9 +65,7 @@ app.get('/api/proyecto/:query', (req, res) => {
     });
 });
 
-// Ruta para buscar materiales e inventario procesando operador y ubicaciones
-// Ruta para buscar materiales extrayendo rack y lado del texto guardado
-// Ruta para buscar materiales en inventario con todo el detalle de ubicación (Nivel, Lado, Apilado) y filtro de SALIDAS
+
 app.get('/api/materiales', (req, res) => {
     const q = req.query.p || req.query.q || '';
     const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
@@ -77,27 +75,28 @@ app.get('/api/materiales', (req, res) => {
     db.query(sql, (err, filas) => {
         if (err) return res.json([]);
         
-        // Creamos un mapa para rastrear el estado actual de cada material/proyecto
-        const inventarioEstado = new Map();
+        // Mapeamos los movimientos: las entradas entran al inventario, las salidas las sacan
+        const inventarioMap = new Map();
 
         filas.forEach(item => {
-            const proyectoKey = (item.proyecto || 'GENERAL').toUpperCase().trim();
+            // Usamos el ID único del movimiento como llave para que cada tarima sea independiente
+            const idMov = item.id;
             const tipoMov = (item.tipo_movimiento || '').toUpperCase();
 
-            // Si es entrada o registro, lo damos por activo
             if (tipoMov.includes('ENTRADA') || tipoMov === 'REGISTRO') {
-                inventarioEstado.set(proyectoKey, { ...item, estado: 'ACTIVO' });
-            } 
-            // Si es salida, lo marcamos como inactivo/salido de la planta
-            else if (tipoMov.includes('SALIDA')) {
-                if (inventarioEstado.has(proyectoKey)) {
-                    inventarioEstado.get(proyectoKey).estado = 'SALIDA';
-                }
+                inventarioMap.set(idMov, { ...item, estado: 'ACTIVO' });
+            } else if (tipoMov.includes('SALIDA')) {
+                // Si hay una salida, intentamos asociarla o marcar las entradas previas como concluidas si comparten proyecto
+                inventarioMap.forEach((val) => {
+                    if (val.proyecto && item.proyecto && val.proyecto.toUpperCase().trim() === item.proyecto.toUpperCase().trim()) {
+                        val.estado = 'SALIDA';
+                    }
+                });
             }
         });
 
         const activos = [];
-        inventarioEstado.forEach((item) => {
+        inventarioMap.forEach((item) => {
             if (item.estado === 'ACTIVO') {
                 let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
                 let nivelVal = item.nivel && item.nivel !== 'N/A' ? item.nivel : 'N1';
@@ -108,7 +107,7 @@ app.get('/api/materiales', (req, res) => {
                     let partes = item.ubicacion_destino.split(',');
                     partes.forEach(part => {
                         let p = part.trim();
-                        if (p.includes('RACK')) rackVal = p.replace('RACK', '').tresM ? p.replace('RACK', '').trim() : p.replace('RACK', '').trim();
+                        if (p.includes('RACK')) rackVal = p.replace('RACK', '').trim();
                         if (p.includes('Nivel:')) nivelVal = p.replace('Nivel:', '').trim();
                         if (p.includes('Lado:')) ladoVal = p.replace('Lado:', '').trim();
                         if (p.includes('Pos:')) apiladoVal = p.replace('Pos:', '').trim();
@@ -132,6 +131,7 @@ app.get('/api/materiales', (req, res) => {
             }
         });
 
+        // Filtro flexible por buscador
         const queryFiltro = q.toUpperCase().trim();
         const resultadosFinales = queryFiltro === '' ? activos : activos.filter(mat => 
             (mat.proyecto && mat.proyecto.toUpperCase().includes(queryFiltro)) ||
