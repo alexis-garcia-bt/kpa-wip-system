@@ -69,7 +69,6 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 
 app.get('/api/materiales', (req, res) => {
-    // Usamos exactamente la misma consulta base que la de movimientos que ya te funciona
     const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
     
     if (!estaConectado || !db) {
@@ -81,44 +80,18 @@ app.get('/api/materiales', (req, res) => {
             return res.json([]);
         }
 
-        const inventarioMap = new Map();
+        // Mapeo directo y plano sin borrar nada, para forzar que pinte todo en la tabla
+        const listaPlana = filas.map(item => ({
+            proyecto: item.proyecto || item.codigo_material || 'GENERAL',
+            tipo_movimiento: item.tipo_movimiento || 'ENTRADA',
+            piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
+            rack: item.rack && item.rack !== 'N/A' ? item.rack : 'N/A',
+            ubicacion_destino: item.ubicacion_destino || 'N/A',
+            personal: item.nombre_operador || item.personal || 'OPERADOR',
+            fecha_hora: item.fecha_hora || 'Reciente'
+        }));
 
-        filas.forEach(item => {
-            if (!item) return;
-            
-            // Tomamos el proyecto normalizado para el mapa FIFO
-            const rawProj = item.proyecto || item.codigo_material || item.material || item.nombre_proyecto || 'GENERAL';
-            const projKey = String(rawProj).toUpperCase().trim();
-            if (!projKey) return;
-            
-            const rawTipo = item.tipo_movimiento || item.tipo || item.movimiento || 'ENTRADA';
-            const tipo = String(rawTipo).toUpperCase();
-
-            // Si es salida o retiro, lo removemos del inventario activo (Lógica FIFO)
-            if (tipo.includes('SALIDA') || tipo.includes('RETIRO')) {
-                inventarioMap.delete(projKey);
-            } else {
-                // Si es entrada, lo guardamos/actualizamos con todos los alias posibles
-                inventarioMap.set(projKey, {
-                    id: item.id,
-                    proyecto: rawProj,
-                    tipo_movimiento: rawTipo,
-                    movimiento: rawTipo,
-                    piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
-                    cantidad: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
-                    rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
-                    ubicacion_destino: item.ubicacion_destino || 'N/A',
-                    personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR GENERAL',
-                    nombre_operador: item.nombre_operador || item.personal || item.operador || 'OPERADOR GENERAL',
-                    fecha_hora: item.fecha_hora || item.fecha_proceso || 'Reciente',
-                    fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
-                });
-            }
-        });
-
-        // Convertimos el mapa a un arreglo limpio para la tabla
-        const activos = Array.from(inventarioMap.values());
-        res.json(activos);
+        res.json(listaPlana);
     });
 });
 app.get('/api/historial', (req, res) => {
