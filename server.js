@@ -68,69 +68,61 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 app.get('/api/materiales', (req, res) => {
     const q = req.query.p || req.query.q || '';
-    const sql = `SELECT * FROM movimientos ORDER BY id DESC`;
+    const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
     
     if (!estaConectado || !db) return res.json([]);
     
     db.query(sql, (err, filas) => {
         if (err) return res.json([]);
         
-        const proyectosSalidos = new Set();
-        const proyectosActivosMap = new Map();
+        const inventarioMap = new Map();
 
-        // 1. Detectar qué proyectos tienen salida registrada para ignorarlos
+        // Procesamos cronológicamente: la entrada activa el proyecto, la salida lo retira
         filas.forEach(item => {
-            const tipo = (item.tipo_movimiento || '').toUpperCase();
             const proj = (item.proyecto || '').toUpperCase().trim();
-            if (tipo.includes('SALIDA') && proj) {
-                proyectosSalidos.add(proj);
-            }
-        });
-
-        // 2. Registrar las entradas que siguen activas en la planta
-        filas.forEach(item => {
-            const tipo = (item.tipo_movimiento || '').toUpperCase();
-            const proj = (item.proyecto || '').toUpperCase().trim();
+            if (!proj) return;
             
-            if ((tipo.includes('ENTRADA') || tipo === 'REGISTRO') && proj && !proyectosSalidos.has(proj)) {
-                if (!proyectosActivosMap.has(proj)) {
-                    let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
-                    let nivelVal = item.nivel && item.nivel !== 'N/A' ? item.nivel : 'N1';
-                    let ladoVal = item.lado && item.lado !== 'N/A' ? item.lado : 'IZQUIERDO';
-                    let apiladoVal = item.apilado && item.apilado !== 'N/A' ? item.apilado : '1';
+            const tipo = (item.tipo_movimiento || '').toUpperCase();
 
-                    if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
-                        let partes = item.ubicacion_destino.split(',');
-                        partes.forEach(part => {
-                            let p = part.trim();
-                            if (p.includes('RACK')) rackVal = p.replace('RACK', '').trim();
-                            if (p.includes('Nivel:')) nivelVal = p.replace('Nivel:', '').trim();
-                            if (p.includes('Lado:')) ladoVal = p.replace('Lado:', '').trim();
-                            if (p.includes('Pos:')) apiladoVal = p.replace('Pos:', '').trim();
-                        });
-                    }
+            if (tipo.includes('ENTRADA') || tipo === 'REGISTRO') {
+                let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
+                let nivelVal = item.nivel && item.nivel !== 'N/A' ? item.nivel : 'N1';
+                let ladoVal = item.lado && item.lado !== 'N/A' ? item.lado : 'IZQUIERDO';
+                let apiladoVal = item.apilado && item.apilado !== 'N/A' ? item.apilado : '1';
 
-                    const operadorDinamico = item.nombre_operador && item.nombre_operador.trim() !== '' 
-                        ? item.nombre_operador 
-                        : 'OPERADOR GENERAL';
-
-                    proyectosActivosMap.set(proj, {
-                        ...item,
-                        operador: operadorDinamico,
-                        personal: operadorDinamico,
-                        nombre_operador: operadorDinamico,
-                        rack: rackVal,
-                        nivel: nivelVal,
-                        lado: ladoVal,
-                        apilado: apiladoVal
+                if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
+                    let partes = item.ubicacion_destino.split(',');
+                    partes.forEach(part => {
+                        let p = part.trim();
+                        if (p.includes('RACK')) rackVal = p.replace('RACK', '').trim();
+                        if (p.includes('Nivel:')) nivelVal = p.replace('Nivel:', '').trim();
+                        if (p.includes('Lado:')) ladoVal = p.replace('Lado:', '').trim();
+                        if (p.includes('Pos:')) apiladoVal = p.replace('Pos:', '').trim();
                     });
                 }
+
+                const operadorDinamico = item.nombre_operador && item.nombre_operador.trim() !== '' 
+                    ? item.nombre_operador 
+                    : 'OPERADOR GENERAL';
+
+                inventarioMap.set(proj, {
+                    ...item,
+                    operador: operadorDinamico,
+                    personal: operadorDinamico,
+                    nombre_operador: operadorDinamico,
+                    rack: rackVal,
+                    nivel: nivelVal,
+                    lado: ladoVal,
+                    apilado: apiladoVal
+                });
+            } else if (tipo.includes('SALIDA')) {
+                inventarioMap.delete(proj);
             }
         });
 
-        let activos = Array.from(proyectosActivosMap.values());
+        let activos = Array.from(inventarioMap.values());
 
-        // Si el usuario buscó algo específico, filtramos de forma flexible
+        // Filtro flexible por buscador
         const queryFiltro = q.toUpperCase().trim();
         if (queryFiltro !== '') {
             activos = activos.filter(mat => 
