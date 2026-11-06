@@ -66,30 +66,45 @@ app.get('/api/proyecto/:query', (req, res) => {
 });
 
 
+
+// RUTA COMPLETA Y ROBUSTA: /api/materiales
 app.get('/api/materiales', (req, res) => {
     const q = req.query.p || req.query.q || '';
     const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
     
-    if (!estaConectado || !db) return res.json([]);
+    if (!estaConectado || !db) {
+        console.warn(" Advertencia: Base de datos no conectada para /api/materiales");
+        return res.json([]);
+    }
     
     db.query(sql, (err, filas) => {
-        if (err) return res.json([]);
+        if (err) {
+            console.error("❌ Error al consultar movimientos en MySQL:", err);
+            return res.status(500).json({ error: "Error al consultar la base de datos" });
+        }
         
+        // Si no hay filas, regresamos arreglo vacío limpio
+        if (!filas || filas.length === 0) {
+            return res.json([]);
+        }
+
         const inventarioMap = new Map();
 
-        // Procesamos cronológicamente: la entrada activa el proyecto, la salida lo retira
+        // Procesamos cronológicamente cada movimiento registrado en la planta
         filas.forEach(item => {
             const proj = (item.proyecto || '').toUpperCase().trim();
             if (!proj) return;
             
             const tipo = (item.tipo_movimiento || '').toUpperCase();
 
+            // Si es una entrada o registro inicial, el material entra al inventario activo
             if (tipo.includes('ENTRADA') || tipo === 'REGISTRO') {
                 let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
                 let nivelVal = item.nivel && item.nivel !== 'N/A' ? item.nivel : 'N1';
                 let ladoVal = item.lado && item.lado !== 'N/A' ? item.lado : 'IZQUIERDO';
-                let apiladoVal = item.apilado && item.apilado !== 'N/A' ? item.apilado : '1';
+                let apiladoVal = item.apilado && item.apilado !== 'N/A' ? item.apilado : (item.posicion || '1');
 
+                // Respaldo por si la ubicación viene integrada en texto largo
                 if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
                     let partes = item.ubicacion_destino.split(',');
                     partes.forEach(part => {
@@ -105,24 +120,36 @@ app.get('/api/materiales', (req, res) => {
                     ? item.nombre_operador 
                     : 'OPERADOR GENERAL';
 
+                // Guardamos el objeto con todas las variantes de nombres para que el frontend no falle jamás
                 inventarioMap.set(proj, {
                     ...item,
+                    id: item.id,
+                    proyecto: item.proyecto,
+                    tipo_movimiento: item.tipo_movimiento || 'ENTRADA',
+                    movimiento: item.tipo_movimiento || 'ENTRADA',
+                    piezas: item.piezas || item.cantidad || 0,
+                    cantidad: item.piezas || item.cantidad || 0,
                     operador: operadorDinamico,
                     personal: operadorDinamico,
                     nombre_operador: operadorDinamico,
                     rack: rackVal,
                     nivel: nivelVal,
                     lado: ladoVal,
-                    apilado: apiladoVal
+                    apilado: apiladoVal,
+                    posicion: apiladoVal,
+                    ubicacion_destino: item.ubicacion_destino || 'N/A',
+                    fecha_proceso: item.fecha_proceso || item.fecha_hora
                 });
-            } else if (tipo.includes('SALIDA')) {
+            } 
+            // Si tiene una salida registrada posterior, lo retiramos del inventario activo
+            else if (tipo.includes('SALIDA')) {
                 inventarioMap.delete(proj);
             }
         });
 
         let activos = Array.from(inventarioMap.values());
 
-        // Filtro flexible por buscador
+        // Aplicamos el filtro de búsqueda si el usuario escribió algo en el buscador
         const queryFiltro = q.toUpperCase().trim();
         if (queryFiltro !== '') {
             activos = activos.filter(mat => 
@@ -132,6 +159,7 @@ app.get('/api/materiales', (req, res) => {
             );
         }
 
+        // Devolvemos el JSON completo que el frontend espera leer en la tabla de Inventario WIP
         res.json(activos);
     });
 });
