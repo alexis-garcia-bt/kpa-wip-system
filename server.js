@@ -68,78 +68,79 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 app.get('/api/materiales', (req, res) => {
     const q = req.query.p || req.query.q || '';
-    const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
+    const sql = `SELECT * FROM movimientos ORDER BY id DESC`;
     
     if (!estaConectado || !db) return res.json([]);
     
     db.query(sql, (err, filas) => {
         if (err) return res.json([]);
         
-        // Mapeamos los movimientos: las entradas entran al inventario, las salidas las sacan
-        const inventarioMap = new Map();
+        const proyectosSalidos = new Set();
+        const proyectosActivosMap = new Map();
 
+        // 1. Detectar qué proyectos tienen salida registrada para ignorarlos
         filas.forEach(item => {
-            // Usamos el ID único del movimiento como llave para que cada tarima sea independiente
-            const idMov = item.id;
-            const tipoMov = (item.tipo_movimiento || '').toUpperCase();
-
-            if (tipoMov.includes('ENTRADA') || tipoMov === 'REGISTRO') {
-                inventarioMap.set(idMov, { ...item, estado: 'ACTIVO' });
-            } else if (tipoMov.includes('SALIDA')) {
-                // Si hay una salida, intentamos asociarla o marcar las entradas previas como concluidas si comparten proyecto
-                inventarioMap.forEach((val) => {
-                    if (val.proyecto && item.proyecto && val.proyecto.toUpperCase().trim() === item.proyecto.toUpperCase().trim()) {
-                        val.estado = 'SALIDA';
-                    }
-                });
+            const tipo = (item.tipo_movimiento || '').toUpperCase();
+            const proj = (item.proyecto || '').toUpperCase().trim();
+            if (tipo.includes('SALIDA') && proj) {
+                proyectosSalidos.add(proj);
             }
         });
 
-        const activos = [];
-        inventarioMap.forEach((item) => {
-            if (item.estado === 'ACTIVO') {
-                let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
-                let nivelVal = item.nivel && item.nivel !== 'N/A' ? item.nivel : 'N1';
-                let ladoVal = item.lado && item.lado !== 'N/A' ? item.lado : 'IZQUIERDO';
-                let apiladoVal = item.apilado && item.apilado !== 'N/A' ? item.apilado : '1';
+        // 2. Registrar las entradas que siguen activas en la planta
+        filas.forEach(item => {
+            const tipo = (item.tipo_movimiento || '').toUpperCase();
+            const proj = (item.proyecto || '').toUpperCase().trim();
+            
+            if ((tipo.includes('ENTRADA') || tipo === 'REGISTRO') && proj && !proyectosSalidos.has(proj)) {
+                if (!proyectosActivosMap.has(proj)) {
+                    let rackVal = item.rack && item.rack !== 'N/A' ? item.rack : 'N/A';
+                    let nivelVal = item.nivel && item.nivel !== 'N/A' ? item.nivel : 'N1';
+                    let ladoVal = item.lado && item.lado !== 'N/A' ? item.lado : 'IZQUIERDO';
+                    let apiladoVal = item.apilado && item.apilado !== 'N/A' ? item.apilado : '1';
 
-                if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
-                    let partes = item.ubicacion_destino.split(',');
-                    partes.forEach(part => {
-                        let p = part.trim();
-                        if (p.includes('RACK')) rackVal = p.replace('RACK', '').trim();
-                        if (p.includes('Nivel:')) nivelVal = p.replace('Nivel:', '').trim();
-                        if (p.includes('Lado:')) ladoVal = p.replace('Lado:', '').trim();
-                        if (p.includes('Pos:')) apiladoVal = p.replace('Pos:', '').trim();
+                    if (rackVal === 'N/A' && item.ubicacion_destino && item.ubicacion_destino.includes('RACK')) {
+                        let partes = item.ubicacion_destino.split(',');
+                        partes.forEach(part => {
+                            let p = part.trim();
+                            if (p.includes('RACK')) rackVal = p.replace('RACK', '').trim();
+                            if (p.includes('Nivel:')) nivelVal = p.replace('Nivel:', '').trim();
+                            if (p.includes('Lado:')) ladoVal = p.replace('Lado:', '').trim();
+                            if (p.includes('Pos:')) apiladoVal = p.replace('Pos:', '').trim();
+                        });
+                    }
+
+                    const operadorDinamico = item.nombre_operador && item.nombre_operador.trim() !== '' 
+                        ? item.nombre_operador 
+                        : 'OPERADOR GENERAL';
+
+                    proyectosActivosMap.set(proj, {
+                        ...item,
+                        operador: operadorDinamico,
+                        personal: operadorDinamico,
+                        nombre_operador: operadorDinamico,
+                        rack: rackVal,
+                        nivel: nivelVal,
+                        lado: ladoVal,
+                        apilado: apiladoVal
                     });
                 }
-
-                const operadorDinamico = item.nombre_operador && item.nombre_operador.trim() !== '' 
-                    ? item.nombre_operador 
-                    : 'OPERADOR GENERAL';
-
-                activos.push({
-                    ...item,
-                    operador: operadorDinamico,
-                    personal: operadorDinamico,
-                    nombre_operador: operadorDinamico,
-                    rack: rackVal,
-                    nivel: nivelVal,
-                    lado: ladoVal,
-                    apilado: apiladoVal
-                });
             }
         });
 
-        // Filtro flexible por buscador
-        const queryFiltro = q.toUpperCase().trim();
-        const resultadosFinales = queryFiltro === '' ? activos : activos.filter(mat => 
-            (mat.proyecto && mat.proyecto.toUpperCase().includes(queryFiltro)) ||
-            (mat.rack && mat.rack.toUpperCase().includes(queryFiltro)) ||
-            (mat.ubicacion_destino && mat.ubicacion_destino.toUpperCase().includes(queryFiltro))
-        );
+        let activos = Array.from(proyectosActivosMap.values());
 
-        res.json(resultadosFinales);
+        // Si el usuario buscó algo específico, filtramos de forma flexible
+        const queryFiltro = q.toUpperCase().trim();
+        if (queryFiltro !== '') {
+            activos = activos.filter(mat => 
+                (mat.proyecto && mat.proyecto.toUpperCase().includes(queryFiltro)) ||
+                (mat.rack && mat.rack.toUpperCase().includes(queryFiltro)) ||
+                (mat.ubicacion_destino && mat.ubicacion_destino.toUpperCase().includes(queryFiltro))
+            );
+        }
+
+        res.json(activos);
     });
 });
 app.get('/api/historial', (req, res) => {
