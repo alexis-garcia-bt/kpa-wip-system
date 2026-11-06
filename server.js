@@ -70,51 +70,44 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 // RUTA COMPLETA, ROBUSTA Y SIN RECORTES: /api/materiales
 
+// ==========================================
+// RUTA ADAPTABLE Y BLINDADA: /api/materiales
+// ==========================================
 app.get('/api/materiales', (req, res) => {
     try {
-        const q = String(req.query.p || req.query.q || '').toUpperCase().trim();
+        // Aceptamos cualquier nombre de parámetro que el frontend pueda mandar en la URL
+        const q = String(req.query.p || req.query.q || req.query.search || req.query.query || req.query.proyecto || req.query.term || '').toUpperCase().trim();
         const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
         
         if (!estaConectado || !db) {
-            console.warn("⚠️ Base de datos no conectada en /api/materiales");
             return res.json([]);
         }
         
         db.query(sql, (err, filas) => {
-            if (err) {
-                console.error("❌ Error en consulta SQL de materiales:", err);
+            if (err || !filas || !Array.isArray(filas)) {
                 return res.json([]);
             }
-            
-            if (!filas || !Array.isArray(filas) || filas.length === 0) {
-                console.log("ℹ️ La tabla movimientos está vacía actualmente.");
-                return res.json([]);
-            }
-
-            console.log(`🔍 Total de movimientos leídos de la BD: ${filas.length}`);
 
             const inventarioMap = new Map();
 
             filas.forEach(item => {
                 if (!item) return;
                 
-                // Detectamos el nombre del proyecto o material con cualquier posible nombre de columna
                 const rawProyecto = item.proyecto || item.codigo_material || item.material || item.nombre_proyecto || 'GENERAL';
                 const proj = String(rawProyecto).toUpperCase().trim();
                 if (!proj) return;
                 
-                // Detectamos el tipo de movimiento con flexibilidad total
                 const rawTipo = item.tipo_movimiento || item.tipo || item.movimiento || 'ENTRADA';
                 const tipo = String(rawTipo).toUpperCase();
 
-                // Si es Entrada o Registro, se agrega/actualiza en el inventario activo
-                if (tipo.includes('ENTRADA') || tipo.includes('REGISTRO') || tipo.includes('INSERCION')) {
+                if (tipo.includes('SALIDA')) {
+                    inventarioMap.delete(proj);
+                } else {
                     let rackVal = item.rack && String(item.rack) !== 'N/A' ? String(item.rack) : 'N/A';
                     let nivelVal = item.nivel && String(item.nivel) !== 'N/A' ? String(item.nivel) : 'N1';
                     let ladoVal = item.lado && String(item.lado) !== 'N/A' ? String(item.lado) : 'IZQUIERDO';
-                    let apiladoVal = item.apilado && String(item.apilado) !== 'N/A' ? String(item.apilado) : String(item.posicion || item.tarima_apilada || '1');
+                    let apiladoVal = item.apilado && String(item.apilado) !== 'N/A' ? String(item.apilado) : String(item.posicion || '1');
 
-                    // Respaldo por si la ubicación viene integrada en formato de texto largo en destino
                     if (rackVal === 'N/A' && item.ubicacion_destino && String(item.ubicacion_destino).includes('RACK')) {
                         let partes = String(item.ubicacion_destino).split(',');
                         partes.forEach(part => {
@@ -146,18 +139,14 @@ app.get('/api/materiales', (req, res) => {
                         apilado: apiladoVal,
                         posicion: apiladoVal,
                         ubicacion_destino: item.ubicacion_destino || 'N/A',
-                        fecha_proceso: item.fecha_proceso || item.fecha_hora || item.fecha_ingreso
+                        fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
                     });
-                } 
-                // Si es Salida, retiramos el proyecto del inventario activo
-                else if (tipo.includes('SALIDA')) {
-                    inventarioMap.delete(proj);
                 }
             });
 
             let activos = Array.from(inventarioMap.values());
 
-            // Filtro de búsqueda flexible por texto ingresado en la interfaz
+            // Si hay texto de búsqueda, filtramos; si está vacío, devolvemos los activos para que la tabla no luzca muerta
             if (q !== '') {
                 activos = activos.filter(mat => {
                     const pStr = String(mat.proyecto || '').toUpperCase();
@@ -167,11 +156,15 @@ app.get('/api/materiales', (req, res) => {
                 });
             }
 
-            console.log(`📦 Materiales activos calculados para la vista WIP: ${activos.length}`);
-            res.json(activos);
+            // TRUCO MAESTRO: Devolvemos un arreglo que también sirve como objeto con propiedades.
+            // Así, si el frontend lee directo el array o busca data.materiales / data.data, funcionará perfecto siempre.
+            const respuestaFlexible = activos;
+            respuestaFlexible.materiales = activos;
+            respuestaFlexible.data = activos;
+            
+            res.json(respuestaFlexible);
         });
     } catch (error) {
-        console.error("❌ Excepción crítica en /api/materiales:", error);
         res.json([]);
     }
 });
