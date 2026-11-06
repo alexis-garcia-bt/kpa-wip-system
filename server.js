@@ -70,6 +70,7 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 app.get('/api/materiales', (req, res) => {
     try {
+        // Consultamos directamente la tabla 'movimientos' que es la que tiene tus 7 registros reales
         const sql = `SELECT * FROM movimientos ORDER BY id DESC`;
         
         if (!estaConectado || !db) {
@@ -77,32 +78,39 @@ app.get('/api/materiales', (req, res) => {
         }
         
         db.query(sql, (err, filas) => {
-            if (err || !filas || !Array.isArray(filas)) {
-                return res.json([]);
+            if (err || !filas || filas.length === 0) {
+                // Si por algo 'movimientos' viniera vacío, intentamos con 'materiales' como respaldo
+                db.query(`SELECT * FROM materiales ORDER BY id DESC`, (err2, filas2) => {
+                    if (err2 || !filas2 || !Array.isArray(filas2)) return res.json([]);
+                    enviarRespuestaMateriales(filas2, res);
+                });
+                return;
             }
-
-            // Mapeamos todos los registros para asegurar que la tabla del inventario WIP pinte la información al instante
-            const listaActiva = filas.map(item => {
-                if (!item) return null;
-                return {
-                    id: item.id,
-                    proyecto: item.proyecto || item.codigo_material || item.material || 'GENERAL',
-                    tipo_movimiento: item.tipo_movimiento || item.tipo || 'ENTRADA',
-                    piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
-                    rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
-                    ubicacion_destino: item.ubicacion_destino || item.ubicacion || 'N/A',
-                    personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR',
-                    fecha_hora: item.fecha_hora || item.fecha_proceso || 'Reciente',
-                    fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
-                };
-            }).filter(Boolean);
-
-            res.json(listaActiva);
+            enviarRespuestaMateriales(filas, res);
         });
     } catch (error) {
         res.json([]);
     }
 });
+
+function enviarRespuestaMateriales(filas, res) {
+    const listaActiva = filas.map(item => {
+        if (!item) return null;
+        return {
+            id: item.id,
+            proyecto: item.proyecto || item.codigo_material || item.material || 'GENERAL',
+            tipo_movimiento: item.tipo_movimiento || item.tipo || 'ENTRADA',
+            piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
+            rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
+            ubicacion_destino: item.ubicacion_destino || item.ubicacion || 'N/A',
+            personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR',
+            fecha_hora: item.fecha_hora || item.fecha_proceso || 'Reciente',
+            fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
+        };
+    }).filter(Boolean);
+
+    res.json(listaActiva);
+}
 app.get('/api/historial', (req, res) => {
     const sql = `SELECT * FROM movimientos ORDER BY fecha_hora DESC LIMIT 50`;
     if (!estaConectado || !db) return res.json([]);
@@ -136,7 +144,7 @@ app.post('/api/movimientos', (req, res) => {
     // 1. VALIDACIÓN DE SEGURIDAD: Si es SALIDA o REUBICACIÓN, verificamos que el material exista previamente en el inventario activo
     const validarExistencia = (callback) => {
         if (tipoMov === 'SALIDA' || tipoMov === 'REUBICACION') {
-            const idMatQuery = data.id_material || 1;
+            const idMatQuery = data.id_material || data.idMaterial || 1;
             // Consultamos el historial para ver si su último movimiento no fue una salida
             const sqlCheck = `SELECT * FROM movimientos WHERE id_material = ? ORDER BY fecha_hora DESC LIMIT 1`;
             db.query(sqlCheck, [idMatQuery], (err, filas) => {
@@ -188,6 +196,7 @@ app.post('/api/movimientos', (req, res) => {
 
         const nombreOperadorVal = data.nombre_operador || data.operador || data.usuario || data.personal || 'OPERADOR GENERAL';
         const idOperadorVal = data.id_operador || data.idOperador || 1;
+        const idMaterialVal = data.id_material || data.idMaterial || 1;
 
         let fechaProcesoVal = data.fecha_proceso;
         if (!fechaProcesoVal || fechaProcesoVal.includes('1111') || fechaProcesoVal.length < 8) {
@@ -201,10 +210,10 @@ app.post('/api/movimientos', (req, res) => {
         `;
 
         db.query(sqlInsert, [
-            data.id_material || 1,
+            idMaterialVal,
             idOperadorVal,
             tipoMov,
-            data.proyecto || 'GENERAL',
+            data.proyecto ? data.proyecto.toUpperCase() : 'GENERAL',
             data.piezas || 0,
             fechaProcesoVal,
             ubicacionOrigenVal,
