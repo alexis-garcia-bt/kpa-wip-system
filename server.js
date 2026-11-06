@@ -70,7 +70,7 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 app.get('/api/materiales', (req, res) => {
     try {
-        const q = String(req.query.p || req.query.q || req.query.search || req.query.query || req.query.proyecto || req.query.term || '').toUpperCase().trim();
+        const q = String(req.query.proyecto || req.query.p || req.query.q || '').toUpperCase().trim();
         const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
         
         if (!estaConectado || !db) {
@@ -87,67 +87,38 @@ app.get('/api/materiales', (req, res) => {
             filas.forEach(item => {
                 if (!item) return;
                 
-                const rawProyecto = item.proyecto || item.codigo_material || item.material || item.nombre_proyecto || 'GENERAL';
-                const proj = String(rawProyecto).toUpperCase().trim();
+                const proj = String(item.proyecto || '').toUpperCase().trim();
                 if (!proj) return;
                 
-                const rawTipo = item.tipo_movimiento || item.tipo || item.movimiento || 'ENTRADA';
-                const tipo = String(rawTipo).toUpperCase();
+                const tipo = String(item.tipo_movimiento || '').toUpperCase();
 
-                // Si es una salida, borramos el proyecto del mapa activo
+                // Lógica FIFO / Estado: Si es salida, lo borramos del inventario activo
                 if (tipo.includes('SALIDA') || tipo.includes('RETIRO')) {
                     inventarioMap.delete(proj);
                 } else {
-                    // Para cualquier entrada o registro, lo guardamos o actualizamos en el inventario activo
-                    let rackVal = item.rack && String(item.rack) !== 'N/A' ? String(item.rack) : 'N/A';
-                    let nivelVal = item.nivel && String(item.nivel) !== 'N/A' ? String(item.nivel) : 'N1';
-                    let ladoVal = item.lado && String(item.lado) !== 'N/A' ? String(item.lado) : 'IZQUIERDO';
-                    let apiladoVal = item.apilado && String(item.apilado) !== 'N/A' ? String(item.apilado) : String(item.posicion || '1');
-
-                    if (rackVal === 'N/A' && item.ubicacion_destino && String(item.ubicacion_destino).includes('RACK')) {
-                        let partes = String(item.ubicacion_destino).split(',');
-                        partes.forEach(part => {
-                            let p = part.trim();
-                            if (p.includes('RACK')) rackVal = p.replace('RACK', '').trim();
-                            if (p.includes('Nivel:')) nivelVal = p.replace('Nivel:', '').trim();
-                            if (p.includes('Lado:')) ladoVal = p.replace('Lado:', '').trim();
-                            if (p.includes('Pos:')) apiladoVal = p.replace('Pos:', '').trim();
-                        });
-                    }
-
-                    const operadorDinamico = item.nombre_operador || item.operador || item.personal || 'OPERADOR GENERAL';
-                    const cantPiezas = item.piezas !== undefined ? item.piezas : (item.cantidad !== undefined ? item.cantidad : 0);
-
+                    // Si es entrada o reubicación, se queda (o se actualiza) en el inventario activo
                     inventarioMap.set(proj, {
                         ...item,
-                        id: item.id,
-                        proyecto: rawProyecto,
-                        tipo_movimiento: rawTipo,
-                        movimiento: rawTipo,
-                        piezas: cantPiezas,
-                        cantidad: cantPiezas,
-                        operador: String(operadorDinamico),
-                        personal: String(operadorDinamico),
-                        nombre_operador: String(operadorDinamico),
-                        rack: rackVal,
-                        nivel: nivelVal,
-                        lado: ladoVal,
-                        apilado: apiladoVal,
-                        posicion: apiladoVal,
+                        proyecto: item.proyecto,
+                        tipo_movimiento: item.tipo_movimiento || 'ENTRADA',
+                        piezas: item.piezas || 0,
+                        rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
                         ubicacion_destino: item.ubicacion_destino || 'N/A',
-                        fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
+                        personal: item.nombre_operador || item.personal || 'OPERADOR GENERAL',
+                        fecha_hora: item.fecha_hora || 'Reciente',
+                        fecha_proceso: item.fecha_proceso || ''
                     });
                 }
             });
 
             let activos = Array.from(inventarioMap.values());
 
+            // Filtro de búsqueda si el usuario escribió algo
             if (q !== '') {
                 activos = activos.filter(mat => {
                     const pStr = String(mat.proyecto || '').toUpperCase();
                     const rStr = String(mat.rack || '').toUpperCase();
-                    const uStr = String(mat.ubicacion_destino || '').toUpperCase();
-                    return pStr.includes(q) || rStr.includes(q) || uStr.includes(q);
+                    return pStr.includes(q) || rStr.includes(q);
                 });
             }
 
