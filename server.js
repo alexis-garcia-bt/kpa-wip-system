@@ -68,11 +68,6 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 
 
-// RUTA COMPLETA, ROBUSTA Y SIN RECORTES: /api/materiales
-
-// ==========================================
-// RUTA ADAPTABLE Y BLINDADA: /api/materiales
-// ==========================================
 app.get('/api/materiales', (req, res) => {
     try {
         // Aceptamos cualquier nombre de parámetro que el frontend pueda mandar en la URL
