@@ -467,12 +467,10 @@
                         <thead>
                             <tr>
                                 <th>Proyecto / Material</th>
-                                <th>Tipo Movimiento</th>
                                 <th>Piezas Actuales</th>
-                                <th>Rack Destino</th>
-                                <th>Nivel / Lado / Pos / F. Proceso</th>
-                                <th>Operador</th>
-                                <th>Fecha Registro</th>
+                                <th>Ubicación y Detalles en Rack</th>
+                                <th>Personal</th>
+                                <th>Fechas (Movimiento / Proceso)</th>
                             </tr>
                         </thead>
                         <tbody id="tablaUbicacionBody">
@@ -644,10 +642,9 @@
             const tbody = document.getElementById('tablaUbicacionBody');
             if (!tbody) return;
             
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Cargando inventario WIP...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Cargando inventario WIP...</td></tr>`;
             
             try {
-                // Aquí estaba el fallo: ahora apunta a la URL correcta siempre
                 const res = await fetch(`${API_URL}/api/materiales`);
                 
                 if (res.ok) {
@@ -655,40 +652,46 @@
                     tbody.innerHTML = '';
                     
                     if (!data || data.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No hay materiales registrados en inventario WIP.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No hay materiales en inventario WIP.</td></tr>`;
                         return;
                     }
                     
                     data.forEach(item => {
-                        let fProceso = 'N/A';
-                        if (item.fecha_proceso) {
-                            fProceso = String(item.fecha_proceso).split('T')[0];
-                        }
+                        // 1. Limpieza de texto para evitar "RACK R1" o "Nivel: N4"
+                        let ubicacionLimpia = (item.ubicacion_destino || 'N/A')
+                            .replace(/RACK\s+R/gi, 'RACK ')
+                            .replace(/Nivel:\s*N/gi, 'Nivel ')
+                            .replace(/Pos:\s*/gi, 'Posición ');
 
+                        // 2. Formato limpio de fechas
+                        let fProceso = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'No asignada';
                         let fRegistro = 'Reciente';
                         if (item.fecha_hora && item.fecha_hora !== 'Reciente') {
                             const d = new Date(item.fecha_hora);
-                            fRegistro = !isNaN(d.getTime()) ? d.toLocaleDateString('es-MX') : item.fecha_hora;
+                            fRegistro = !isNaN(d.getTime()) ? d.toLocaleDateString('es-MX') : String(item.fecha_hora).split('T')[0];
                         }
 
                         tbody.innerHTML += `
                             <tr>
-                                <td><strong>${item.proyecto || ''}</strong></td>
-                                <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento || ''}</span></td>
-                                <td><strong style="color:var(--warning);">${item.piezas || 0} pzas</strong></td>
-                                <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A')}</td>
-                                <td>${item.ubicacion_destino || 'N/A'}<br><small style="color: var(--kpa-blue);">F. Proceso: ${fProceso}</small></td>
+                                <td><strong style="font-size: 14px; letter-spacing: 0.5px;">${(item.proyecto || 'GENERAL').toUpperCase()}</strong></td>
+                                <td><strong style="color:var(--warning); font-size: 15px;">${item.piezas || 0} pzas</strong></td>
+                                <td>
+                                    <span style="color: #60a5fa; font-weight: bold;">${ubicacionLimpia}</span>
+                                </td>
                                 <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
-                                <td>${fRegistro}</td>
+                                <td>
+                                    <div><strong>Reg:</strong> ${fRegistro}</div>
+                                    <small style="color: var(--kpa-green); font-weight: bold;">Proc: ${fProceso}</small>
+                                </td>
                             </tr>
                         `;
                     });
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error al consultar el servidor (Status: ${res.status}).</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error al consultar el servidor.</td></tr>`;
                 }
             } catch (e) {
                 console.error("EXCEPCIÓN en cargarInventarioCompleto:", e);
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error de conexión con la base de datos.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error de conexión con la base de datos.</td></tr>`;
             }
         }
 
@@ -933,33 +936,47 @@ document.addEventListener("DOMContentLoaded", () => {
                 cargarInventarioCompleto();
                 return;
             }
-            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Buscando material...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">Buscando material...</td></tr>';
             try {
                 const res = await fetch(`${API_URL}/api/materiales?proyecto=${encodeURIComponent(query)}`);
                 if (res.ok) {
                     const data = await res.json();
                     tbody.innerHTML = '';
                     if (!data || data.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No se encontraron registros.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No se encontraron registros coincidentes.</td></tr>';
                         return;
                     }
                     data.forEach(item => {
-                        let fProceso = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'N/A';
+                        let ubicacionLimpia = (item.ubicacion_destino || 'N/A')
+                            .replace(/RACK\s+R/gi, 'RACK ')
+                            .replace(/Nivel:\s*N/gi, 'Nivel ')
+                            .replace(/Pos:\s*/gi, 'Posición ');
+
+                        let fProceso = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'No asignada';
+                        let fRegistro = 'Reciente';
+                        if (item.fecha_hora && item.fecha_hora !== 'Reciente') {
+                            const d = new Date(item.fecha_hora);
+                            fRegistro = !isNaN(d.getTime()) ? d.toLocaleDateString('es-MX') : String(item.fecha_hora).split('T')[0];
+                        }
+
                         tbody.innerHTML += `
                             <tr>
-                                <td><strong>${item.proyecto}</strong></td>
-                                <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento}</span></td>
-                                <td><strong style="color:var(--warning);">${item.piezas || '0'} pzas</strong></td>
-                                <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A')}</td>
-                                <td>${item.ubicacion_destino || 'N/A'} <br><small style="color: var(--kpa-blue);">F. Proceso: ${fProceso}</small></td>
+                                <td><strong style="font-size: 14px; letter-spacing: 0.5px;">${(item.proyecto || 'GENERAL').toUpperCase()}</strong></td>
+                                <td><strong style="color:var(--warning); font-size: 15px;">${item.piezas || 0} pzas</strong></td>
+                                <td>
+                                    <span style="color: #60a5fa; font-weight: bold;">${ubicacionLimpia}</span>
+                                </td>
                                 <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
-                                <td>${item.fecha_hora ? item.fecha_hora.split('T')[0] : 'Reciente'}</td>
+                                <td>
+                                    <div><strong>Reg:</strong> ${fRegistro}</div>
+                                    <small style="color: var(--kpa-green); font-weight: bold;">Proc: ${fProceso}</small>
+                                </td>
                             </tr>
                         `;
                     });
                 }
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Error al buscar registros.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error al buscar registros.</td></tr>';
             }
         }
         async function cargarHistorial() {
