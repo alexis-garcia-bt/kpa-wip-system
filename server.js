@@ -75,14 +75,24 @@ app.get('/api/materiales', (req, res) => {
             return res.json([]);
         }
 
-        // Consultamos primero la tabla 'movimientos' ordenada por ID descendente
-        const sql = `SELECT * FROM movimientos ORDER BY id DESC`;
-        
-        db.query(sql, (err, filas) => {
+        const proyectoFiltro = req.query.proyecto ? req.query.proyecto.trim().toUpperCase() : null;
+
+        // Usamos fecha_hora DESC o 1 DESC (primera columna primaria) para evitar error si no existe 'id'
+        let sql = `SELECT * FROM movimientos`;
+        let params = [];
+
+        if (proyectoFiltro) {
+            sql += ` WHERE UPPER(proyecto) LIKE ? ORDER BY fecha_hora DESC LIMIT 50`;
+            params.push(`%${proyectoFiltro}%`);
+        } else {
+            sql += ` ORDER BY fecha_hora DESC LIMIT 100`;
+        }
+
+        db.query(sql, params, (err, filas) => {
             if (err) {
                 console.error("Error al consultar movimientos:", err.message);
-                // Respaldo automático con la tabla 'materiales' si llega a fallar
-                db.query(`SELECT * FROM materiales ORDER BY id DESC`, (err2, filas2) => {
+                // Respaldo con la tabla materiales si existiera
+                db.query(`SELECT * FROM materiales LIMIT 100`, (err2, filas2) => {
                     if (err2 || !filas2 || !Array.isArray(filas2)) {
                         return res.json([]);
                     }
@@ -92,14 +102,7 @@ app.get('/api/materiales', (req, res) => {
             }
 
             if (!filas || filas.length === 0) {
-                // Si movimientos está vacío, intentamos con la tabla materiales
-                db.query(`SELECT * FROM materiales ORDER BY id DESC`, (err2, filas2) => {
-                    if (err2 || !filas2 || !Array.isArray(filas2)) {
-                        return res.json([]);
-                    }
-                    return enviarRespuestaSegura(filas2, res);
-                });
-                return;
+                return res.json([]);
             }
 
             return enviarRespuestaSegura(filas, res);
@@ -119,11 +122,13 @@ function enviarRespuestaSegura(filas, res) {
                 proyecto: item.proyecto || item.codigo_material || item.material || 'GENERAL',
                 tipo_movimiento: item.tipo_movimiento || item.tipo || 'ENTRADA',
                 piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
-                rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
+                rack: (item.rack && item.rack !== 'N/A') ? item.rack : (item.rack_destino || 'N/A'),
+                rack_destino: item.rack_destino || item.rack || 'N/A',
                 ubicacion_destino: item.ubicacion_destino || item.ubicacion || 'N/A',
-                personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR',
+                personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR KPA',
+                nombre_operador: item.nombre_operador || item.personal || item.operador || 'OPERADOR KPA',
                 fecha_hora: item.fecha_hora || item.fecha_proceso || 'Reciente',
-                fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
+                fecha_proceso: item.fecha_proceso || ''
             };
         }).filter(Boolean);
 

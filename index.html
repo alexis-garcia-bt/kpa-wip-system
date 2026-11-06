@@ -588,6 +588,10 @@
         </footer>
 
     <script>
+         const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'https://kpa-wip-system.onrender.com' // Si abres con Live Server apunta a Render
+            : ''; // Si se sirve desde el mismo Express, usa rutas relativas limpias
+
         setInterval(() => {
             document.getElementById('relojTiempoReal').textContent = new Date().toLocaleTimeString();
         }, 1000);
@@ -596,20 +600,23 @@
         let usuarioActual = { rol: '', nombre: '', turno: '' };
         let tipoMovimientoSeleccionado = '';
 
-        window.onload = async () => { await cargarPersonalBD(); };
+        window.onload = async () => { 
+            await cargarPersonalBD(); 
+            await cargarInventarioCompleto();
+        };
 
         async function cargarPersonalBD() {
-    try {
-        const res = await fetch('https://kpa-wip-system.onrender.com/api/personal');
-        if (res.ok) {
-            listaPersonalGlobal = await res.json();
-            renderizarTablaPersonal();
-            filtrarPersonalPorRol(); // <-- Esta línea es clave para refrescar el selector
+            try {
+                const res = await fetch(`${API_URL}/api/personal`);
+                if (res.ok) {
+                    listaPersonalGlobal = await res.json();
+                    renderizarTablaPersonal();
+                    filtrarPersonalPorRol();
+                }
+            } catch (e) {
+                console.error("Error cargando personal:", e);
+            }
         }
-    } catch (e) {
-        console.error("Error cargando personal:", e);
-    }
-}
             function verificarProcedenciaOrigen() {
             const procedencia = document.getElementById('origenProcedencia').value;
             const detallesRack = document.getElementById('detallesRackOrigen');
@@ -634,56 +641,56 @@
     cargarInventarioCompleto();
 }
        async function cargarInventarioCompleto() {
-    console.log("-> 1. Entró a la función cargarInventarioCompleto()");
-    
-    const tbody = document.getElementById('tablaUbicacionBody');
-    if (!tbody) {
-        console.error("-> ERROR CRÍTICO: No se encontró ningun elemento con ID 'tablaUbicacionBody' en el HTML.");
-        return;
-    }
-    console.log("-> 2. Tbody encontrado exitosamente:", tbody);
-    
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Cargando inventario WIP...</td></tr>`;
-    
-    try {
-        console.log("-> 3. Intentando hacer fetch a /api/materiales...");
-        const res = await fetch('/api/materiales');
-        console.log("-> 4. Respuesta del servidor recibida, status:", res.status);
-        
-        if (res.ok) {
-            const data = await res.json();
-            console.log("-> 5. Datos obtenidos de la base de datos:", data);
+            const tbody = document.getElementById('tablaUbicacionBody');
+            if (!tbody) return;
             
-            tbody.innerHTML = '';
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">Cargando inventario WIP...</td></tr>`;
             
-            if (!data || data.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No hay materiales activos en inventario WIP.</td></tr>`;
-                return;
+            try {
+                // Aquí estaba el fallo: ahora apunta a la URL correcta siempre
+                const res = await fetch(`${API_URL}/api/materiales`);
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    tbody.innerHTML = '';
+                    
+                    if (!data || data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No hay materiales registrados en inventario WIP.</td></tr>`;
+                        return;
+                    }
+                    
+                    data.forEach(item => {
+                        let fProceso = 'N/A';
+                        if (item.fecha_proceso) {
+                            fProceso = String(item.fecha_proceso).split('T')[0];
+                        }
+
+                        let fRegistro = 'Reciente';
+                        if (item.fecha_hora && item.fecha_hora !== 'Reciente') {
+                            const d = new Date(item.fecha_hora);
+                            fRegistro = !isNaN(d.getTime()) ? d.toLocaleDateString('es-MX') : item.fecha_hora;
+                        }
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><strong>${item.proyecto || ''}</strong></td>
+                                <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento || ''}</span></td>
+                                <td><strong style="color:var(--warning);">${item.piezas || 0} pzas</strong></td>
+                                <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A')}</td>
+                                <td>${item.ubicacion_destino || 'N/A'}<br><small style="color: var(--kpa-blue);">F. Proceso: ${fProceso}</small></td>
+                                <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
+                                <td>${fRegistro}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error al consultar el servidor (Status: ${res.status}).</td></tr>`;
+                }
+            } catch (e) {
+                console.error("EXCEPCIÓN en cargarInventarioCompleto:", e);
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error de conexión con la base de datos.</td></tr>`;
             }
-            
-            data.forEach(item => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td><strong>${item.proyecto || ''}</strong></td>
-                        <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento || ''}</span></td>
-                        <td><strong style="color:var(--warning);">${item.piezas || 0} pzas</strong></td>
-                        <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A')}</td>
-                        <td>${item.ubicacion_destino || 'N/A'}<br><small style="color: var(--kpa-blue);">F. Proceso: ${item.fecha_proceso || item.fecha_hora || 'Reciente'}</small></td>
-                        <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
-                        <td>${item.fecha_hora || 'Reciente'}</td>
-                    </tr>
-                `;
-            });
-            console.log("-> 6. ¡Tabla pintada con éxito!");
-        } else {
-            console.error("-> Error: El servidor respondió con un status inválido:", res.status);
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error al consultar el servidor.</td></tr>`;
         }
-    } catch (e) {
-        console.error("-> EXCEPCIÓN en el fetch:", e);
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error al consultar inventario.</td></tr>`;
-    }
-}
 
 // Disparador universal: Carga al abrir la página y al cambiar de pestaña
 document.addEventListener("DOMContentLoaded", () => {
@@ -928,7 +935,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Buscando material...</td></tr>';
             try {
-                const res = await fetch(`https://kpa-wip-system.onrender.com/api/materiales?proyecto=${encodeURIComponent(query)}`);
+                const res = await fetch(`${API_URL}/api/materiales?proyecto=${encodeURIComponent(query)}`);
                 if (res.ok) {
                     const data = await res.json();
                     tbody.innerHTML = '';
@@ -937,21 +944,22 @@ document.addEventListener("DOMContentLoaded", () => {
                         return;
                     }
                     data.forEach(item => {
+                        let fProceso = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'N/A';
                         tbody.innerHTML += `
                             <tr>
                                 <td><strong>${item.proyecto}</strong></td>
                                 <td><span style="color:var(--kpa-green); font-weight:bold;">${item.tipo_movimiento}</span></td>
-                                <td><strong style="color:var(--warning);">${item.piezas || 'N/A'} pzas</strong></td>
-                                <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino && item.rack_destino !== 'N/A' ? item.rack_destino : 'N/A')}</td>
-                                <td>${item.ubicacion_destino || 'N/A'} <br><small style="color: var(--kpa-blue);">F. Proceso: ${item.fecha_proceso ? item.fecha_proceso.split('T')[0] : 'N/A'}</small></td>
+                                <td><strong style="color:var(--warning);">${item.piezas || '0'} pzas</strong></td>
+                                <td>${item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A')}</td>
+                                <td>${item.ubicacion_destino || 'N/A'} <br><small style="color: var(--kpa-blue);">F. Proceso: ${fProceso}</small></td>
                                 <td>${item.personal || item.nombre_operador || 'Operador KPA'}</td>
-                                <td>${item.fecha_hora ? item.fecha_hora : 'Reciente'}</td>
+                                <td>${item.fecha_hora ? item.fecha_hora.split('T')[0] : 'Reciente'}</td>
                             </tr>
                         `;
                     });
                 }
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No se encontraron registros.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Error al buscar registros.</td></tr>';
             }
         }
         async function cargarHistorial() {
