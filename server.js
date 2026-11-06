@@ -67,49 +67,54 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 
 
-// RUTA COMPLETA Y ROBUSTA: /api/materiales
-// ==========================================
-// RUTA BLINDADA CONTRA ERRORES 500: /api/materiales
-// ==========================================
+
+// RUTA COMPLETA, ROBUSTA Y SIN RECORTES: /api/materiales
+
 app.get('/api/materiales', (req, res) => {
     try {
         const q = String(req.query.p || req.query.q || '').toUpperCase().trim();
         const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
         
         if (!estaConectado || !db) {
+            console.warn("⚠️ Base de datos no conectada en /api/materiales");
             return res.json([]);
         }
         
         db.query(sql, (err, filas) => {
             if (err) {
-                console.error("❌ Error en SQL /api/materiales:", err);
+                console.error("❌ Error en consulta SQL de materiales:", err);
                 return res.json([]);
             }
             
             if (!filas || !Array.isArray(filas) || filas.length === 0) {
+                console.log("ℹ️ La tabla movimientos está vacía actualmente.");
                 return res.json([]);
             }
+
+            console.log(`🔍 Total de movimientos leídos de la BD: ${filas.length}`);
 
             const inventarioMap = new Map();
 
             filas.forEach(item => {
                 if (!item) return;
                 
-                // Mapeamos de forma segura las variantes de columnas
-                const rawProyecto = item.proyecto || item.codigo_material || 'GENERAL';
+                // Detectamos el nombre del proyecto o material con cualquier posible nombre de columna
+                const rawProyecto = item.proyecto || item.codigo_material || item.material || item.nombre_proyecto || 'GENERAL';
                 const proj = String(rawProyecto).toUpperCase().trim();
                 if (!proj) return;
                 
-                const rawTipo = item.tipo_movimiento || item.movimiento || 'ENTRADA';
+                // Detectamos el tipo de movimiento con flexibilidad total
+                const rawTipo = item.tipo_movimiento || item.tipo || item.movimiento || 'ENTRADA';
                 const tipo = String(rawTipo).toUpperCase();
 
-                if (tipo.includes('ENTRADA') || tipo.includes('REGISTRO')) {
+                // Si es Entrada o Registro, se agrega/actualiza en el inventario activo
+                if (tipo.includes('ENTRADA') || tipo.includes('REGISTRO') || tipo.includes('INSERCION')) {
                     let rackVal = item.rack && String(item.rack) !== 'N/A' ? String(item.rack) : 'N/A';
                     let nivelVal = item.nivel && String(item.nivel) !== 'N/A' ? String(item.nivel) : 'N1';
                     let ladoVal = item.lado && String(item.lado) !== 'N/A' ? String(item.lado) : 'IZQUIERDO';
-                    let apiladoVal = item.apilado && String(item.apilado) !== 'N/A' ? String(item.apilado) : String(item.posicion || '1');
+                    let apiladoVal = item.apilado && String(item.apilado) !== 'N/A' ? String(item.apilado) : String(item.posicion || item.tarima_apilada || '1');
 
-                    // Respaldo por si la ubicación viene integrada en texto largo
+                    // Respaldo por si la ubicación viene integrada en formato de texto largo en destino
                     if (rackVal === 'N/A' && item.ubicacion_destino && String(item.ubicacion_destino).includes('RACK')) {
                         let partes = String(item.ubicacion_destino).split(',');
                         partes.forEach(part => {
@@ -121,10 +126,7 @@ app.get('/api/materiales', (req, res) => {
                         });
                     }
 
-                    const operadorDinamico = item.nombre_operador && String(item.nombre_operador).trim() !== '' 
-                        ? String(item.nombre_operador) 
-                        : 'OPERADOR GENERAL';
-
+                    const operadorDinamico = item.nombre_operador || item.operador || item.personal || 'OPERADOR GENERAL';
                     const cantPiezas = item.piezas !== undefined ? item.piezas : (item.cantidad !== undefined ? item.cantidad : 0);
 
                     inventarioMap.set(proj, {
@@ -135,18 +137,19 @@ app.get('/api/materiales', (req, res) => {
                         movimiento: rawTipo,
                         piezas: cantPiezas,
                         cantidad: cantPiezas,
-                        operador: operadorDinamico,
-                        personal: operadorDinamico,
-                        nombre_operador: operadorDinamico,
+                        operador: String(operadorDinamico),
+                        personal: String(operadorDinamico),
+                        nombre_operador: String(operadorDinamico),
                         rack: rackVal,
                         nivel: nivelVal,
                         lado: ladoVal,
                         apilado: apiladoVal,
                         posicion: apiladoVal,
                         ubicacion_destino: item.ubicacion_destino || 'N/A',
-                        fecha_proceso: item.fecha_proceso || item.fecha_hora
+                        fecha_proceso: item.fecha_proceso || item.fecha_hora || item.fecha_ingreso
                     });
                 } 
+                // Si es Salida, retiramos el proyecto del inventario activo
                 else if (tipo.includes('SALIDA')) {
                     inventarioMap.delete(proj);
                 }
@@ -154,7 +157,7 @@ app.get('/api/materiales', (req, res) => {
 
             let activos = Array.from(inventarioMap.values());
 
-            // Filtro de búsqueda seguro
+            // Filtro de búsqueda flexible por texto ingresado en la interfaz
             if (q !== '') {
                 activos = activos.filter(mat => {
                     const pStr = String(mat.proyecto || '').toUpperCase();
@@ -164,6 +167,7 @@ app.get('/api/materiales', (req, res) => {
                 });
             }
 
+            console.log(`📦 Materiales activos calculados para la vista WIP: ${activos.length}`);
             res.json(activos);
         });
     } catch (error) {
