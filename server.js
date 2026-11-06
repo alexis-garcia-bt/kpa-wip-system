@@ -70,8 +70,7 @@ app.get('/api/proyecto/:query', (req, res) => {
 
 app.get('/api/materiales', (req, res) => {
     try {
-        const q = String(req.query.proyecto || req.query.p || req.query.q || '').toUpperCase().trim();
-        const sql = `SELECT * FROM movimientos ORDER BY id ASC`;
+        const sql = `SELECT * FROM movimientos ORDER BY id DESC`;
         
         if (!estaConectado || !db) {
             return res.json([]);
@@ -82,53 +81,23 @@ app.get('/api/materiales', (req, res) => {
                 return res.json([]);
             }
 
-            const inventarioMap = new Map();
+            // Mapeamos todos los registros para asegurar que la tabla del inventario WIP pinte la información al instante
+            const listaActiva = filas.map(item => {
+                if (!item) return null;
+                return {
+                    id: item.id,
+                    proyecto: item.proyecto || item.codigo_material || item.material || 'GENERAL',
+                    tipo_movimiento: item.tipo_movimiento || item.tipo || 'ENTRADA',
+                    piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
+                    rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
+                    ubicacion_destino: item.ubicacion_destino || item.ubicacion || 'N/A',
+                    personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR',
+                    fecha_hora: item.fecha_hora || item.fecha_proceso || 'Reciente',
+                    fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
+                };
+            }).filter(Boolean);
 
-            filas.forEach(item => {
-                if (!item) return;
-                
-                // Normalizamos el nombre del proyecto a mayúsculas para unificar el mapa
-                const rawProj = item.proyecto || item.codigo_material || item.material || item.nombre_proyecto || 'GENERAL';
-                const projKey = String(rawProj).toUpperCase().trim();
-                if (!projKey) return;
-                
-                const rawTipo = item.tipo_movimiento || item.tipo || item.movimiento || 'ENTRADA';
-                const tipo = String(rawTipo).toUpperCase();
-
-                // Lógica FIFO: Si es salida o retiro, se elimina del inventario activo
-                if (tipo.includes('SALIDA') || tipo.includes('RETIRO')) {
-                    inventarioMap.delete(projKey);
-                } else {
-                    // Si es entrada, se queda registrado en el mapa con sus alias listos
-                    inventarioMap.set(projKey, {
-                        id: item.id,
-                        proyecto: rawProj,
-                        tipo_movimiento: rawTipo,
-                        movimiento: rawTipo,
-                        piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
-                        cantidad: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
-                        rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
-                        ubicacion_destino: item.ubicacion_destino || 'N/A',
-                        personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR GENERAL',
-                        nombre_operador: item.nombre_operador || item.personal || item.operador || 'OPERADOR GENERAL',
-                        fecha_hora: item.fecha_hora || item.fecha_proceso || 'Reciente',
-                        fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
-                    });
-                }
-            });
-
-            let activos = Array.from(inventarioMap.values());
-
-            // Filtro por si se manda parámetro de búsqueda
-            if (q !== '') {
-                activos = activos.filter(mat => {
-                    const pStr = String(mat.proyecto || '').toUpperCase();
-                    const rStr = String(mat.rack || '').toUpperCase();
-                    return pStr.includes(q) || rStr.includes(q);
-                });
-            }
-
-            res.json(activos);
+            res.json(listaActiva);
         });
     } catch (error) {
         res.json([]);
