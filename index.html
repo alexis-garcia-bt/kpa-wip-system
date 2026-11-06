@@ -621,17 +621,19 @@
             }
         }
                function cambiarPestana(pestana, elemento) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById(`tab-${pestana}`).classList.add('active');
-            elemento.classList.add('active');
-            
-            if (pestana === 'historial') cargarHistorial();
-            if (pestana === 'personal') cargarPersonalBD();
-            
-            // ¡ESTA LÍNEA DEBE CARGAR SIEMPRE QUE SEA LA DE INVENTARIO/UBICAR!
-            cargarInventarioCompleto(); 
-            }
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    
+    const tabTarget = document.getElementById(`tab-${pestana}`);
+    if (tabTarget) tabTarget.classList.add('active');
+    if (elemento) elemento.classList.add('active');
+    
+    if (pestana === 'historial') cargarHistorial();
+    if (pestana === 'personal') cargarPersonalBD();
+    
+    // Lo disparamos directamente para que cargue los materiales al cambiar de pestaña
+    cargarInventarioCompleto();
+}
 
        async function cargarInventarioCompleto() {
     const tbody = document.getElementById('tablaUbicacionBody');
