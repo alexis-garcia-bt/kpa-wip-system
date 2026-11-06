@@ -620,15 +620,18 @@
                 detallesRack.style.display = 'none';
             }
         }
-                function cambiarPestana(pestana, elemento) {
+               function cambiarPestana(pestana, elemento) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(`tab-${pestana}`).classList.add('active');
             elemento.classList.add('active');
+            
             if (pestana === 'historial') cargarHistorial();
             if (pestana === 'personal') cargarPersonalBD();
-            if (pestana === 'ubicar') cargarInventarioCompleto(); // <-- Carga automática al entrar a Inventario WIP
-        }
+            
+            // ¡ESTA LÍNEA DEBE CARGAR SIEMPRE QUE SEA LA DE INVENTARIO/UBICAR!
+            cargarInventarioCompleto(); 
+            }
 
        async function cargarInventarioCompleto() {
     const tbody = document.getElementById('tablaUbicacionBody');
