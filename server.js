@@ -71,47 +71,45 @@ app.get('/api/proyecto/:query', (req, res) => {
 app.get('/api/materiales', (req, res) => {
     try {
         if (!estaConectado || !db) {
-            console.error("❌ ERROR: La base de datos no está conectada en /api/materiales");
+            console.error("Base de datos no conectada en /api/materiales");
             return res.json([]);
         }
 
+        // Consultamos primero la tabla 'movimientos' ordenada por ID descendente
         const sql = `SELECT * FROM movimientos ORDER BY id DESC`;
         
         db.query(sql, (err, filas) => {
             if (err) {
-                console.error("❌ ERROR DE MYSQL EN MOVIMIENTOS:", err.sqlMessage || err);
-                return res.json([]);
+                console.error("Error al consultar movimientos:", err.message);
+                // Respaldo automático con la tabla 'materiales' si llega a fallar
+                db.query(`SELECT * FROM materiales ORDER BY id DESC`, (err2, filas2) => {
+                    if (err2 || !filas2 || !Array.isArray(filas2)) {
+                        return res.json([]);
+                    }
+                    return enviarRespuestaSegura(filas2, res);
+                });
+                return;
             }
-
-            console.log("🔍 Filas crudas encontradas en MySQL:", filas ? filas.length : 0);
 
             if (!filas || filas.length === 0) {
-                console.warn("⚠️ La tabla movimientos está vacía para esta conexión.");
-                return res.json([]);
+                // Si movimientos está vacío, intentamos con la tabla materiales
+                db.query(`SELECT * FROM materiales ORDER BY id DESC`, (err2, filas2) => {
+                    if (err2 || !filas2 || !Array.isArray(filas2)) {
+                        return res.json([]);
+                    }
+                    return enviarRespuestaSegura(filas2, res);
+                });
+                return;
             }
 
-            const listaActiva = filas.map(item => {
-                if (!item) return null;
-                return {
-                    id: item.id || item.id_movimiento || 0,
-                    proyecto: item.proyecto || item.codigo_material || item.material || 'GENERAL',
-                    tipo_movimiento: item.tipo_movimiento || item.tipo || 'ENTRADA',
-                    piezas: item.piezas !== undefined ? item.piezas : (item.cantidad || 0),
-                    rack: item.rack && item.rack !== 'N/A' ? item.rack : (item.rack_destino || 'N/A'),
-                    ubicacion_destino: item.ubicacion_destino || item.ubicacion || 'N/A',
-                    personal: item.nombre_operador || item.personal || item.operador || 'OPERADOR',
-                    fecha_hora: item.fecha_hora || item.fecha_proceso || 'Reciente',
-                    fecha_proceso: item.fecha_proceso || item.fecha_hora || ''
-                };
-            }).filter(Boolean);
-
-            res.json(listaActiva);
+            return enviarRespuestaSegura(filas, res);
         });
     } catch (error) {
-        console.error("❌ EXCEPCIÓN CRÍTICA:", error);
+        console.error("Excepción crítica en /api/materiales:", error);
         res.json([]);
     }
 });
+
 function enviarRespuestaSegura(filas, res) {
     try {
         const listaActiva = filas.map(item => {
