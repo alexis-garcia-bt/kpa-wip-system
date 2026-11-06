@@ -454,10 +454,51 @@
         </div>
 
         <!-- PESTAÑA 2: UBICAR MATERIAL -->
-        <div id="tab-ubicar" class="tab-content">
-            <div class="card">
-                <h2>Buscador de Inventario y Ubicación de Material</h2>
+       <h2>Buscador de Inventario y Ubicación de Material</h2>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Consulta el inventario actual, piezas, fecha de proceso y ubicación exacta en racks.</p>
+
+                <!-- TARJETAS DE MÉTRICAS (KPIs) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 32px;">📦</div>
+                        <div>
+                            <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">TOTAL PIEZAS EN WIP</div>
+                            <div id="kpiTotalPiezas" style="font-size: 22px; font-weight: 900; color: var(--warning);">0 pzas</div>
+                        </div>
+                    </div>
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 32px;">🏷️</div>
+                        <div>
+                            <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">TARIMAS / LOTES</div>
+                            <div id="kpiTotalTarimas" style="font-size: 22px; font-weight: 900; color: var(--kpa-green);">0</div>
+                        </div>
+                    </div>
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 15px;">
+                        <div style="font-size: 32px;">📍</div>
+                        <div>
+                            <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">RACKS OCUPADOS</div>
+                            <div id="kpiRacksOcupados" style="font-size: 22px; font-weight: 900; color: #60a5fa;">0 / 19</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BUSCADOR, FILTRO Y BOTÓN EXCEL -->
+                <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
+                    <input type="text" id="inputBuscarMaterial" placeholder="BUSCAR PROYECTO O MATERIAL..." oninput="aplicarFiltrosInventario()" style="flex: 2; min-width: 220px;">
+                    <select id="filtroRackInventario" onchange="aplicarFiltrosInventario()" style="flex: 1; min-width: 180px;">
+                        <option value="">TODOS LOS RACKS (1-19)</option>
+                        <script>
+                            for(let i=1; i<=19; i++) {
+                                document.write(`<option value="RACK ${i}">RACK ${i}</option>`);
+                            }
+                        </script>
+                    </select>
+                    <button type="button" onclick="cargarInventarioCompleto()" class="btn-primary" style="flex: 0 0 120px; padding: 12px;">Actualizar</button>
+                    <button type="button" onclick="exportarInventarioExcel()" style="background: #059669; color: #fff; border: none; padding: 12px 18px; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        📥 Excel
+                    </button>
+                </div>
+
                 <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
                     <input type="text" id="inputBuscarMaterial" placeholder="BUSCAR PROYECTO O MATERIAL..." oninput="aplicarFiltrosInventario()" style="flex: 2; min-width: 220px;">
                     <select id="filtroRackInventario" onchange="aplicarFiltrosInventario()" style="flex: 1; min-width: 180px;">
@@ -635,7 +676,7 @@
             }
         }
 
-        async function cargarInventarioCompleto() {
+       async function cargarInventarioCompleto() {
             const tbody = document.getElementById('tablaUbicacionBody');
             if (!tbody) return;
             
@@ -645,6 +686,7 @@
                 const res = await fetch(`${API_URL}/api/materiales`);
                 if (res.ok) {
                     listaInventarioGlobal = await res.json();
+                    actualizarKPIs(listaInventarioGlobal); // <-- Actualiza las 3 tarjetas
                     aplicarFiltrosInventario();
                 } else {
                     tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger);">Error al consultar el servidor.</td></tr>`;
@@ -655,6 +697,30 @@
             }
         }
 
+        // Calcula las 3 métricas en tiempo real
+        function actualizarKPIs(lista) {
+            if (!lista) return;
+            const totalPiezas = lista.reduce((acc, item) => acc + (parseInt(item.piezas, 10) || 0), 0);
+            const totalTarimas = lista.length;
+            const racksUnicos = new Set();
+            
+            lista.forEach(item => {
+                let r = (item.rack && item.rack !== 'N/A') ? item.rack : '';
+                if (!r && item.ubicacion_destino) {
+                    const m = item.ubicacion_destino.match(/RACK\s*([0-9A-Z]+)/i);
+                    if (m) r = `RACK ${m[1]}`;
+                }
+                if (r && !r.includes('SIN')) racksUnicos.add(r.toUpperCase().trim());
+            });
+
+            const elPiezas = document.getElementById('kpiTotalPiezas');
+            const elTarimas = document.getElementById('kpiTotalTarimas');
+            const elRacks = document.getElementById('kpiRacksOcupados');
+
+            if (elPiezas) elPiezas.textContent = `${totalPiezas.toLocaleString('es-MX')} pzas`;
+            if (elTarimas) elTarimas.textContent = totalTarimas;
+            if (elRacks) elRacks.textContent = `${racksUnicos.size} / 19`;
+        }
         function aplicarFiltrosInventario() {
             const tbody = document.getElementById('tablaUbicacionBody');
             if (!tbody) return;
@@ -718,6 +784,38 @@
                     </tr>
                 `;
             });
+        }
+
+        function exportarInventarioExcel() {
+            if (!listaInventarioGlobal || listaInventarioGlobal.length === 0) {
+                alert("No hay materiales en el inventario para exportar.");
+                return;
+            }
+
+            // \uFEFF asegura que Excel reconozca los acentos en español
+            let csv = "\uFEFF";
+            csv += "Proyecto/Material,Piezas,Ubicación en Rack,Operador,Fecha Registro,Fecha Proceso\n";
+
+            listaInventarioGlobal.forEach(item => {
+                let proy = (item.proyecto || 'GENERAL').replace(/,/g, '');
+                let piezas = item.piezas || 0;
+                let ubi = (item.ubicacion_destino || 'N/A').replace(/,/g, ' - ');
+                let op = (item.personal || item.nombre_operador || 'Operador KPA').replace(/,/g, '');
+                let fReg = item.fecha_hora ? String(item.fecha_hora).split('T')[0] : 'Reciente';
+                let fProc = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'N/A';
+
+                csv += `"${proy}",${piezas},"${ubi}","${op}","${fReg}","${fProc}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            const hoy = new Date().toISOString().split('T')[0];
+            a.download = `Inventario_WIP_KPA_${hoy}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
         
         
@@ -908,13 +1006,40 @@
             contenedor.style.display = 'block';
         }
 
-        async function registrarMovimiento(e) {
+       
+    async function registrarMovimiento(e) {
             e.preventDefault();
             const proyecto = document.getElementById('proyectoInput').value;
             const piezas = document.getElementById('inputPiezas').value;
             const fechaProceso = document.getElementById('inputFechaProceso').value;
             const ambosLados = document.getElementById('ambosLadosCheck').checked;
             const ladoFinal = ambosLados ? 'AMBOS (IZQ Y DER - MANGA LARGA)' : (document.getElementById('ladoDestino').value || 'N/A');
+
+            // --- CANDADO DE SEGURIDAD EN SALIDAS ---
+            if (tipoMovimientoSeleccionado === 'SALIDA') {
+                const cantSalida = parseInt(piezas, 10);
+                const proyBuscado = proyecto.trim().toUpperCase();
+                const rackOrigenSel = (document.getElementById('rackOrigen').value || '').toUpperCase().replace('R', '').trim();
+
+                // Buscamos si existe stock activo en ese rack
+                const loteEncontrado = listaInventarioGlobal.find(item => {
+                    const coincideProy = (item.proyecto || '').toUpperCase().trim() === proyBuscado;
+                    const rackItem = (item.rack || '').toUpperCase().replace('RACK', '').replace('R', '').trim();
+                    return coincideProy && (!rackOrigenSel || rackItem === rackOrigenSel);
+                });
+
+                if (!loteEncontrado) {
+                    alert(`⚠️ STOCK NO ENCONTRADO:\n\nNo hay registro de inventario activo para el proyecto "${proyBuscado}" en el Rack seleccionado.`);
+                    return;
+                }
+
+                if (cantSalida > loteEncontrado.piezas) {
+                    alert(`⚠️ STOCK INSUFICIENTE:\n\nSolo hay ${loteEncontrado.piezas} piezas disponibles en ese Rack.\nNo es posible retirar ${cantSalida} piezas.`);
+                    return;
+                }
+            }
+            // --- FIN DEL CANDADO ---
+
 
             // Aseguramos que viajen explícitamente el nombre del operador activo y el rack destino
             const payload = {
