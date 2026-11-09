@@ -1792,54 +1792,6 @@
             }
         }
 
-        function renderizarMapaRacks() {
-            const grid = document.getElementById('gridRacksContainer');
-            if (!grid) return;
-            grid.innerHTML = '';
-
-            for (let i = 1; i <= 19; i++) {
-                // Buscamos materiales en este rack específico
-                const materialesEnRack = listaInventarioGlobal.filter(item => {
-                    let r = (item.rack && item.rack !== 'N/A') ? item.rack : '';
-                    if (!r && item.ubicacion_destino) {
-                        const m = item.ubicacion_destino.match(/RACK\s*([0-9A-Z]+)/i);
-                        if (m) r = m[1];
-                    }
-                    r = String(r).toUpperCase().replace('RACK', '').replace('R', '').trim();
-                    return r === String(i);
-                });
-
-                const totalTarimas = materialesEnRack.length;
-                const totalPiezas = materialesEnRack.reduce((acc, it) => acc + (parseInt(it.piezas, 10) || 0), 0);
-                const estaOcupado = totalTarimas > 0;
-
-                // Extraer lista de proyectos únicos en el rack
-                const proyectosUnicos = [...new Set(materialesEnRack.map(m => (m.proyecto || 'EXP').toUpperCase()))].slice(0, 2);
-                const textoProyectos = proyectosUnicos.length > 0 ? proyectosUnicos.join(', ') : 'Sin carga';
-
-                grid.innerHTML += `
-                    <div class="rack-card ${estaOcupado ? 'ocupado' : 'vacio'}" onclick="filtrarDesdeRack(${i})">
-                        <span class="badge-status ${estaOcupado ? 'badge-ocupado' : 'badge-vacio'}">
-                            ${estaOcupado ? 'Ocupado' : 'Disponible'}
-                        </span>
-                        <h3>RACK ${i}</h3>
-                        <div style="font-size: 13px; color: ${estaOcupado ? 'var(--warning)' : 'var(--text-muted)'}; font-weight: bold; margin-bottom: 4px;">
-                            ${estaOcupado ? `${totalPiezas.toLocaleString('es-MX')} pzas` : '0 pzas'}
-                        </div>
-                        <div style="font-size: 11px; color: var(--text-muted);">
-                            ${estaOcupado ? `${totalTarimas} tarima(s)` : 'Vacío'}
-                        </div>
-                        <div style="font-size: 11px; color: var(--kpa-cyan); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            ${textoProyectos}
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-       
-
-
         // FUNCIÓN NUEVA: Radiografía de los 4 niveles y lados independientes
         function abrirRadiografiaRack(numRack) {
             const modal = document.getElementById('modalDetalleRack');
