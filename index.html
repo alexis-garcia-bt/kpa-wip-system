@@ -337,7 +337,72 @@
         .badge-vacio { background: rgba(16, 185, 129, 0.2); color: var(--kpa-green); border: 1px solid var(--kpa-green); }
         .badge-ocupado { background: rgba(56, 189, 248, 0.2); color: var(--kpa-cyan); border: 1px solid var(--kpa-cyan); }
     
-    
+    /* ==========================================================
+           ESTILOS DEL MAPA VISUAL DE RACKS (1 AL 19)
+           ========================================================== */
+        .rack-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 14px;
+            margin-top: 20px;
+        }
+        @media screen and (max-width: 768px) {
+            .rack-grid {
+                grid-template-columns: repeat(2, 1fr) !important; /* 2 columnas grandes en celular */
+                gap: 10px !important;
+            }
+        }
+        .rack-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .rack-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--kpa-blue);
+        }
+        .rack-card.ocupado {
+            border-color: rgba(56, 189, 248, 0.45);
+            background: linear-gradient(145deg, #121d33, #0b1e3d);
+        }
+        .rack-card.vacio {
+            border-color: rgba(16, 185, 129, 0.35);
+            background: linear-gradient(145deg, #121d33, #092019);
+        }
+        .rack-card h3 {
+            margin: 6px 0;
+            font-size: 17px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: var(--text-main);
+        }
+        .badge-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-vacio { 
+            background: rgba(16, 185, 129, 0.15); 
+            color: var(--kpa-green); 
+            border: 1px solid var(--kpa-green); 
+        }
+        .badge-ocupado { 
+            background: rgba(56, 189, 248, 0.15); 
+            color: var(--kpa-cyan); 
+            border: 1px solid var(--kpa-cyan); 
+        }
+
     </style>
 </head>
 <body>
@@ -563,45 +628,76 @@
     </div>
 
        <!-- PESTAÑA 2: UBICAR MATERIAL -->
+        <!-- PESTAÑA 2: UBICAR MATERIAL & MAPA VISUAL -->
         <div id="tab-ubicar" class="tab-content">
             <div class="card">
                 <h2>
-                    <span>Buscador de Inventario y Ubicación de Material</span>
+                    <span>Buscador & Mapa de Racks WIP</span>
                     <button type="button" onclick="exportarInventarioExcel()" style="background: #059669; color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
                         📥 Descargar Excel
                     </button>
                 </h2>
-                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Consulta el inventario activo, piezas netas y ubicación exacta por coordenada en racks.</p>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                    Consulta el inventario en tabla o explora visualmente la ocupación de los 19 racks en planta.
+                </p>
 
-                <div style="display: flex; gap: 15px; margin-bottom: 25px; align-items: center; flex-wrap: wrap;">
-                    <input type="text" id="inputBuscarMaterial" placeholder="ESCRIBA EL PROYECTO O MATERIAL (EJ. EXP0001)..." oninput="aplicarFiltrosInventario()" style="flex: 2; min-width: 220px; padding: 14px 18px;">
-                    <select id="filtroRackInventario" onchange="aplicarFiltrosInventario()" style="flex: 1; min-width: 180px; padding: 14px 18px;">
-                        <option value="">TODOS LOS RACKS (1-19)</option>
-                        <script>
-                            for(let i=1; i<=19; i++) {
-                                document.write(`<option value="RACK ${i}">RACK ${i}</option>`);
-                            }
-                        </script>
-                    </select>
-                    <button type="button" onclick="cargarInventarioCompleto()" class="btn-primary" style="flex: 0 0 130px; padding: 14px 18px;">Actualizar</button>
+                <!-- SELECTOR DE VISTAS (TABLA VS MAPA) -->
+                <div style="display: flex; gap: 12px; margin-bottom: 22px;">
+                    <button type="button" id="btnVerTabla" onclick="cambiarVistaInventario('tabla')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; background: var(--kpa-blue); color: #fff; border: 1px solid var(--kpa-blue);">
+                        📋 Ver Lista de Inventario
+                    </button>
+                    <button type="button" id="btnVerMapa" onclick="cambiarVistaInventario('mapa')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color);">
+                        🗺️ Ver Mapa de Racks (1-19)
+                    </button>
                 </div>
 
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Proyecto / Material</th>
-                                <th>Piezas Actuales</th>
-                                <th>Ubicación y Detalles en Rack</th>
-                                <th>Personal</th>
-                                <th>Fechas (Movimiento / Proceso)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaUbicacionBody">
-                            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Ingrese un proyecto para consultar el inventario.</td></tr>
-                        </tbody>
-                    </table>
+                <!-- 1. VISTA: MAPA VISUAL DE RACKS -->
+                <div id="vistaMapaRacks" style="display: none; margin-bottom: 25px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <span style="font-size: 12px; color: var(--text-muted);">Toca cualquier rack para ver sus tarimas en detalle:</span>
+                        <div style="display: flex; gap: 12px; font-size: 11px;">
+                            <span style="color: var(--kpa-green); font-weight: bold;">● Disponible (0 tarimas)</span>
+                            <span style="color: var(--kpa-cyan); font-weight: bold;">● Ocupado con Carga</span>
+                        </div>
+                    </div>
+                    <div id="gridRacksContainer" class="rack-grid">
+                        <!-- Casillas generadas dinámicamente con JavaScript -->
+                    </div>
                 </div>
+
+                <!-- 2. VISTA: TABLA DE INVENTARIO -->
+                <div id="vistaTablaInventario">
+                    <div style="display: flex; gap: 15px; margin-bottom: 25px; align-items: center; flex-wrap: wrap;">
+                        <input type="text" id="inputBuscarMaterial" placeholder="ESCRIBA EL PROYECTO O MATERIAL (EJ. EXP0001)..." oninput="aplicarFiltrosInventario()" style="flex: 2; min-width: 200px; padding: 12px 16px;">
+                        <select id="filtroRackInventario" onchange="aplicarFiltrosInventario()" style="flex: 1; min-width: 160px; padding: 12px 16px;">
+                            <option value="">TODOS LOS RACKS (1-19)</option>
+                            <script>
+                                for(let i=1; i<=19; i++) {
+                                    document.write(`<option value="RACK ${i}">RACK ${i}</option>`);
+                                }
+                            </script>
+                        </select>
+                        <button type="button" onclick="cargarInventarioCompleto()" class="btn-primary" style="flex: 0 0 120px; padding: 12px 16px;">Actualizar</button>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Proyecto / Material</th>
+                                    <th>Piezas Actuales</th>
+                                    <th>Ubicación y Detalles en Rack</th>
+                                    <th>Personal</th>
+                                    <th>Fechas (Movimiento / Proceso)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaUbicacionBody">
+                                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Cargando inventario WIP...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -838,6 +934,89 @@
             }
         }
 
+        function cambiarVistaInventario(vista) {
+            const elTabla = document.getElementById('vistaTablaInventario');
+            const elMapa = document.getElementById('vistaMapaRacks');
+            const btnTabla = document.getElementById('btnVerTabla');
+            const btnMapa = document.getElementById('btnVerMapa');
+
+            if (vista === 'mapa') {
+                elTabla.style.display = 'none';
+                elMapa.style.display = 'block';
+                btnMapa.style.background = 'var(--kpa-blue)';
+                btnMapa.style.color = '#fff';
+                btnTabla.style.background = 'var(--bg-card)';
+                btnTabla.style.color = 'var(--text-muted)';
+                renderizarMapaRacks();
+            } else {
+                elTabla.style.display = 'block';
+                elMapa.style.display = 'none';
+                btnTabla.style.background = 'var(--kpa-blue)';
+                btnTabla.style.color = '#fff';
+                btnMapa.style.background = 'var(--bg-card)';
+                btnMapa.style.color = 'var(--text-muted)';
+            }
+        }
+
+        function renderizarMapaRacks() {
+            const grid = document.getElementById('gridRacksContainer');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            for (let i = 1; i <= 19; i++) {
+                // Buscamos los materiales en este rack (compatible con "R1", "RACK 1" o "1")
+                const materialesEnRack = (listaInventarioGlobal || []).filter(item => {
+                    let r = (item.rack && item.rack !== 'N/A') ? item.rack : '';
+                    if (!r && item.ubicacion_destino) {
+                        const m = item.ubicacion_destino.match(/RACK\s*([0-9A-Z]+)/i);
+                        if (m) r = m[1];
+                    }
+                    r = String(r).toUpperCase().replace('RACK', '').replace('R', '').trim();
+                    return r === String(i);
+                });
+
+                const totalTarimas = materialesEnRack.length;
+                const totalPiezas = materialesEnRack.reduce((acc, it) => acc + (parseInt(it.piezas, 10) || 0), 0);
+                const estaOcupado = totalTarimas > 0;
+
+                // Extraemos los proyectos almacenados (ej: "EXP0001, EXP0002")
+                const proyectosUnicos = [...new Set(materialesEnRack.map(m => (m.proyecto || 'EXP').toUpperCase()))].slice(0, 2);
+                const textoProyectos = proyectosUnicos.length > 0 ? proyectosUnicos.join(', ') : 'Sin tarimas';
+
+                grid.innerHTML += `
+                    <div class="rack-card ${estaOcupado ? 'ocupado' : 'vacio'}" onclick="filtrarDesdeRack(${i})">
+                        <div>
+                            <span class="badge-status ${estaOcupado ? 'badge-ocupado' : 'badge-vacio'}">
+                                ${estaOcupado ? 'Ocupado' : 'Disponible'}
+                            </span>
+                            <h3>RACK ${i}</h3>
+                        </div>
+                        <div>
+                            <div style="font-size: 15px; color: ${estaOcupado ? 'var(--warning)' : 'var(--text-muted)'}; font-weight: 800; margin-bottom: 2px;">
+                                ${estaOcupado ? `${totalPiezas.toLocaleString('es-MX')} pzas` : '0 pzas'}
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted);">
+                                ${estaOcupado ? `${totalTarimas} tarima(s)` : 'Vacío'}
+                            </div>
+                            <div style="font-size: 10px; color: var(--kpa-cyan); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;">
+                                ${textoProyectos}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Al tocar un rack en el mapa, regresa a la tabla y lo filtra al instante
+        function filtrarDesdeRack(numeroRack) {
+            cambiarVistaInventario('tabla');
+            const selectRack = document.getElementById('filtroRackInventario');
+            if (selectRack) {
+                selectRack.value = `RACK ${numeroRack}`;
+                aplicarFiltrosInventario();
+            }
+        }
+
        async function cargarInventarioCompleto() {
             const tbody = document.getElementById('tablaUbicacionBody');
             if (!tbody) return;
@@ -883,6 +1062,9 @@
             if (elTarimas) elTarimas.textContent = totalTarimas;
             if (elRacks) elRacks.textContent = `${racksUnicos.size} / 19`;
         }
+        if (document.getElementById('vistaMapaRacks') && document.getElementById('vistaMapaRacks').style.display !== 'none') {
+    renderizarMapaRacks();
+}
         function aplicarFiltrosInventario() {
             const tbody = document.getElementById('tablaUbicacionBody');
             if (!tbody) return;
