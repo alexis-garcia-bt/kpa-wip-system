@@ -270,13 +270,13 @@
         <!-- CÁPSULAS DE MÉTRICAS ENCABEZADO -->
         <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
             <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); padding: 6px 14px; border-radius: 20px; font-size: 13px;">
-                📦 <span style="color: var(--text-muted); font-size: 11px; font-weight: 700;">WIP:</span> <strong id="kpiTotalPiezas" style="color: var(--warning); font-size: 13px;">0 pzas</strong>
+                 <span style="color: var(--text-muted); font-size: 11px; font-weight: 700;">WIP:</span> <strong id="kpiTotalPiezas" style="color: var(--warning); font-size: 13px;">0 pzas</strong>
             </div>
             <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); padding: 6px 14px; border-radius: 20px; font-size: 13px;">
-                🏷️ <span style="color: var(--text-muted); font-size: 11px; font-weight: 700;">TARIMAS:</span> <strong id="kpiTotalTarimas" style="color: var(--kpa-green); font-size: 13px;">0</strong>
+                 <span style="color: var(--text-muted); font-size: 11px; font-weight: 700;">TARIMAS:</span> <strong id="kpiTotalTarimas" style="color: var(--kpa-green); font-size: 13px;">0</strong>
             </div>
             <div style="background: rgba(96, 165, 250, 0.12); border: 1px solid rgba(96, 165, 250, 0.35); padding: 6px 14px; border-radius: 20px; font-size: 13px;">
-                📍 <span style="color: var(--text-muted); font-size: 11px; font-weight: 700;">RACKS:</span> <strong id="kpiRacksOcupados" style="color: #60a5fa; font-size: 13px;">0 / 19</strong>
+                 <span style="color: var(--text-muted); font-size: 11px; font-weight: 700;">RACKS:</span> <strong id="kpiRacksOcupados" style="color: #60a5fa; font-size: 13px;">0 / 19</strong>
             </div>
         </div>
 
@@ -468,7 +468,10 @@
         </div>
 
         <!-- PESTAÑA 2: UBICAR MATERIAL -->
-       <h2>
+       <!-- PESTAÑA 2: UBICAR MATERIAL -->
+        <div id="tab-ubicar" class="tab-content">
+            <div class="card">
+                <h2>
                     <span>Buscador de Inventario y Ubicación de Material</span>
                     <button type="button" onclick="exportarInventarioExcel()" style="background: #059669; color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
                         📥 Descargar Excel
@@ -489,6 +492,7 @@
                     </select>
                     <button type="button" onclick="cargarInventarioCompleto()" class="btn-primary" style="flex: 0 0 130px; padding: 14px 18px;">Actualizar</button>
                 </div>
+
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
@@ -507,7 +511,6 @@
                 </div>
             </div>
         </div>
-
         <!-- PESTAÑA 3: MOVIMIENTOS -->
         <div id="tab-historial" class="tab-content">
             <div class="card">
