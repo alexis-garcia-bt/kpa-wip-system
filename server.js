@@ -238,7 +238,7 @@ app.get('/api/historial', (req, res) => {
 
 
 // Registro de movimientos incluyendo la fecha de proceso solicitada y manejo seguro de nulos
-a// Registro de movimientos con sanitización limpia (Paso 1) y seguridad
+// Registro de movimientos con sanitización limpia (Paso 1) y seguridad
 app.post('/api/movimientos', (req, res) => {
     if (!db) {
         return res.status(500).json({ success: false, error: 'Base de datos no conectada' });
