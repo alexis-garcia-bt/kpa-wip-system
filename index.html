@@ -146,117 +146,148 @@
 
 /* DISEÑO RESPONSIVO DEFINITIVO PARA MÓVILES */
 
+ /* ==========================================================
+   DISEÑO INDUSTRIAL ULTRA-RESPONSIVO PARA PISO DE PLANTA (KPA)
+   Optimizado para celular y uso con pulgares
+   ========================================================== */
 @media screen and (max-width: 768px) {
-    /* Forzamos que toda la pantalla y contenedores respeten los márgenes estrictos */
+    /* 1. Reset limpio sin desbordamientos laterales */
     html, body {
-        width: 100% !important;
-        max-width: 100% !important;
         overflow-x: hidden !important;
-        margin: 0 !important;
-        padding: 4px !important;
-        box-sizing: border-box !important;
-    }
-
-    .container, .main-container, .card, div[style*="max-width"], div[style*="width"] {
         width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding-left: 6px !important;
-        padding-right: 6px !important;
-    }
-
-    /* Arreglamos la barra superior y menús para que no se salgan */
-    header, nav, .navbar, .nav-tabs {
-        width: 100% !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: stretch !important;
-        box-sizing: border-box !important;
-    }
-
-    /* Botonera de movimiento (Entrada, Salida, Reubicación) en bloque completo y sin cortes */
-    .nav-tabs button, .btn-group, div[style*="display: flex"] button, button[id*="btn"] {
-        width: 100% !important;
-        max-width: 100% !important;
-        margin: 4px 0 !important;
-        box-sizing: border-box !important;
-        white-space: normal !important;
-        text-align: center !important;
-    }
-
-    /* Inputs, selects y campos de texto */
-    input, select, button, textarea {
-        width: 100% !important;
-        max-width: 100% !important;
-        font-size: 16px !important;
-        padding: 10px !important;
-        box-sizing: border-box !important;
-        margin-bottom: 8px !important;
-    }
-
-    /* Casilla de Manga / Checkbox  */
-    div[style*="display: flex"]:has(input[type="checkbox"]), label:has(input[type="checkbox"]), .checkbox-container {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        white-space: normal !important;
-        word-break: break-word !important;
-        padding: 5px 0 !important;
-    }
-
-    input[type="checkbox"] {
-        width: 24px !important;
-        height: 24px !important;
-        margin-right: 10px !important;
-        flex-shrink: 0 !important;
-    }
-
-    /* Ajustamos el texto que acompaña al checkbox para que baje de línea si es largo */
-    div[style*="display: flex"] span, div[style*="display: flex"] label {
-        display: inline-block !important;
-        width: calc(100% - 35px) !important;
-        white-space: normal !important;
-        word-break: break-word !important;
         font-size: 14px !important;
     }
 
-    /* Tablas responsivas */
-    table, .table-responsive {
+    /* 2. Header compacto: Logo arriba, métricas en fila limpia */
+    header {
+        padding: 12px 14px !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        position: static !important; /* Libera pantalla en celulares */
+    }
+    header h1 { font-size: 18px !important; }
+    
+    /* Métricas WIP / Tarimas / Racks en una sola fila compacta */
+    header div[style*="flex-wrap: wrap"] {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 6px !important;
         width: 100% !important;
-        display: block !important;
+    }
+    header div[style*="flex-wrap: wrap"] > div {
+        padding: 5px 6px !important;
+        font-size: 11px !important;
+        text-align: center !important;
+    }
+
+    /* Ocultamos reloj pesado en cel para ahorrar espacio */
+    .header-meta {
+        width: 100% !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+    }
+    .real-time-clock { display: none !important; }
+    .user-badge { width: 100% !important; text-align: center !important; font-size: 11px !important; }
+
+    /* 3. Menú de pestañas tipo App (Scroll horizontal deslizable con el dedo) */
+    .nav-tabs {
+        padding: 6px 10px !important;
+        gap: 8px !important;
         overflow-x: auto !important;
         white-space: nowrap !important;
+        display: flex !important;
+        flex-direction: row !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+        padding: 10px 16px !important;
+        font-size: 13px !important;
+        flex: 0 0 auto !important;
+        border-radius: 8px !important;
     }
 
-    /* CORRECCIÓN EXCLUSIVA PARA EL FOOTER Y EL NÚMERO DE TELÉFONO */
-    footer, .footer, div[style*="background"], div[style*="padding"] {
+    /* 4. Tarjetas con márgenes amplios (adiós al padding de 40px) */
+    .main-container {
+        margin: 15px auto !important;
+        padding: 0 10px !important;
         width: 100% !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        word-break: break-word !important;
-        white-space: normal !important;
+    }
+    .card {
+        padding: 18px 14px !important; /* Espacio aprovechado al 100% */
+        border-radius: 14px !important;
+        margin-bottom: 20px !important;
+    }
+    h2 {
+        font-size: 16px !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+    }
+    h2 button {
+        width: 100% !important;
+        justify-content: center !important;
     }
 
-    /* Forzamos que las columnas del pie de página se apilen verticalmente y centradas */
-    footer div, .footer div, div[style*="display: grid"], div[style*="grid"] {
+    /* 5. Botonera de Acción WIP (Entrada, Salida, Reubicación en bloque grande) */
+    .action-grid {
+        grid-template-columns: 1fr !important; /* Una fila por botón: enormes y fáciles de picar */
+        gap: 10px !important;
+    }
+    .action-btn {
+        padding: 16px !important;
+        font-size: 16px !important;
+        letter-spacing: 1px !important;
+    }
+
+    /* 6. Inputs y Selects táctiles (48px de alto para dedos) */
+    input[type="text"], input[type="password"], input[type="date"], input[type="number"], select {
+        padding: 14px !important;
+        font-size: 16px !important; /* Evita que Safari/Chrome hagan zoom automático molesto */
+        border-radius: 10px !important;
+        margin-bottom: 12px !important;
+        width: 100% !important;
+    }
+
+    /* 7. Arreglo de filas dobles (Rack + Nivel / Lado + Posición) */
+    div[style*="display: flex; gap: 15px"],
+    div[style*="display: flex; gap: 12px"] {
+        flex-direction: column !important;
+        gap: 0px !important;
+    }
+
+    /* 8. Barra de filtros de historial e inventario apilada ordenadamente */
+    #tab-ubicar div[style*="margin-bottom: 25px"],
+    #tab-historial div[style*="margin-bottom: 22px"] {
         display: flex !important;
         flex-direction: column !important;
-        align-items: center !important;
-        text-align: center !important;
-        width: 100% !important;
+        gap: 10px !important;
+        align-items: stretch !important;
+    }
+    #filtroHistorial, #inputBuscarMaterial, #filtroRackInventario {
         max-width: 100% !important;
+        width: 100% !important;
+    }
+    div:has(> #filtroFechaDesde), div:has(> #filtroFechaHasta) {
+        width: 100% !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
     }
 
-    /* Aseguramos que los textos y el número de teléfono bajen de línea correctamente sin cortarse */
-    footer span, footer p, .footer span, .footer p, a[href*="tel"] {
-        display: block !important;
-        width: 100% !important;
-        white-space: normal !important;
-        word-break: break-word !important;
+    /* 9. Tablas con scroll horizontal suave */
+    table {
+        font-size: 12px !important;
+    }
+    th, td {
+        padding: 10px 8px !important;
+    }
+
+    /* 10. Checkbox amigable para dedo */
+    #ambosLadosCheck {
+        width: 24px !important;
+        height: 24px !important;
     }
 }
 
