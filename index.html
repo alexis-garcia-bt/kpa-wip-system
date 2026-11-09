@@ -699,34 +699,100 @@
     </div>
 </div>
         <!-- PESTAÑA 5: CONTACTO -->
-        <div id="tab-contacto" class="card tab-content">
-            <h2>Panel de Contacto KPA</h2>
-            <p style="color: var(--text-muted); line-height: 1.8;">Soporte técnico directo y administración de sistemas en planta.</p>
-            <div style="background: var(--bg-input); padding: 20px; border-radius: 14px; border: 1px solid var(--border-color); margin-top: 15px;">
-                <h3 style="color: var(--kpa-green); margin-top: 0;">Administrador General</h3>
-                <p style="margin: 5px 0;"><strong>Nombre:</strong> Alexis Michael Garcia H.</p>
-                <p style="margin: 5px 0;"><strong>Teléfono de Emergencias / WhatsApp:</strong> <a href="tel:4427770928" style="color: var(--kpa-blue); font-weight: bold; text-decoration: none;">442 777 0928</a></p>
-                <p style="margin: 5px 0; color: var(--text-muted); font-size: 12px;">(Para cualquier duda, comunicarse con el administrador).</p>
+       <!-- PESTAÑA 5: CONTACTO Y SOPORTE INDUSTRIAL -->
+        <div id="tab-contacto" class="tab-content">
+            <div class="card">
+                <h2>
+                    <span>Soporte Operativo & Planeación KPA</span>
+                    <span style="font-size: 11px; color: var(--kpa-green); background: rgba(16, 185, 129, 0.15); padding: 5px 12px; border-radius: 20px; border: 1px solid var(--kpa-green);">
+                        ● Planta Querétaro
+                    </span>
+                </h2>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">
+                    Línea directa para dudas de planeación de material (MPS) y soporte técnico del sistema WIP.
+                </p>
+
+                <!-- GRID DE CONTACTOS (ALEXIS Y LIZETH) -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 25px;">
+                    
+                    <!-- 1. LIZETH FRANCO (PLANEACIÓN MPS) -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <span style="color: var(--warning); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+                                Planeación de Materiales
+                            </span>
+                            <h3 style="color: var(--text-main); font-size: 17px; margin: 6px 0 4px 0; font-weight: 800;">
+                                Lizeth Franco
+                            </h3>
+                            <div style="color: var(--kpa-cyan); font-size: 13px; font-weight: bold; margin-bottom: 8px;">
+                                Planeador MPS
+                            </div>
+                            <p style="color: var(--text-muted); font-size: 12px; margin: 0 0 15px 0; line-height: 1.5;">
+                                Contactar para dudas sobre números de proyecto, qué material urge mover o prioridades de producción.
+                            </p>
+                        </div>
+                        <a href="https://wa.me/522462161119?text=Hola%20Lizeth,%20tengo%20una%20duda%20de%20planeación/material%20en%20WIP" target="_blank" style="background: #25d366; color: #fff; text-decoration: none; padding: 13px; border-radius: 10px; font-weight: 800; font-size: 13px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.25);">
+                            💬 Enviar WhatsApp a Lizeth
+                        </a>
+                    </div>
+
+                    <!-- 2. ALEXIS GARCIA (SISTEMAS / WIP) -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <span style="color: var(--kpa-cyan); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+                                Desarrollo & Soporte TI
+                            </span>
+                            <h3 style="color: var(--text-main); font-size: 17px; margin: 6px 0 4px 0; font-weight: 800;">
+                                Alexis Michael Garcia H.
+                            </h3>
+                            <div style="color: var(--kpa-green); font-size: 13px; font-weight: bold; margin-bottom: 8px;">
+                                Administrador de Sistemas
+                            </div>
+                            <p style="color: var(--text-muted); font-size: 12px; margin: 0 0 15px 0; line-height: 1.5;">
+                                Contactar si el sistema no carga, olvidaste tu contraseña o te equivocaste en la cantidad de piezas al guardar.
+                            </p>
+                        </div>
+                        <a href="https://wa.me/524427770928?text=Hola%20Alexis,%20necesito%20soporte%20en%20el%20sistema%20KPA%20WIP" target="_blank" style="background: #25d366; color: #fff; text-decoration: none; padding: 13px; border-radius: 10px; font-weight: 800; font-size: 13px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.25);">
+                            💬 Enviar WhatsApp a Alexis
+                        </a>
+                    </div>
+
+                </div>
+
+                <!-- ESTADO EN VIVO DEL SISTEMA -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 25px;">
+                    <div style="background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-muted); font-weight: bold;">BASE DE DATOS</div>
+                        <div style="color: var(--kpa-green); font-size: 12px; font-weight: 800; margin-top: 3px;">● Clever Cloud (Online)</div>
+                    </div>
+                    <div style="background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-muted); font-weight: bold;">SERVIDOR WEB</div>
+                        <div style="color: var(--kpa-green); font-size: 12px; font-weight: 800; margin-top: 3px;">● Render Cloud (Live)</div>
+                    </div>
+                    <div style="background: var(--bg-input); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); text-align: center;">
+                        <div style="font-size: 11px; color: var(--text-muted); font-weight: bold;">VERSIÓN INDUSTRIAL</div>
+                        <div style="color: var(--warning); font-size: 12px; font-weight: 800; margin-top: 3px;">v11.0 KPA WIP</div>
+                    </div>
+                </div>
+
+                <!-- GUÍA RÁPIDA DE INCIDENCIAS -->
+                <h3 style="color: var(--kpa-cyan); font-size: 13px; margin: 0 0 10px 0; text-transform: uppercase; letter-spacing: 0.5px;">
+                    📌 ¿A quién acudir según tu problema?
+                </h3>
+                <div style="background: var(--bg-input); border-radius: 12px; border: 1px solid var(--border-color); padding: 15px; font-size: 12px; line-height: 1.7; color: var(--text-muted);">
+                    <div style="margin-bottom: 8px;">
+                        <strong style="color: var(--text-main);">• Proyecto no aparece o duda de lote:</strong> Escribe a <strong>Lizeth Franco</strong> para validar si el proyecto ya fue liberado o qué número corresponde.
+                    </div>
+                    <div style="margin-bottom: 8px;">
+                        <strong style="color: var(--text-main);">• Error al guardar o piezas mal capturadas:</strong> Escribe a <strong>Alexis Garcia</strong> para corregir el registro en la base de datos sin alterar el historial.
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-main);">• Tarima sin etiqueta física legible:</strong> No la subas al rack. Avísale a tu Líder de Turno para reetiquetar antes de ingresarla al sistema.
+                    </div>
+                </div>
+
             </div>
         </div>
-
-    </div>
-
-    <footer class="footer">
-            <div class="footer-section">
-                <h3>KPA Packaging & Handling Solutions</h3>
-                <p>Control automatizado de inventario WIP y gestión de racks.</p>
-            </div>
-            <div class="footer-section">
-                <h3>ACCESOS RÁPIDOS</h3>
-                <p>Operación</p>
-                <p>Ubicar Material</p>
-                <p>Movimientos</p>
-            </div>
-            <div class="footer-section">
-                <h3>SOPORTE TÉCNICO</h3>
-                <p>Emergencias IT: 442 777 0928</p>
-            </div>
         </footer>
 
     <script>
