@@ -1837,15 +1837,7 @@
             }
         }
 
-        // Al tocar un rack en el mapa, filtra automáticamente la tabla
-        function filtrarDesdeRack(numeroRack) {
-            cambiarVistaInventario('tabla');
-            const selectRack = document.getElementById('filtroRackInventario');
-            if (selectRack) {
-                selectRack.value = `RACK ${numeroRack}`;
-                aplicarFiltrosInventario();
-            }
-        }
+       
 
 
         // FUNCIÓN NUEVA: Radiografía de los 4 niveles y lados independientes
