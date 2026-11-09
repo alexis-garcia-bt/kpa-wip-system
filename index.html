@@ -999,48 +999,74 @@
             grid.innerHTML = '';
 
             for (let i = 1; i <= 19; i++) {
-                // Buscamos los materiales en este rack (compatible con "R1", "RACK 1" o "1")
+                // Buscamos los materiales de este rack exacto
                 const materialesEnRack = (listaInventarioGlobal || []).filter(item => {
-                    let r = (item.rack && item.rack !== 'N/A') ? item.rack : '';
-                    if (!r && item.ubicacion_destino) {
-                        const m = item.ubicacion_destino.match(/RACK\s*([0-9A-Z]+)/i);
-                        if (m) r = m[1];
+                    let r = '';
+                    if (item.rack && item.rack !== 'N/A') {
+                        r = String(item.rack).replace(/RACK/gi, '').replace(/R/gi, '').trim();
+                    } else if (item.ubicacion_destino) {
+                        const m = item.ubicacion_destino.match(/RACK\s*([0-9]+)/i);
+                        if (m) r = m[1].trim();
                     }
-                    r = String(r).toUpperCase().replace('RACK', '').replace('R', '').trim();
                     return r === String(i);
                 });
 
                 const totalTarimas = materialesEnRack.length;
                 const totalPiezas = materialesEnRack.reduce((acc, it) => acc + (parseInt(it.piezas, 10) || 0), 0);
-                const estaOcupado = totalTarimas > 0;
 
-                // Extraemos los proyectos almacenados (ej: "EXP0001, EXP0002")
+                // Evaluamos si los lados están llenos al tope
+                const ladosLlenosAlTope = materialesEnRack.filter(it => {
+                    const txt = (it.ubicacion_destino || '').toUpperCase();
+                    return txt.includes('LLENO') || txt.includes('MANGA') || txt.includes('AMBOS');
+                }).length;
+
+                // 3 ESTADOS FÍSICOS REALES:
+                let claseEstado = 'estado-vacio';
+                let claseBadge = 'badge-vacio';
+                let textoBadge = '🟢 DISPONIBLE';
+
+                if (totalTarimas === 0) {
+                    claseEstado = 'estado-vacio';
+                    claseBadge = 'badge-vacio';
+                    textoBadge = '🟢 DISPONIBLE';
+                } else if (ladosLlenosAlTope >= 8 || totalTarimas >= 8) {
+                    claseEstado = 'estado-lleno';
+                    claseBadge = 'badge-lleno';
+                    textoBadge = '🔴 LLENO AL TOPE';
+                } else {
+                    claseEstado = 'estado-parcial';
+                    claseBadge = 'badge-parcial';
+                    textoBadge = `🟡 PARCIAL (${totalTarimas} tarimas)`;
+                }
+
                 const proyectosUnicos = [...new Set(materialesEnRack.map(m => (m.proyecto || 'EXP').toUpperCase()))].slice(0, 2);
-                const textoProyectos = proyectosUnicos.length > 0 ? proyectosUnicos.join(', ') : 'Sin tarimas';
+                const textoProyectos = proyectosUnicos.length > 0 ? proyectosUnicos.join(', ') : 'Sin carga';
 
                 grid.innerHTML += `
-                    <div class="rack-card ${estaOcupado ? 'ocupado' : 'vacio'}" onclick="filtrarDesdeRack(${i})">
+                    <div class="rack-card ${claseEstado}" onclick="abrirRadiografiaRack(${i})">
                         <div>
-                            <span class="badge-status ${estaOcupado ? 'badge-ocupado' : 'badge-vacio'}">
-                                ${estaOcupado ? 'Ocupado' : 'Disponible'}
-                            </span>
+                            <span class="badge-status ${claseBadge}">${textoBadge}</span>
                             <h3>RACK ${i}</h3>
                         </div>
                         <div>
-                            <div style="font-size: 15px; color: ${estaOcupado ? 'var(--warning)' : 'var(--text-muted)'}; font-weight: 800; margin-bottom: 2px;">
-                                ${estaOcupado ? `${totalPiezas.toLocaleString('es-MX')} pzas` : '0 pzas'}
+                            <div style="font-size: 15px; color: ${totalTarimas > 0 ? 'var(--warning)' : 'var(--text-muted)'}; font-weight: 800; margin-bottom: 2px;">
+                                ${totalTarimas > 0 ? `${totalPiezas.toLocaleString('es-MX')} pzas` : '0 pzas'}
                             </div>
                             <div style="font-size: 11px; color: var(--text-muted);">
-                                ${estaOcupado ? `${totalTarimas} tarima(s)` : 'Vacío'}
+                                ${totalTarimas > 0 ? `${totalTarimas} tarima(s) • Con espacio` : '100% Vacío'}
                             </div>
                             <div style="font-size: 10px; color: var(--kpa-cyan); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;">
                                 ${textoProyectos}
+                            </div>
+                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px; font-weight: bold;">
+                                🔍 Toca para ver niveles y lados
                             </div>
                         </div>
                     </div>
                 `;
             }
         }
+
 
         // Al tocar un rack en el mapa, regresa a la tabla y lo filtra al instante
         function filtrarDesdeRack(numeroRack) {
