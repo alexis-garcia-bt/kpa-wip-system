@@ -627,7 +627,23 @@
                         <div class="form-group" id="bloqueDestino">
                         <!-- CONTENEDOR A: Destino a Racks (Únicamente para Entradas y Reubicaciones) -->
                         <div id="destinoRackContainer">
-                            <label>Ubicación de Destino / Almacenamiento:</label>
+
+
+                <!-- BOTÓN Y TARJETA DEL MOTOR DE IA (SMART SLOTTING) -->
+                        <div style="margin-bottom: 18px;">
+                            <button type="button" onclick="sugerirUbicacionIA()" style="background: linear-gradient(135deg, #1d4ed8, #7c3aed); color: #fff; border: 1px solid #a855f7; padding: 14px 18px; border-radius: 12px; font-weight: 800; font-size: 14px; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35); text-transform: uppercase; letter-spacing: 0.5px;">
+                                ✨ Sugerir Mejor Ubicación con IA
+                            </button>
+                            <div id="cajaSugerenciaIA" style="display: none; margin-top: 12px; background: rgba(124, 58, 237, 0.12); border: 1px solid rgba(168, 85, 247, 0.4); padding: 14px 16px; border-radius: 12px; font-size: 13px; line-height: 1.6;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                    <span style="background: #7c3aed; color: #fff; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: bold;">KPA AI SLOTTING</span>
+                                    <strong id="aiTituloSugerencia" style="color: var(--kpa-cyan); font-size: 14px;"></strong>
+                                </div>
+                                <div id="aiExplicacion" style="color: var(--text-main);"></div>
+                            </div>
+                        </div>
+
+                           <label>Ubicación de Destino / Almacenamiento:</label>
                             <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                                 <select id="rackDestino">
                                     <option value="">RACK DESTINO (1-19)</option>
@@ -1980,6 +1996,167 @@
         function cerrarModalRack() {
             const modal = document.getElementById('modalDetalleRack');
             if (modal) modal.style.display = 'none';
+        }
+
+
+
+        // ============
+        // MOTOR DE IA
+        // =============
+        function sugerirUbicacionIA() {
+            const proyectoInput = (document.getElementById('proyectoInput').value || '').trim().toUpperCase();
+            const piezasInput = parseInt(document.getElementById('inputPiezas').value, 10) || 0;
+            const cajaSugerencia = document.getElementById('cajaSugerenciaIA');
+            const tituloSugerencia = document.getElementById('aiTituloSugerencia');
+            const explicacion = document.getElementById('aiExplicacion');
+
+            if (!proyectoInput) {
+                alert(" Primero escribe el Número de Proyecto / Material para que la IA pueda buscar coincidencias.");
+                document.getElementById('proyectoInput').focus();
+                return;
+            }
+
+            // 1. RECOLECCIÓN DE DATOS: Mapear los 19 racks (4 niveles x 2 lados)
+            const mapaOcupacion = {};
+            for (let r = 1; r <= 19; r++) {
+                mapaOcupacion[r] = {
+                    totalTarimas: 0,
+                    proyectos: new Set(),
+                    bahias: {} // 'Nivel-Lado'
+                };
+                for (let n = 1; n <= 4; n++) {
+                    mapaOcupacion[r].bahias[`${n}-IZQUIERDO`] = { ocupada: false, lleno: false, items: [] };
+                    mapaOcupacion[r].bahias[`${n}-DERECHO`] = { ocupada: false, lleno: false, items: [] };
+                }
+            }
+
+            // Llenamos el mapa con el inventario actual
+            (listaInventarioGlobal || []).forEach(item => {
+                let rNum = null;
+                if (item.rack && item.rack !== 'N/A') {
+                    rNum = parseInt(String(item.rack).replace(/\D/g, ''), 10);
+                } else if (item.ubicacion_destino) {
+                    const m = item.ubicacion_destino.match(/RACK\s*R?([0-9]+)/i);
+                    if (m) rNum = parseInt(m[1], 10);
+                }
+
+                if (!rNum || rNum < 1 || rNum > 19) return;
+
+                const txt = (item.ubicacion_destino || '').toUpperCase();
+                const proy = (item.proyecto || '').toUpperCase();
+                mapaOcupacion[rNum].totalTarimas++;
+                mapaOcupacion[rNum].proyectos.add(proy);
+
+                for (let n = 1; n <= 4; n++) {
+                    const matchNivel = new RegExp(`Nivel:?\\s*N?${n}\\b`, 'i').test(txt);
+                    if (matchNivel) {
+                        const esIzq = txt.includes('IZQ') || txt.includes('MANGA') || txt.includes('AMBOS');
+                        const esDer = txt.includes('DER') || txt.includes('MANGA') || txt.includes('AMBOS');
+                        const estaLleno = txt.includes('LLENO') || txt.includes('MANGA') || txt.includes('AMBOS');
+
+                        if (esIzq) {
+                            mapaOcupacion[rNum].bahias[`${n}-IZQUIERDO`].ocupada = true;
+                            if (estaLleno) mapaOcupacion[rNum].bahias[`${n}-IZQUIERDO`].lleno = true;
+                            mapaOcupacion[rNum].bahias[`${n}-IZQUIERDO`].items.push(item);
+                        }
+                        if (esDer) {
+                            mapaOcupacion[rNum].bahias[`${n}-DERECHO`].ocupada = true;
+                            if (estaLleno) mapaOcupacion[rNum].bahias[`${n}-DERECHO`].lleno = true;
+                            mapaOcupacion[rNum].bahias[`${n}-DERECHO`].items.push(item);
+                        }
+                    }
+                }
+            });
+
+            // 2. MOTOR DE DECISIÓN DE IA
+            let mejorRack = null;
+            let mejorNivel = null;
+            let mejorLado = null;
+            let razonIA = "";
+
+            // CRITERIO A: CONSOLIDACIÓN DE LOTE (¿Dónde está el mismo proyecto?)
+            const racksConMismoProyecto = Object.keys(mapaOcupacion)
+                .map(Number)
+                .filter(r => mapaOcupacion[r].proyectos.has(proyectoInput));
+
+            if (racksConMismoProyecto.length > 0) {
+                // Buscamos espacio libre en esos mismos racks para no separar el lote
+                for (let r of racksConMismoProyecto) {
+                    for (let n = 1; n <= 4; n++) {
+                        for (let lado of ['IZQUIERDO', 'DERECHO']) {
+                            const bahia = mapaOcupacion[r].bahias[`${n}-${lado}`];
+                            // Si está libre o si tiene espacio (no lleno)
+                            if (!bahia.lleno) {
+                                mejorRack = r;
+                                mejorNivel = n;
+                                mejorLado = lado;
+                                razonIA = `Consolidación de Lote: Se detectó material activo de <strong>${proyectoInput}</strong> en el RACK ${r}. Se asigna a este mismo rack para agilizar la preparación de pedidos y evitar dispersión de piezas.`;
+                                break;
+                            }
+                        }
+                        if (mejorRack) break;
+                    }
+                    if (mejorRack) break;
+                }
+            }
+
+            // CRITERIO B: SI NO HAY LOTE PREVIO -> BALANCEO DE PASILLOS & ERGONOMÍA DE MÁSTIL
+            if (!mejorRack) {
+                // Ordenamos racks por menor ocupación para distribuir el tráfico
+                const racksOrdenadosPorMenosCarga = Object.keys(mapaOcupacion)
+                    .map(Number)
+                    .sort((a, b) => mapaOcupacion[a].totalTarimas - mapaOcupacion[b].totalTarimas);
+
+                mejorRack = racksOrdenadosPorMenosCarga[0];
+
+                // Si son muchas piezas (>75 pzas), la IA prefiere Piso (Nivel 1) por seguridad y peso
+                const ordenNiveles = piezasInput > 75 ? [1, 2, 3, 4] : [2, 3, 1, 4];
+
+                for (let n of ordenNiveles) {
+                    for (let lado of ['IZQUIERDO', 'DERECHO']) {
+                        const bahia = mapaOcupacion[mejorRack].bahias[`${n}-${lado}`];
+                        if (!bahia.ocupada) {
+                            mejorNivel = n;
+                            mejorLado = lado;
+                            break;
+                        }
+                    }
+                    if (mejorNivel) break;
+                }
+
+                if (piezasInput > 75) {
+                    razonIA = `Optimización de Carga Pesada: Al ser un lote de <strong>${piezasInput} piezas</strong>, la IA prioriza el <strong>Nivel ${mejorNivel} (Piso/Bajo)</strong> en el RACK ${mejorRack} para minimizar desgaste de mástil del montacargas y balancear tráfico en pasillo.`;
+                } else {
+                    razonIA = `Balanceo de Almacén: Proyecto nuevo sin historial previo. La IA seleccionó el <strong>RACK ${mejorRack}</strong> por tener la menor tasa de ocupación actual en planta.`;
+                }
+            }
+
+            // 3. APLICAR VALORES AUTOMÁTICAMENTE EN LOS SELECTS
+            if (mejorRack && mejorNivel && mejorLado) {
+                const selectRack = document.getElementById('rackDestino');
+                const selectNivel = document.getElementById('nivelDestino');
+                const selectLado = document.getElementById('ladoDestino');
+
+                if (selectRack) selectRack.value = String(mejorRack);
+                if (selectNivel) selectNivel.value = String(mejorNivel);
+                if (selectLado) selectLado.value = mejorLado;
+
+                // Mostramos la tarjeta de explicación
+                cajaSugerencia.style.display = 'block';
+                const nombreNivelLegible = mejorNivel === 1 ? 'Nivel 1 (Piso)' : (mejorNivel === 4 ? 'Nivel 4 (Alto)' : `Nivel ${mejorNivel}`);
+                tituloSugerencia.textContent = `RACK ${mejorRack} • ${nombreNivelLegible} • LADO ${mejorLado}`;
+                explicacion.innerHTML = razonIA;
+
+                // Animación visual de confirmación en los selects
+                [selectRack, selectNivel, selectLado].forEach(el => {
+                    if (el) {
+                        el.style.borderColor = '#a855f7';
+                        setTimeout(() => { el.style.borderColor = 'var(--border-color)'; }, 2500);
+                    }
+                });
+            } else {
+                alert(" Almacén al 100% de capacidad. No se encontraron bahías disponibles.");
+            }
         }
     </script>
 </body>
