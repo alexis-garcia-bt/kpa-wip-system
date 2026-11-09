@@ -1065,7 +1065,7 @@
         if (document.getElementById('vistaMapaRacks') && document.getElementById('vistaMapaRacks').style.display !== 'none') {
     renderizarMapaRacks();
 }
-        function aplicarFiltrosInventario() {
+       function aplicarFiltrosInventario() {
             const tbody = document.getElementById('tablaUbicacionBody');
             if (!tbody) return;
 
@@ -1077,7 +1077,9 @@
                 return;
             }
 
-            // Filtramos en memoria al instante (por texto y por rack a la vez)
+            // Extraemos solo el número puro del filtro (ej: "RACK 1" -> "1")
+            const numRackFiltro = rackSeleccionado ? rackSeleccionado.replace(/RACK/gi, '').replace(/R/gi, '').trim() : '';
+
             const filtrados = listaInventarioGlobal.filter(item => {
                 const proyecto = (item.proyecto || '').toUpperCase();
                 const operador = (item.personal || item.nombre_operador || '').toUpperCase();
@@ -1085,17 +1087,26 @@
                 let ubicacionLimpia = (item.ubicacion_destino || 'N/A')
                     .replace(/RACK\s+R/gi, 'RACK ')
                     .replace(/Nivel:\s*N/gi, 'Nivel ')
-                    .replace(/Pos:\s*/gi, 'Posición ')
-                    .toUpperCase();
+                    .replace(/Pos:\s*/gi, 'Posición ');
+
+                // Extraemos el número exacto del rack del material
+                let numRackItem = '';
+                if (item.rack && item.rack !== 'N/A') {
+                    numRackItem = String(item.rack).replace(/RACK/gi, '').replace(/R/gi, '').trim();
+                } else if (item.ubicacion_destino) {
+                    const match = item.ubicacion_destino.match(/RACK\s*([0-9]+)/i);
+                    if (match) numRackItem = match[1].trim();
+                }
 
                 const coincideTexto = !texto || proyecto.includes(texto) || operador.includes(texto);
-                const coincideRack = !rackSeleccionado || ubicacionLimpia.includes(rackSeleccionado);
+                // Comparación matemática exacta (1 === 1, no 19 === 1)
+                const coincideRack = !numRackFiltro || numRackItem === numRackFiltro;
 
                 return coincideTexto && coincideRack;
             });
 
             if (filtrados.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No se encontraron materiales con esos filtros.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No se encontraron materiales en este Rack.</td></tr>`;
                 return;
             }
 
