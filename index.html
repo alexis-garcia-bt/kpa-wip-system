@@ -266,6 +266,20 @@
         <div class="logo-container">
             <h1>KPA <span>// WIP</span></h1>
         </div>
+
+        <!-- CÁPSULAS DE MÉTRICAS ENCABEZADO -->
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); padding: 6px 14px; border-radius: 20px; font-size: 13px;">
+                📦 <span style="color: var(--text-muted); font-size: 11px; font-weight: 700;">WIP:</span> <strong id="kpiTotalPiezas" style="color: var(--warning); font-size: 13px;">0 pzas</strong>
+            </div>
+            <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); padding: 6px 14px; border-radius: 20px; font-size: 13px;">
+                🏷️ <span style="color: var(--text-muted); font-size: 11px; font-weight: 700;">TARIMAS:</span> <strong id="kpiTotalTarimas" style="color: var(--kpa-green); font-size: 13px;">0</strong>
+            </div>
+            <div style="background: rgba(96, 165, 250, 0.12); border: 1px solid rgba(96, 165, 250, 0.35); padding: 6px 14px; border-radius: 20px; font-size: 13px;">
+                📍 <span style="color: var(--text-muted); font-size: 11px; font-weight: 700;">RACKS:</span> <strong id="kpiRacksOcupados" style="color: #60a5fa; font-size: 13px;">0 / 19</strong>
+            </div>
+        </div>
+
         <div class="header-meta">
             <div class="real-time-clock" id="relojTiempoReal">00:00:00</div>
             <div class="user-badge">
@@ -454,54 +468,18 @@
         </div>
 
         <!-- PESTAÑA 2: UBICAR MATERIAL -->
-       <h2>Buscador de Inventario y Ubicación de Material</h2>
-                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">Consulta el inventario actual, piezas, fecha de proceso y ubicación exacta en racks.</p>
-
-                <!-- TARJETAS DE MÉTRICAS (KPIs) -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 15px;">
-                        <div style="font-size: 32px;">📦</div>
-                        <div>
-                            <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">TOTAL PIEZAS EN WIP</div>
-                            <div id="kpiTotalPiezas" style="font-size: 22px; font-weight: 900; color: var(--warning);">0 pzas</div>
-                        </div>
-                    </div>
-                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 15px;">
-                        <div style="font-size: 32px;">🏷️</div>
-                        <div>
-                            <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">TARIMAS / LOTES</div>
-                            <div id="kpiTotalTarimas" style="font-size: 22px; font-weight: 900; color: var(--kpa-green);">0</div>
-                        </div>
-                    </div>
-                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 18px 20px; display: flex; align-items: center; gap: 15px;">
-                        <div style="font-size: 32px;">📍</div>
-                        <div>
-                            <div style="font-size: 11px; font-weight: 800; color: var(--text-muted); letter-spacing: 0.5px;">RACKS OCUPADOS</div>
-                            <div id="kpiRacksOcupados" style="font-size: 22px; font-weight: 900; color: #60a5fa;">0 / 19</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- BUSCADOR, FILTRO Y BOTÓN EXCEL -->
-                <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
-                    <input type="text" id="inputBuscarMaterial" placeholder="BUSCAR PROYECTO O MATERIAL..." oninput="aplicarFiltrosInventario()" style="flex: 2; min-width: 220px;">
-                    <select id="filtroRackInventario" onchange="aplicarFiltrosInventario()" style="flex: 1; min-width: 180px;">
-                        <option value="">TODOS LOS RACKS (1-19)</option>
-                        <script>
-                            for(let i=1; i<=19; i++) {
-                                document.write(`<option value="RACK ${i}">RACK ${i}</option>`);
-                            }
-                        </script>
-                    </select>
-                    <button type="button" onclick="cargarInventarioCompleto()" class="btn-primary" style="flex: 0 0 120px; padding: 12px;">Actualizar</button>
-                    <button type="button" onclick="exportarInventarioExcel()" style="background: #059669; color: #fff; border: none; padding: 12px 18px; border-radius: 12px; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                        📥 Excel
+       <h2>
+                    <span>Buscador de Inventario y Ubicación de Material</span>
+                    <button type="button" onclick="exportarInventarioExcel()" style="background: #059669; color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        📥 Descargar Excel
                     </button>
-                </div>
+                </h2>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Consulta el inventario activo, piezas netas y ubicación exacta por coordenada en racks.</p>
 
-                <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
-                    <input type="text" id="inputBuscarMaterial" placeholder="BUSCAR PROYECTO O MATERIAL..." oninput="aplicarFiltrosInventario()" style="flex: 2; min-width: 220px;">
-                    <select id="filtroRackInventario" onchange="aplicarFiltrosInventario()" style="flex: 1; min-width: 180px;">
+                <!-- BUSCADOR Y FILTRO AMPLIOS Y DESPEJADOS -->
+                <div style="display: flex; gap: 15px; margin-bottom: 25px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="inputBuscarMaterial" placeholder="ESCRIBA EL PROYECTO O MATERIAL (EJ. EXP0001)..." oninput="aplicarFiltrosInventario()" style="flex: 2; min-width: 220px; padding: 14px 18px;">
+                    <select id="filtroRackInventario" onchange="aplicarFiltrosInventario()" style="flex: 1; min-width: 180px; padding: 14px 18px;">
                         <option value="">TODOS LOS RACKS (1-19)</option>
                         <script>
                             for(let i=1; i<=19; i++) {
@@ -509,7 +487,7 @@
                             }
                         </script>
                     </select>
-                    <button type="button" onclick="cargarInventarioCompleto()" class="btn-primary" style="flex: 0 0 140px; padding: 12px;">Actualizar</button>
+                    <button type="button" onclick="cargarInventarioCompleto()" class="btn-primary" style="flex: 0 0 130px; padding: 14px 18px;">Actualizar</button>
                 </div>
                 <div style="overflow-x: auto;">
                     <table>
@@ -793,7 +771,7 @@
             }
 
             // \uFEFF asegura que Excel reconozca los acentos en español
-            let csv = "\uFEFF";
+            let csv = "\uFEFF"; // Para que Excel respete los acentos
             csv += "Proyecto/Material,Piezas,Ubicación en Rack,Operador,Fecha Registro,Fecha Proceso\n";
 
             listaInventarioGlobal.forEach(item => {
@@ -817,7 +795,6 @@
             a.click();
             document.body.removeChild(a);
         }
-        
         
         
         function cambiarPestana(pestana, elemento) {
