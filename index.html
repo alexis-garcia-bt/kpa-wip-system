@@ -511,15 +511,15 @@
             <div id="stepIdentificacion" class="card">
                 <h2>1. Identificación y Contraseña Segura</h2>
                 <form id="formIdentificacion" onsubmit="continuarAlSistema(event)">
-                                    <div class="form-group">
-                    <label for="tipoRol">Seleccionar Rol:</label>
-                    <select id="tipoRol" required onchange="filtrarPersonalPorRol()">
-                        <option value="">-- SELECCIONE ROL --</option>
-                        <option value="MONTACARGUISTA">MONTACARGUISTA</option>
-                        <option value="LIDER">LÍDER DE ÁREA</option>
-                        <option value="ADMIN">ADMINISTRADOR</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="tipoRol">Seleccionar Rol:</label>
+                        <select id="tipoRol" required onchange="filtrarPersonalPorRol()">
+                            <option value="">-- SELECCIONE ROL --</option>
+                            <option value="MONTACARGUISTA">MONTACARGUISTA</option>
+                            <option value="LIDER">LÍDER DE ÁREA</option>
+                            <option value="ADMIN">ADMINISTRADOR</option>
+                        </select>
+                    </div>
 
                     <div class="form-group">
                         <label for="selectPersonal">Nombre del Operador:</label>
@@ -529,21 +529,29 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="inputPassword">Contraseña:</label>
-                        <input type="password" id="inputPassword" placeholder="INGRESE SU CONTRASEÑA" required autocomplete="current-password">
+                        <label for="inputPassword">Contraseña / PIN de 4 dígitos:</label>
+                        <!-- inputmode="numeric" abre el teclado numérico gigante en celular -->
+                        <input type="password" id="inputPassword" placeholder="EJ. 1397 O SU APELLIDO" required autocomplete="current-password" style="font-size: 16px; letter-spacing: 2px;">
                     </div>
 
                     <div class="form-group">
-                        <label for="turnoFijo">Turno Operativo:</label>
+                        <label for="turnoFijo">Turno Operativo (Detectado automáticamente por reloj):</label>
                         <select id="turnoFijo" required>
-                            <option value="">-- SELECCIONE TURNO --</option>
                             <option value="1er Turno (07:00 - 15:00)">1er Turno (07:00 - 15:00)</option>
                             <option value="2do Turno (15:00 - 23:00)">2do Turno (15:00 - 23:00)</option>
                             <option value="3er Turno (23:00 - 07:00)">3er Turno (23:00 - 07:00)</option>
                         </select>
                     </div>
 
-                    <button type="submit" class="btn-primary">Entrar</button>
+                    <!-- CASILLA: RECORDAR SESIÓN EN ESTE CELULAR -->
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: var(--bg-card); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-color);">
+                            <input type="checkbox" id="checkRecordarSesion" checked style="width: 20px; height: 20px; accent-color: var(--kpa-green); margin: 0;">
+                            <span style="font-size: 13px; color: var(--text-main); font-weight: bold;">Recordar mi usuario en este celular (Entrar directo)</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary" style="padding: 16px; font-size: 16px;">Entrar a Operación</button>
                 </form>
             </div>
 
@@ -828,24 +836,37 @@
             </div>
         </div>
         <!-- PESTAÑA 4: GESTIÓN DE PERSONAL -->
-<div id="tab-personal" class="tab-content">
-    <div id="contenidoPersonalAdmin" class="card" style="display: none;">
-        <h2>Gestión de Personal</h2>
-        <form onsubmit="agregarPersonal(event)" style="margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 25px;">
-            <div class="form-group">
-                <label for="nuevoRolPersonal">Rol Operativo:</label>
-                <select id="nuevoRolPersonal" required>
-                    <option value="MONTACARGUISTA">MONTACARGUISTA</option>
-                    <option value="LIDER">LÍDER DE ÁREA</option>
-                </select>
+<div id="contenidoPersonalAdmin" class="card" style="display: none;">
+        <h2>
+            <span>Gestión de Personal & Accesos</span>
+            <span style="font-size: 11px; color: var(--kpa-green); background: rgba(16, 185, 129, 0.15); padding: 4px 10px; border-radius: 20px;">Panel de Administrador</span>
+        </h2>
+        <form onsubmit="agregarPersonal(event)" style="margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="nuevoRolPersonal">Rol Operativo:</label>
+                    <select id="nuevoRolPersonal" required>
+                        <option value="MONTACARGUISTA">MONTACARGUISTA</option>
+                        <option value="LIDER">LÍDER DE ÁREA</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="inputNuevoNombre">Nombre Completo:</label>
+                    <input type="text" id="inputNuevoNombre" placeholder="EJ. JUAN PÉREZ" required oninput="this.value = this.value.toUpperCase()">
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="inputNuevoPin">PIN de Acceso (4 dígitos o Apellido):</label>
+                    <input type="text" id="inputNuevoPin" placeholder="EJ. 1234 (OPCIONAL)" maxlength="15" oninput="this.value = this.value.toUpperCase()">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="nuevoNombrePersonal">Nombre Completo:</label>
-                <input type="text" id="inputNuevoNombre" placeholder="EJ. JUAN PÉREZ" required oninput="this.value = this.value.toUpperCase()">
-            </div>
-            <button type="submit" class="btn-primary">Registrar Operador</button>
-            <div id="statusPersonal" style="margin-top: 15px; font-weight: bold; text-align: center;"></div>
+            <button type="submit" class="btn-primary" style="padding: 14px; font-size: 14px;">+ Registrar Operador en Base de Datos</button>
+            <div id="statusPersonal" style="margin-top: 12px; font-weight: bold; text-align: center;"></div>
         </form>
+
+        <!-- BUSCADOR RÁPIDO DE OPERADORES -->
+        <div style="margin-bottom: 15px;">
+            <input type="text" id="filtroTablaPersonal" placeholder="BUSCAR OPERADOR POR NOMBRE O ROL..." oninput="filtrarOperadoresAdmin()" style="padding: 10px 14px; font-size: 13px;">
+        </div>
 
         <div style="overflow-x: auto;">
             <table>
@@ -854,7 +875,7 @@
                         <th>ID</th>
                         <th>Rol</th>
                         <th>Nombre Completo</th>
-                        <th>Contraseña</th>
+                        <th>Clave / PIN de Acceso</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
@@ -864,12 +885,6 @@
             </table>
         </div>
     </div>
-
-    <div id="mensajeAccesoDenegado" class="card" style="text-align: center; padding: 50px;">
-        <h2 style="color: var(--danger); justify-content: center;">Acceso Restringido</h2>
-        <p style="color: var(--text-muted);">Esta sección es exclusiva para el <strong>Administrador</strong> del sistema.</p>
-    </div>
-</div>
        
        <!-- PESTAÑA 5: CONTACTO Y SOPORTE INDUSTRIAL -->
         <div id="tab-contacto" class="tab-content">
@@ -1346,61 +1361,9 @@
             }
         }
 
-        function continuarAlSistema(e) {
-            e.preventDefault();
-            const rol = document.getElementById('tipoRol').value;
-            const nombre = document.getElementById('selectPersonal').value;
-            const passwordIngresada = document.getElementById('inputPassword').value.trim().toUpperCase();
-            const turno = document.getElementById('turnoFijo').value;
+        
 
-            if (!rol || !nombre || !passwordIngresada || !turno) {
-                alert('Complete todos los campos.');
-                return;
-            }
-
-            if (rol === 'ADMIN') {
-                if (passwordIngresada !== '1397') {
-                    alert('Contraseña de Administrador incorrecta.');
-                    return;
-                }
-            } else {
-                const partesNombre = nombre.trim().split(' ');
-                const apellidoReal = partesNombre[partesNombre.length - 1];
-                if (passwordIngresada !== apellidoReal) {
-                    alert(`Contraseña incorrecta: "${apellidoReal}"`);
-                    return;
-                }
-            }
-
-            usuarioActual = { rol, nombre, turno };
-            document.getElementById('lblUsuarioActivo').textContent = `${nombre} (${rol})`;
-            document.getElementById('lblInfoOperador').textContent = `${nombre} [${rol}] - ${turno}`;
-            document.getElementById('stepIdentificacion').style.display = 'none';
-            document.getElementById('stepOperacion').style.display = 'block';
-
-            // VALIDAR SI ES ADMIN PARA MOSTRAR LA PESTAÑA DE PERSONAL
-            if (rol === 'ADMIN') {
-                document.getElementById('btnTabPersonal').style.display = 'block';
-                document.getElementById('contenidoPersonalAdmin').style.display = 'block';
-                document.getElementById('mensajeAccesoDenegado').style.display = 'none';
-            } else {
-                document.getElementById('btnTabPersonal').style.display = 'none';
-                document.getElementById('contenidoPersonalAdmin').style.display = 'none';
-                document.getElementById('mensajeAccesoDenegado').style.display = 'block';
-            }
-        }
-
-        function cerrarSesion() {
-            document.getElementById('stepIdentificacion').style.display = 'block';
-            document.getElementById('stepOperacion').style.display = 'none';
-            document.getElementById('formMovimiento').style.display = 'none';
-            document.getElementById('inputPassword').value = '';
-            
-            // OCULTAR PERSONAL AL CERRAR SESIÓN
-            document.getElementById('btnTabPersonal').style.display = 'none';
-            document.getElementById('contenidoPersonalAdmin').style.display = 'none';
-            document.getElementById('mensajeAccesoDenegado').style.display = 'block';
-        }
+        
 
        function seleccionarAccion(tipo, elemento) {
             tipoMovimientoSeleccionado = tipo;
@@ -1575,64 +1538,10 @@
 
     
         
-        async function agregarPersonal(e) {
-            e.preventDefault();
-            if (usuarioActual.rol !== 'ADMIN') {
-                alert('Acceso denegado. Solo el administrador puede registrar personal.');
-                return;
-            }
-            const rol = document.getElementById('nuevoRolPersonal').value;
-            const nombre = document.getElementById('inputNuevoNombre').value.trim();
-            try {
-                const res = await fetch('https://kpa-wip-system.onrender.com/api/personal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ rol, nombre })
-                });
-                if (res.ok) {
-                    document.getElementById('inputNuevoNombre').value = '';
-                    const status = document.getElementById('statusPersonal');
-                    status.style.color = 'var(--kpa-green)';
-                    status.textContent = `Operador agregado. Contraseña (Apellido): ${nombre.split(' ').pop()}`;
-                    await cargarPersonalBD();
-                    setTimeout(() => { status.textContent = ''; }, 4000);
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
+        
 
-        async function eliminarPersonal(id) {
-            if (usuarioActual.rol !== 'ADMIN') {
-                alert('Acceso denegado. Solo el administrador puede eliminar personal.');
-                return;
-            }
-            if (!confirm('¿Eliminar operador?')) return;
-            try {
-               await fetch(`https://kpa-wip-system.onrender.com/api/personal/${id}`, { method: 'DELETE' });
-                await cargarPersonalBD();
-            } catch (err) {}
-        }
-        async function renderizarTablaPersonal() {
-            const tbody = document.getElementById('tablaPersonalBody');
-            tbody.innerHTML = '';
-            if (listaPersonalGlobal.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay personal.</td></tr>';
-                return;
-            }
-            listaPersonalGlobal.forEach(p => {
-                const apellido = p.nombre.trim().split(' ').pop();
-                tbody.innerHTML += `
-                    <tr>
-                        <td>#${p.id_operador || p.id || 'BD'}</td>
-                        <td><span style="color: var(--kpa-blue); font-weight: bold;">${p.rol}</span></td>
-                        <td><strong>${p.nombre}</strong></td>
-                        <td><span style="color: var(--warning); font-family: monospace;">${p.rol === 'ADMIN' ? 'PROTEGIDA' : apellido}</span></td>
-                        <td><button onclick="eliminarPersonal(${p.id_operador || p.id})" class="btn-danger">Eliminar</button></td>
-                    </tr>
-                `;
-            });
-        }
+        
+        
 
        async function cargarHistorial() {
             const tbody = document.getElementById('tablaHistorialBody');
@@ -1998,6 +1907,204 @@
             if (modal) modal.style.display = 'none';
         }
 
+
+        // AUTO-DETECCIÓN INTELIGENTE DEL TURNO POR RELOJ
+        function detectarTurnoActual() {
+            const hora = new Date().getHours();
+            if (hora >= 7 && hora < 15) return "1er Turno (07:00 - 15:00)";
+            if (hora >= 15 && hora < 23) return "2do Turno (15:00 - 23:00)";
+            return "3er Turno (23:00 - 07:00)";
+        }
+
+        // En window.onload: Revisa sesión guardada y preselecciona turno
+        const originalOnload = window.onload;
+        window.onload = async () => {
+            if (originalOnload) await originalOnload();
+
+            // 1. Preseleccionar turno automático
+            const selectTurno = document.getElementById('turnoFijo');
+            if (selectTurno) selectTurno.value = detectarTurnoActual();
+
+            // 2. Revisar si este celular tiene sesión recordada
+            const sesionGuardada = localStorage.getItem('kpa_usuario_activo');
+            if (sesionGuardada) {
+                try {
+                    usuarioActual = JSON.parse(sesionGuardada);
+                    // Actualiza turno al actual del día
+                    usuarioActual.turno = detectarTurnoActual();
+                    aplicarSesionEnPantalla();
+                } catch (e) {
+                    localStorage.removeItem('kpa_usuario_activo');
+                }
+            }
+        };
+
+        function aplicarSesionEnPantalla() {
+            document.getElementById('lblUsuarioActivo').textContent = `${usuarioActual.nombre} (${usuarioActual.rol})`;
+            document.getElementById('lblInfoOperador').textContent = `${usuarioActual.nombre} [${usuarioActual.rol}] - ${usuarioActual.turno}`;
+            document.getElementById('stepIdentificacion').style.display = 'none';
+            document.getElementById('stepOperacion').style.display = 'block';
+
+            if (usuarioActual.rol === 'ADMIN') {
+                document.getElementById('btnTabPersonal').style.display = 'block';
+                document.getElementById('contenidoPersonalAdmin').style.display = 'block';
+                document.getElementById('mensajeAccesoDenegado').style.display = 'none';
+            } else {
+                document.getElementById('btnTabPersonal').style.display = 'none';
+                document.getElementById('contenidoPersonalAdmin').style.display = 'none';
+                document.getElementById('mensajeAccesoDenegado').style.display = 'block';
+            }
+        }
+
+        function continuarAlSistema(e) {
+            e.preventDefault();
+            const rol = document.getElementById('tipoRol').value;
+            const nombre = document.getElementById('selectPersonal').value;
+            const passwordIngresada = document.getElementById('inputPassword').value.trim().toUpperCase();
+            const turno = document.getElementById('turnoFijo').value;
+            const recordar = document.getElementById('checkRecordarSesion').checked;
+
+            if (!rol || !nombre || !passwordIngresada || !turno) {
+                alert('Complete todos los campos.');
+                return;
+            }
+
+            // Validación de contraseña
+            if (rol === 'ADMIN') {
+                if (passwordIngresada !== '1397') {
+                    alert('Contraseña de Administrador incorrecta.');
+                    return;
+                }
+            } else {
+                // Busca si tiene PIN específico o usa su apellido
+                const operadorObj = listaPersonalGlobal.find(p => p.nombre === nombre);
+                const apellidoReal = nombre.trim().split(' ').pop();
+                const pinValido = operadorObj && operadorObj.pin ? String(operadorObj.pin).trim().toUpperCase() : apellidoReal;
+
+                if (passwordIngresada !== pinValido && passwordIngresada !== apellidoReal) {
+                    alert(`Contraseña incorrecta. (Tu clave es tu apellido: "${apellidoReal}")`);
+                    return;
+                }
+            }
+
+            usuarioActual = { rol, nombre, turno };
+
+            // Guarda en este celular si marcó la casilla
+            if (recordar) {
+                localStorage.setItem('kpa_usuario_activo', JSON.stringify(usuarioActual));
+            } else {
+                localStorage.removeItem('kpa_usuario_activo');
+            }
+
+            aplicarSesionEnPantalla();
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('kpa_usuario_activo'); // Borra sesión del cel
+            usuarioActual = { rol: '', nombre: '', turno: '' };
+            document.getElementById('stepIdentificacion').style.display = 'block';
+            document.getElementById('stepOperacion').style.display = 'none';
+            document.getElementById('formMovimiento').style.display = 'none';
+            document.getElementById('inputPassword').value = '';
+            document.getElementById('lblUsuarioActivo').textContent = 'No identificado';
+
+            document.getElementById('btnTabPersonal').style.display = 'none';
+            document.getElementById('contenidoPersonalAdmin').style.display = 'none';
+            document.getElementById('mensajeAccesoDenegado').style.display = 'block';
+
+            // Actualiza turno al reloj actual
+            const selectTurno = document.getElementById('turnoFijo');
+            if (selectTurno) selectTurno.value = detectarTurnoActual();
+        }
+
+        async function agregarPersonal(e) {
+            e.preventDefault();
+            if (usuarioActual.rol !== 'ADMIN') {
+                alert('Acceso denegado. Solo el administrador puede registrar personal.');
+                return;
+            }
+            const rol = document.getElementById('nuevoRolPersonal').value;
+            const nombre = document.getElementById('inputNuevoNombre').value.trim();
+            const pin = document.getElementById('inputNuevoPin').value.trim();
+
+            const status = document.getElementById('statusPersonal');
+            status.style.color = 'var(--kpa-blue)';
+            status.textContent = 'Guardando en Clever Cloud...';
+
+            try {
+                const res = await fetch(`${API_URL}/api/personal`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rol, nombre, turno: '1er Turno (07:00 - 15:00)', pin })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('inputNuevoNombre').value = '';
+                    document.getElementById('inputNuevoPin').value = '';
+                    status.style.color = 'var(--kpa-green)';
+                    status.textContent = `¡Operador registrado con éxito! Clave de acceso: ${data.pin || nombre.split(' ').pop()}`;
+                    await cargarPersonalBD();
+                    setTimeout(() => { status.textContent = ''; }, 4500);
+                } else {
+                    status.style.color = 'var(--danger)';
+                    status.textContent = 'Error al registrar en la base de datos.';
+                }
+            } catch (err) {
+                console.error(err);
+                status.style.color = 'var(--danger)';
+                status.textContent = 'Error de conexión con el servidor.';
+            }
+        }
+
+        async function eliminarPersonal(id) {
+            if (usuarioActual.rol !== 'ADMIN') {
+                alert('Acceso denegado. Solo el administrador puede eliminar personal.');
+                return;
+            }
+            if (!confirm('¿Seguro que deseas eliminar a este operador de la base de datos?')) return;
+            try {
+                const res = await fetch(`${API_URL}/api/personal/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    await cargarPersonalBD();
+                } else {
+                    alert('Error al eliminar operador.');
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderizarTablaPersonal() {
+            const tbody = document.getElementById('tablaPersonalBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            if (listaPersonalGlobal.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay personal registrado.</td></tr>';
+                return;
+            }
+            listaPersonalGlobal.forEach(p => {
+                const apellido = p.nombre.trim().split(' ').pop();
+                const claveVisible = p.pin || apellido;
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${p.id_operador || p.id || 'BD'}</td>
+                        <td><span style="color: var(--kpa-cyan); font-weight: bold;">${p.rol}</span></td>
+                        <td><strong>${p.nombre}</strong></td>
+                        <td><span style="color: var(--warning); font-family: monospace; font-weight: bold;">${p.rol === 'ADMIN' ? '1397' : claveVisible}</span></td>
+                        <td>
+                            ${p.rol === 'ADMIN' ? '<span style="color:var(--text-muted); font-size:11px;">Protegido</span>' : `<button onclick="eliminarPersonal(${p.id_operador || p.id})" class="btn-danger">Eliminar</button>`}
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function filtrarOperadoresAdmin() {
+            const filtro = (document.getElementById('filtroTablaPersonal').value || '').toUpperCase();
+            document.querySelectorAll('#tablaPersonalBody tr').forEach(fila => {
+                fila.style.display = fila.textContent.toUpperCase().includes(filtro) ? '' : 'none';
+            });
+        }
 
 
         // ============

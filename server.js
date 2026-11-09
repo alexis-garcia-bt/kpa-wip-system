@@ -345,6 +345,9 @@ app.post('/api/movimientos', (req, res) => {
         });
     });
 });
+// ====================================================================
+// 1. ESTA RUTA YA LA TIENES: DÉJALA TAL CUAL (CONSULTA LOS OPERADORES)
+// ====================================================================
 app.get('/api/personal', (req, res) => {
     const operadoresCompletos = [
         { id_operador: 1, rol: 'ADMIN', nombre: 'ALEXIS GARCIA', turno: 'MATUTINO' },
@@ -377,13 +380,64 @@ app.get('/api/personal', (req, res) => {
             id_operador: op.id_operador || op.id || 1,
             rol: (op.rol || op.tipo || 'MONTACARGUISTA').toUpperCase(),
             nombre: (op.nombre || op.nombre_operador || 'OPERADOR').toUpperCase(),
-            turno: op.turno || 'MATUTINO'
+            turno: op.turno || 'MATUTINO',
+            pin: op.pin || op.password || ''
         }));
 
         res.json(operadoresMapeados.length > 0 ? operadoresMapeados : operadoresCompletos);
     });
 });
 
+// ====================================================================
+// 2. ESTA ES LA NUEVA QUE SE AGREGA AQUÍ ABAJO (GUARDA EN CLEVER CLOUD)
+// ====================================================================
+app.post('/api/personal', (req, res) => {
+    if (!db) return res.status(500).json({ error: 'Base de datos no conectada' });
+
+    const { rol, nombre, turno, pin } = req.body || {};
+    if (!nombre || !rol) {
+        return res.status(400).json({ error: 'Faltan datos obligatorios (nombre o rol)' });
+    }
+
+    const nombreLimpio = nombre.toUpperCase().trim();
+    const rolLimpio = rol.toUpperCase().trim();
+    const turnoLimpio = turno || '1er Turno (07:00 - 15:00)';
+    const pinLimpio = pin ? String(pin).trim() : nombreLimpio.split(' ').pop(); // Si no dan PIN, usa su apellido
+
+    const sqlConPin = "INSERT INTO operadores (nombre, rol, turno, pin) VALUES (?, ?, ?, ?)";
+    db.query(sqlConPin, [nombreLimpio, rolLimpio, turnoLimpio, pinLimpio], (err, resultado) => {
+        if (err) {
+            // Si la columna 'pin' no existe en tu tabla de MySQL, guarda sin ella para no tronar
+            const sqlSinPin = "INSERT INTO operadores (nombre, rol, turno) VALUES (?, ?, ?)";
+            db.query(sqlSinPin, [nombreLimpio, rolLimpio, turnoLimpio], (err2, res2) => {
+                if (err2) {
+                    console.error("Error al registrar operador:", err2.message);
+                    return res.status(500).json({ error: err2.message });
+                }
+                res.json({ success: true, id: res2.insertId, pin: pinLimpio });
+            });
+        } else {
+            res.json({ success: true, id: resultado.insertId, pin: pinLimpio });
+        }
+    });
+});
+
+// ====================================================================
+// 3. ESTA TAMBIÉN SE AGREGA AQUÍ ABAJO (ELIMINA DE CLEVER CLOUD)
+// ====================================================================
+app.delete('/api/personal/:id', (req, res) => {
+    if (!db) return res.status(500).json({ error: 'Base de datos no conectada' });
+
+    const id = req.params.id;
+    const sql = "DELETE FROM operadores WHERE id_operador = ? OR id = ?";
+    db.query(sql, [id, id], (err, resultado) => {
+        if (err) {
+            console.error("Error al eliminar operador:", err.message);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ success: true });
+    });
+});
 
 app.get('/api/sugerencias', (req, res) => {
     res.json([]);
