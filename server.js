@@ -236,8 +236,6 @@ app.get('/api/historial', (req, res) => {
     });
 });
 
-
-// Registro de movimientos incluyendo la fecha de proceso solicitada y manejo seguro de nulos
 // Registro de movimientos con sanitización limpia (Paso 1) y seguridad
 app.post('/api/movimientos', (req, res) => {
     if (!db) {
