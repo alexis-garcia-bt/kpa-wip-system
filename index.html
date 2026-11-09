@@ -402,6 +402,57 @@
             color: var(--kpa-cyan); 
             border: 1px solid var(--kpa-cyan); 
         }
+/* ==========================================================
+           VENTANA FLOTANTE CENTRADA (POPUP MODAL)
+           ========================================================== */
+        .modal-rack-overlay {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            background: rgba(2, 6, 23, 0.88) !important;
+            backdrop-filter: blur(8px) !important;
+            z-index: 99999 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 15px !important;
+            box-sizing: border-box !important;
+        }
+
+        .modal-rack-content {
+            background: var(--bg-panel) !important;
+            border: 2px solid var(--kpa-blue) !important;
+            border-radius: 20px !important;
+            max-width: 620px !important;
+            width: 95% !important;
+            max-height: 88vh !important;
+            overflow-y: auto !important;
+            padding: 24px !important;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95) !important;
+            position: relative !important;
+            margin: auto !important;
+        }
+
+        .estante-nivel {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .huecos-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        @media screen and (max-width: 500px) {
+            .huecos-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
 
     </style>
 </head>
@@ -1802,8 +1853,8 @@
 
             if (!modal) return;
 
-            titulo.textContent = `RACK ${numRack} - RADIOGRAFÍA POR LADO`;
-            subtitulo.textContent = `Control físico: 4 Niveles × 2 Lados independientes`;
+            titulo.textContent = `RACK ${numRack} - RADIOGRAFÍA DE NIVELES`;
+            subtitulo.textContent = `Control de carga por Nivel y Lado`;
 
             btnFiltrar.onclick = () => {
                 cerrarModalRack();
@@ -1815,15 +1866,16 @@
                 }
             };
 
+            // Filtramos materiales de este rack (reconoce "1", "R1", "RACK 1", etc.)
             const materiales = (listaInventarioGlobal || []).filter(item => {
                 let r = '';
                 if (item.rack && item.rack !== 'N/A') {
                     r = String(item.rack).replace(/RACK/gi, '').replace(/R/gi, '').trim();
                 } else if (item.ubicacion_destino) {
-                    const m = item.ubicacion_destino.match(/RACK\s*([0-9]+)/i);
+                    const m = item.ubicacion_destino.match(/RACK\s*R?([0-9]+)/i);
                     if (m) r = m[1].trim();
                 }
-                return r === String(numRack);
+                return String(r) === String(numRack);
             });
 
             contenedor.innerHTML = '';
@@ -1836,18 +1888,30 @@
             ];
 
             nivelesConfig.forEach(cfg => {
+                // Función flexible para saber si un material pertenece a este nivel
+                const coincideConNivel = (item) => {
+                    const txt = (item.ubicacion_destino || '').toUpperCase();
+                    // Reconoce: "Nivel 4", "Nivel: 4", "Nivel: N4", "Nivel N4", "N4"
+                    const regexNivel = new RegExp(`Nivel:?\\s*N?${cfg.nivel}\\b`, 'i');
+                    const nivelPuro = item.nivel ? String(item.nivel).replace(/\D/g, '') : '';
+                    return regexNivel.test(txt) || nivelPuro === String(cfg.nivel);
+                };
+
+                // Filtramos por lado (Izquierdo / Derecho / Manga)
                 const itemsIzq = materiales.filter(m => {
+                    if (!coincideConNivel(m)) return false;
                     const txt = (m.ubicacion_destino || '').toUpperCase();
-                    const coincideNivel = txt.includes(`NIVEL ${cfg.nivel}`) || txt.includes(`NIVEL: ${cfg.nivel}`);
-                    const coincideLado = txt.includes('IZQUIERDO') || txt.includes('MANGA') || txt.includes('AMBOS');
-                    return coincideNivel && coincideLado;
+                    const ladoPuro = (m.lado || '').toUpperCase();
+                    return txt.includes('IZQUIERDO') || txt.includes('IZQ') || txt.includes('MANGA') || txt.includes('AMBOS') ||
+                           ladoPuro.includes('IZQUIERDO') || ladoPuro.includes('AMBOS');
                 });
 
                 const itemsDer = materiales.filter(m => {
+                    if (!coincideConNivel(m)) return false;
                     const txt = (m.ubicacion_destino || '').toUpperCase();
-                    const coincideNivel = txt.includes(`NIVEL ${cfg.nivel}`) || txt.includes(`NIVEL: ${cfg.nivel}`);
-                    const coincideLado = txt.includes('DERECHO') || txt.includes('MANGA') || txt.includes('AMBOS');
-                    return coincideNivel && coincideLado;
+                    const ladoPuro = (m.lado || '').toUpperCase();
+                    return txt.includes('DERECHO') || txt.includes('DER') || txt.includes('MANGA') || txt.includes('AMBOS') ||
+                           ladoPuro.includes('DERECHO') || ladoPuro.includes('AMBOS');
                 });
 
                 const renderLado = (nombreLado, items) => {
@@ -1871,7 +1935,7 @@
 
                     if (estaLlenoAlTope) {
                         return `
-                            <div class="hueco-slot ocupado" style="border: 2px solid var(--danger); background: rgba(239, 68, 68, 0.15); padding: 14px; border-radius: 10px; text-align: left;">
+                            <div class="hueco-slot ocupado" style="border: 2px solid var(--danger); background: rgba(239, 68, 68, 0.18); padding: 14px; border-radius: 10px; text-align: left;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <strong style="font-size: 11px; color: var(--danger);">${nombreLado}</strong>
                                     <span style="font-size: 10px; background: var(--danger); color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔴 LLENO AL TOPE</span>
@@ -1883,7 +1947,7 @@
                         `;
                     } else {
                         return `
-                            <div class="hueco-slot ocupado" style="border: 2px solid var(--warning); background: rgba(245, 158, 11, 0.15); padding: 14px; border-radius: 10px; text-align: left;">
+                            <div class="hueco-slot ocupado" style="border: 2px solid var(--warning); background: rgba(245, 158, 11, 0.18); padding: 14px; border-radius: 10px; text-align: left;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <strong style="font-size: 11px; color: var(--warning);">${nombreLado}</strong>
                                     <span style="font-size: 10px; background: var(--warning); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🟡 TIENE ESPACIO</span>
@@ -1897,11 +1961,11 @@
                 };
 
                 contenedor.innerHTML += `
-                    <div style="margin-bottom: 12px; background: var(--bg-card); border-radius: 12px; padding: 12px; border: 1px solid var(--border-color);">
+                    <div class="estante-nivel">
                         <div style="font-size: 12px; font-weight: 800; color: var(--kpa-cyan); margin-bottom: 8px; text-transform: uppercase;">
                             🏗️ ${cfg.label}
                         </div>
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="huecos-grid">
                             ${renderLado('LADO IZQUIERDO', itemsIzq)}
                             ${renderLado('LADO DERECHO', itemsDer)}
                         </div>
