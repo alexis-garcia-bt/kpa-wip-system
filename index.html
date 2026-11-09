@@ -619,6 +619,14 @@
                             <span>Ocupar ambos lados (Manga)</span>
                         </label>
                     </div>
+                    <!-- CONTROL REAL DE ESPACIO POR LADO -->
+                    <div class="form-group" id="bloqueEstadoLlenado">
+                        <label for="selectCapacidadLado">Disponibilidad física de este Lado:</label>
+                        <select id="selectCapacidadLado">
+                            <option value="ESPACIO">🟡 TIENE ESPACIO (Aún cabe otra tarima en este lado)</option>
+                            <option value="LLENO">🔴 LLENO AL TOPE (Ya no cabe nada más en este lado)</option>
+                        </select>
+                    </div>
 
                     <button type="submit" class="btn-primary">Guardar Movimiento</button>
                     <div id="mensajeEstado"></div>
@@ -891,6 +899,33 @@
         </div>
         </footer>
 
+
+        <!-- VENTANA DE RADIOGRAFÍA DE RACK (NIVELES Y LADOS) -->
+    <div id="modalDetalleRack" class="modal-rack-overlay" style="display: none;" onclick="cerrarModalRack(event)">
+        <div class="modal-rack-content" onclick="event.stopPropagation()">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 15px;">
+                <div>
+                    <h2 id="modalRackTitulo" style="margin: 0; font-size: 20px; color: var(--kpa-cyan); border: none; padding: 0;">
+                        RACK - RADIOGRAFÍA
+                    </h2>
+                    <span id="modalRackSubtitulo" style="font-size: 12px; color: var(--text-muted);">Control por Nivel y Lado</span>
+                </div>
+                <button type="button" onclick="cerrarModalRack()" style="background: var(--danger); color: #fff; border: none; width: 36px; height: 36px; border-radius: 50%; font-size: 18px; font-weight: bold; cursor: pointer;">✕</button>
+            </div>
+
+            <!-- CONTENEDOR DINÁMICO DE NIVELES Y LADOS -->
+            <div id="modalRackNivelesContenedor"></div>
+
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button type="button" id="btnFiltrarTablaDesdeModal" style="flex: 1; background: var(--kpa-blue); color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer;">
+                    📋 Ver este Rack en la Tabla
+                </button>
+                <button type="button" onclick="cerrarModalRack()" style="flex: 1; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer;">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
     <script>
          const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
             ? 'https://kpa-wip-system.onrender.com' // Si abres con Live Server apunta a Render
@@ -1367,7 +1402,11 @@
             const piezas = document.getElementById('inputPiezas').value;
             const fechaProceso = document.getElementById('inputFechaProceso').value;
             const ambosLados = document.getElementById('ambosLadosCheck').checked;
-            const ladoFinal = ambosLados ? 'AMBOS (IZQ Y DER - MANGA LARGA)' : (document.getElementById('ladoDestino').value || 'N/A');
+            const estadoLlenado = document.getElementById('selectCapacidadLado') ? document.getElementById('selectCapacidadLado').value : 'ESPACIO';
+            let etiquetaLlenado = (ambosLados || estadoLlenado === 'LLENO') ? ' [LLENO AL TOPE]' : ' [CON ESPACIO]';
+            const ladoFinal = ambosLados 
+                ? 'AMBOS (IZQ Y DER - MANGA LARGA) [LLENO AL TOPE]' 
+                : `${document.getElementById('ladoDestino').value || 'IZQUIERDO'}${etiquetaLlenado}`;
 
             // --- CANDADO DE SEGURIDAD EN SALIDAS ---
             if (tipoMovimientoSeleccionado === 'SALIDA') {
@@ -1786,6 +1825,133 @@
                 selectRack.value = `RACK ${numeroRack}`;
                 aplicarFiltrosInventario();
             }
+        }
+
+
+        // FUNCIÓN NUEVA: Radiografía de los 4 niveles y lados independientes
+        function abrirRadiografiaRack(numRack) {
+            const modal = document.getElementById('modalDetalleRack');
+            const titulo = document.getElementById('modalRackTitulo');
+            const subtitulo = document.getElementById('modalRackSubtitulo');
+            const contenedor = document.getElementById('modalRackNivelesContenedor');
+            const btnFiltrar = document.getElementById('btnFiltrarTablaDesdeModal');
+
+            if (!modal) return;
+
+            titulo.textContent = `RACK ${numRack} - RADIOGRAFÍA POR LADO`;
+            subtitulo.textContent = `Control físico: 4 Niveles × 2 Lados independientes`;
+
+            btnFiltrar.onclick = () => {
+                cerrarModalRack();
+                cambiarVistaInventario('tabla');
+                const selectRack = document.getElementById('filtroRackInventario');
+                if (selectRack) {
+                    selectRack.value = `RACK ${numRack}`;
+                    aplicarFiltrosInventario();
+                }
+            };
+
+            const materiales = (listaInventarioGlobal || []).filter(item => {
+                let r = '';
+                if (item.rack && item.rack !== 'N/A') {
+                    r = String(item.rack).replace(/RACK/gi, '').replace(/R/gi, '').trim();
+                } else if (item.ubicacion_destino) {
+                    const m = item.ubicacion_destino.match(/RACK\s*([0-9]+)/i);
+                    if (m) r = m[1].trim();
+                }
+                return r === String(numRack);
+            });
+
+            contenedor.innerHTML = '';
+
+            const nivelesConfig = [
+                { nivel: 4, label: 'NIVEL 4 (ALTO)' },
+                { nivel: 3, label: 'NIVEL 3' },
+                { nivel: 2, label: 'NIVEL 2' },
+                { nivel: 1, label: 'NIVEL 1 (PISO)' }
+            ];
+
+            nivelesConfig.forEach(cfg => {
+                const itemsIzq = materiales.filter(m => {
+                    const txt = (m.ubicacion_destino || '').toUpperCase();
+                    const coincideNivel = txt.includes(`NIVEL ${cfg.nivel}`) || txt.includes(`NIVEL: ${cfg.nivel}`);
+                    const coincideLado = txt.includes('IZQUIERDO') || txt.includes('MANGA') || txt.includes('AMBOS');
+                    return coincideNivel && coincideLado;
+                });
+
+                const itemsDer = materiales.filter(m => {
+                    const txt = (m.ubicacion_destino || '').toUpperCase();
+                    const coincideNivel = txt.includes(`NIVEL ${cfg.nivel}`) || txt.includes(`NIVEL: ${cfg.nivel}`);
+                    const coincideLado = txt.includes('DERECHO') || txt.includes('MANGA') || txt.includes('AMBOS');
+                    return coincideNivel && coincideLado;
+                });
+
+                const renderLado = (nombreLado, items) => {
+                    if (items.length === 0) {
+                        return `
+                            <div class="hueco-slot vacio" style="border: 2px dashed var(--kpa-green); background: rgba(16, 185, 129, 0.08); padding: 14px; border-radius: 10px; text-align: center;">
+                                <strong style="font-size: 11px; color: var(--kpa-green);">${nombreLado}</strong>
+                                <div style="font-size: 13px; font-weight: bold; color: var(--kpa-green); margin-top: 4px;">🟢 100% LIBRE</div>
+                                <small style="color: var(--text-muted); font-size: 10px;">Listo para recibir tarima</small>
+                            </div>
+                        `;
+                    }
+
+                    const estaLlenoAlTope = items.some(it => {
+                        const txt = (it.ubicacion_destino || '').toUpperCase();
+                        return txt.includes('LLENO') || txt.includes('MANGA') || txt.includes('AMBOS');
+                    });
+
+                    const totalPzas = items.reduce((acc, it) => acc + (parseInt(it.piezas, 10) || 0), 0);
+                    const proyectos = items.map(it => it.proyecto || 'EXP').join(', ');
+
+                    if (estaLlenoAlTope) {
+                        return `
+                            <div class="hueco-slot ocupado" style="border: 2px solid var(--danger); background: rgba(239, 68, 68, 0.15); padding: 14px; border-radius: 10px; text-align: left;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <strong style="font-size: 11px; color: var(--danger);">${nombreLado}</strong>
+                                    <span style="font-size: 10px; background: var(--danger); color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔴 LLENO AL TOPE</span>
+                                </div>
+                                <div style="color: var(--warning); font-weight: bold; font-size: 13px; margin-top: 4px;">${proyectos}</div>
+                                <div style="font-size: 11px; color: #fff;">${totalPzas} pzas • ${items.length} tarima(s)</div>
+                                <small style="color: #fca5a5; font-size: 10px;">No cabe más material aquí</small>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="hueco-slot ocupado" style="border: 2px solid var(--warning); background: rgba(245, 158, 11, 0.15); padding: 14px; border-radius: 10px; text-align: left;">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <strong style="font-size: 11px; color: var(--warning);">${nombreLado}</strong>
+                                    <span style="font-size: 10px; background: var(--warning); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🟡 TIENE ESPACIO</span>
+                                </div>
+                                <div style="color: var(--warning); font-weight: bold; font-size: 13px; margin-top: 4px;">${proyectos}</div>
+                                <div style="font-size: 11px; color: #fff;">${totalPzas} pzas • ${items.length} tarima(s)</div>
+                                <small style="color: #fef08a; font-size: 10px;">Cabe otra tarima en este lado</small>
+                            </div>
+                        `;
+                    }
+                };
+
+                contenedor.innerHTML += `
+                    <div style="margin-bottom: 12px; background: var(--bg-card); border-radius: 12px; padding: 12px; border: 1px solid var(--border-color);">
+                        <div style="font-size: 12px; font-weight: 800; color: var(--kpa-cyan); margin-bottom: 8px; text-transform: uppercase;">
+                            🏗️ ${cfg.label}
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            ${renderLado('LADO IZQUIERDO', itemsIzq)}
+                            ${renderLado('LADO DERECHO', itemsDer)}
+                        </div>
+                    </div>
+                `;
+            });
+
+            modal.style.display = 'flex';
+        }
+
+        function cerrarModalRack(e) {
+            if (e && e.target && e.target.id !== 'modalDetalleRack') return;
+            const modal = document.getElementById('modalDetalleRack');
+            if (modal) modal.style.display = 'none';
         }
     </script>
 </body>
