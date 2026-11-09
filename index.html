@@ -675,8 +675,8 @@
                     <div class="form-group" id="bloqueEstadoLlenado">
                         <label for="selectCapacidadLado">Disponibilidad física de este Lado:</label>
                         <select id="selectCapacidadLado">
-                            <option value="ESPACIO">🟡 TIENE ESPACIO (Aún cabe otra tarima en este lado)</option>
-                            <option value="LLENO">🔴 LLENO AL TOPE (Ya no cabe nada más en este lado)</option>
+                            <option value="ESPACIO"> TIENE ESPACIO (Aún cabe otra tarima en este lado)</option>
+                            <option value="LLENO"> LLENO AL TOPE (Ya no cabe nada más en este lado)</option>
                         </select>
                     </div>
 
@@ -694,7 +694,7 @@
                 <h2>
                     <span>Buscador & Mapa de Racks WIP</span>
                     <button type="button" onclick="exportarInventarioExcel()" style="background: #059669; color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        📥 Descargar Excel
+                         Descargar Excel
                     </button>
                 </h2>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
@@ -704,10 +704,10 @@
                 <!-- SELECTOR DE VISTAS (TABLA VS MAPA) -->
                 <div style="display: flex; gap: 12px; margin-bottom: 22px;">
                     <button type="button" id="btnVerTabla" onclick="cambiarVistaInventario('tabla')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; background: var(--kpa-blue); color: #fff; border: 1px solid var(--kpa-blue);">
-                        📋 Ver Lista de Inventario
+                         Ver Lista de Inventario
                     </button>
                     <button type="button" id="btnVerMapa" onclick="cambiarVistaInventario('mapa')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color);">
-                        🗺️ Ver Mapa de Racks (1-19)
+                         Ver Mapa de Racks (1-19)
                     </button>
                 </div>
 
@@ -767,7 +767,7 @@
                 <h2>
                     <span>Registro General de Movimientos WIP</span>
                     <button type="button" onclick="exportarHistorialExcel()" style="background: #059669; color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        📥 Descargar Excel
+                         Descargar Excel
                     </button>
                 </h2>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Historial cronológico de movimientos con trazabilidad completa de operadores y fechas.</p>
@@ -888,7 +888,7 @@
                             </p>
                         </div>
                         <a href="https://wa.me/522462161119?text=Hola%20Lizeth,%20tengo%20una%20duda%20de%20planeación/material%20en%20WIP" target="_blank" style="background: #25d366; color: #fff; text-decoration: none; padding: 13px; border-radius: 10px; font-weight: 800; font-size: 13px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.25);">
-                            💬 Enviar WhatsApp a Lizeth
+                             Enviar WhatsApp a Lizeth
                         </a>
                     </div>
 
@@ -909,7 +909,7 @@
                             </p>
                         </div>
                         <a href="https://wa.me/524427770928?text=Hola%20Alexis,%20necesito%20soporte%20en%20el%20sistema%20KPA%20WIP" target="_blank" style="background: #25d366; color: #fff; text-decoration: none; padding: 13px; border-radius: 10px; font-weight: 800; font-size: 13px; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.25);">
-                            💬 Enviar WhatsApp a Alexis
+                             Enviar WhatsApp a Alexis
                         </a>
                     </div>
 
@@ -970,7 +970,7 @@
 
             <div style="margin-top: 20px; display: flex; gap: 10px;">
                 <button type="button" id="btnFiltrarTablaDesdeModal" style="flex: 1; background: var(--kpa-blue); color: #fff; border: none; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer;">
-                    📋 Ver este Rack en la Tabla
+                     Ver este Rack en la Tabla
                 </button>
                 <button type="button" onclick="cerrarModalRack()" style="flex: 1; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color); padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer;">
                     Cerrar
@@ -1069,20 +1069,20 @@
                 // 3 ESTADOS FÍSICOS REALES:
                 let claseEstado = 'estado-vacio';
                 let claseBadge = 'badge-vacio';
-                let textoBadge = '🟢 DISPONIBLE';
+                let textoBadge = ' DISPONIBLE';
 
                 if (totalTarimas === 0) {
                     claseEstado = 'estado-vacio';
                     claseBadge = 'badge-vacio';
-                    textoBadge = '🟢 DISPONIBLE';
+                    textoBadge = ' DISPONIBLE';
                 } else if (totalTarimas >= 8) {
                     claseEstado = 'estado-lleno';
                     claseBadge = 'badge-lleno';
-                    textoBadge = '🔴 LLENO AL TOPE';
+                    textoBadge = ' LLENO AL TOPE';
                 } else {
                     claseEstado = 'estado-parcial';
                     claseBadge = 'badge-parcial';
-                    textoBadge = `🟡 PARCIAL (${totalTarimas} tarimas)`;
+                    textoBadge = ` PARCIAL (${totalTarimas} tarimas)`;
                 }
 
                 const proyectosUnicos = [...new Set(materialesEnRack.map(m => (m.proyecto || 'EXP').toUpperCase()))].slice(0, 2);
@@ -1105,7 +1105,7 @@
                                 ${textoProyectos}
                             </div>
                             <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px; font-weight: bold;">
-                                🔍 Toca para ver niveles y lados
+                                 Toca para ver niveles y lados
                             </div>
                         </div>
                     </div>
@@ -1494,12 +1494,12 @@
                 });
 
                 if (!loteEncontrado) {
-                    alert(`⚠️ STOCK NO ENCONTRADO:\n\nNo hay registro de inventario activo para el proyecto "${proyBuscado}" en el Rack seleccionado.`);
+                    alert(` STOCK NO ENCONTRADO:\n\nNo hay registro de inventario activo para el proyecto "${proyBuscado}" en el Rack seleccionado.`);
                     return;
                 }
 
                 if (cantSalida > loteEncontrado.piezas) {
-                    alert(`⚠️ STOCK INSUFICIENTE:\n\nSolo hay ${loteEncontrado.piezas} piezas disponibles en ese Rack.\nNo es posible retirar ${cantSalida} piezas.`);
+                    alert(` STOCK INSUFICIENTE:\n\nSolo hay ${loteEncontrado.piezas} piezas disponibles en ese Rack.\nNo es posible retirar ${cantSalida} piezas.`);
                     return;
                 }
             }
@@ -1920,7 +1920,7 @@
                         return `
                             <div class="hueco-slot vacio" style="border: 2px dashed var(--kpa-green); background: rgba(16, 185, 129, 0.08); padding: 14px; border-radius: 10px; text-align: center;">
                                 <strong style="font-size: 11px; color: var(--kpa-green);">${nombreLado}</strong>
-                                <div style="font-size: 13px; font-weight: bold; color: var(--kpa-green); margin-top: 4px;">🟢 100% LIBRE</div>
+                                <div style="font-size: 13px; font-weight: bold; color: var(--kpa-green); margin-top: 4px;"> 100% LIBRE</div>
                                 <small style="color: var(--text-muted); font-size: 10px;">Listo para recibir tarima</small>
                             </div>
                         `;
@@ -1939,7 +1939,7 @@
                             <div class="hueco-slot ocupado" style="border: 2px solid var(--danger); background: rgba(239, 68, 68, 0.18); padding: 14px; border-radius: 10px; text-align: left;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <strong style="font-size: 11px; color: var(--danger);">${nombreLado}</strong>
-                                    <span style="font-size: 10px; background: var(--danger); color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🔴 LLENO AL TOPE</span>
+                                    <span style="font-size: 10px; background: var(--danger); color: #fff; padding: 2px 6px; border-radius: 4px; font-weight: bold;"> LLENO AL TOPE</span>
                                 </div>
                                 <div style="color: var(--warning); font-weight: bold; font-size: 13px; margin-top: 4px;">${proyectos}</div>
                                 <div style="font-size: 11px; color: #fff;">${totalPzas} pzas • ${items.length} tarima(s)</div>
@@ -1951,7 +1951,7 @@
                             <div class="hueco-slot ocupado" style="border: 2px solid var(--warning); background: rgba(245, 158, 11, 0.18); padding: 14px; border-radius: 10px; text-align: left;">
                                 <div style="display: flex; justify-content: space-between; align-items: center;">
                                     <strong style="font-size: 11px; color: var(--warning);">${nombreLado}</strong>
-                                    <span style="font-size: 10px; background: var(--warning); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold;">🟡 TIENE ESPACIO</span>
+                                    <span style="font-size: 10px; background: var(--warning); color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold;"> TIENE ESPACIO</span>
                                 </div>
                                 <div style="color: var(--warning); font-weight: bold; font-size: 13px; margin-top: 4px;">${proyectos}</div>
                                 <div style="font-size: 11px; color: #fff;">${totalPzas} pzas • ${items.length} tarima(s)</div>
@@ -1964,7 +1964,7 @@
                 contenedor.innerHTML += `
                     <div class="estante-nivel">
                         <div style="font-size: 12px; font-weight: 800; color: var(--kpa-cyan); margin-bottom: 8px; text-transform: uppercase;">
-                            🏗️ ${cfg.label}
+                             ${cfg.label}
                         </div>
                         <div class="huecos-grid">
                             ${renderLado('LADO IZQUIERDO', itemsIzq)}
