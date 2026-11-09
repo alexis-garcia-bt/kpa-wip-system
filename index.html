@@ -264,7 +264,7 @@
 </head>
 <body>
 
-    <body>
+
 
     <header>
         <!-- 1. LOGO Y MARCA -->
@@ -405,10 +405,10 @@
                                     <option value="">RACK ORIGEN (1-19)</option>
                                     <script> for(let i=1; i<=19; i++) document.write(`<option value="R${i}">RACK ${i}</option>`); </script>
                                 </select>
-                                <select id="nivelOrigen">
-                                    <option value="">NIVEL (N1-N4)</option>
-                                    <option value="N1">N1</option><option value="N2">N2</option><option value="N3">N3</option><option value="N4">N4</option>
-                                </select>
+                                <option value="Nivel 1">Nivel 1 (Piso)</option>
+                                <option value="Nivel 2">Nivel 2</option>
+                                <option value="Nivel 3">Nivel 3</option>
+                                <option value="Nivel 4">Nivel 4 (Alto)</option>
                             </div>
                             <div style="display: flex; gap: 15px;">
                                 <select id="ladoOrigen">
@@ -1100,17 +1100,21 @@
     registros.forEach(item => {
         const esSalida = item.tipo_movimiento && item.tipo_movimiento.toUpperCase() === 'SALIDA';
         
-        // Detalle inteligente: si es salida muestra el destino real (Basura, Embarques, etc.), si es entrada/reubicación muestra su ubicación
+        // Limpiamos siglas repetidas para lectura rápida en celular
+        let textoLimpio = (item.ubicacion_destino || 'N/A')
+            .replace(/RACK\s*R/gi, 'RACK ')
+            .replace(/Nivel:\s*N/gi, 'Nivel ')
+            .replace(/Pos:\s*/gi, 'Posición ');
+
         let detalleUbicacion = '';
         if (esSalida) {
-            detalleUbicacion = `Retirado de Inventario WIP <br>→ Destino: <strong style="color: var(--kpa-danger);">${item.ubicacion_destino || 'BASURA / SCRAP'}</strong>`;
+            detalleUbicacion = `<span style="color: var(--danger); font-weight: bold;">SALIDA</span> → <strong style="color: var(--warning);">${item.ubicacion_destino || 'BASURA / SCRAP'}</strong>`;
         } else {
-            detalleUbicacion = item.ubicacion_destino || 'N/A';
+            detalleUbicacion = `<strong style="color: #60a5fa; font-size: 13px;">${textoLimpio}</strong>`;
         }
 
         const operadorReal = item.nombre_operador || item.personal || 'Operador KPA';
         const piezasReal = item.piezas ? `${item.piezas} pzas` : 'N/A';
-
         // Convertimos la fecha UTC de la base de datos a hora local de México legible con AM/PM
         let fechaLegible = 'Reciente';
         if (item.fecha_hora) {
@@ -1139,9 +1143,8 @@
                 <td><strong style="color: var(--warning);">${piezasReal}</strong></td>
                 <td>${operadorReal}</td>
                 <td>
-                    <strong style="color: ${esSalida ? 'var(--kpa-danger)' : 'var(--kpa-blue);'}">${esSalida ? 'Retiro de Rack' : 'Rack:'}</strong>
                     ${detalleUbicacion}
-                    ${item.fecha_proceso ? `<br><small style="color: var(--kpa-green);">F. Proceso: ${item.fecha_proceso.split('T')[0]}</small>` : ''}
+                    ${item.fecha_proceso ? `<br><small style="color: var(--kpa-green); font-weight: bold;">F. Proceso: ${item.fecha_proceso.split('T')[0]}</small>` : ''}
                 </td>
                 <td>${fechaLegible}</td>
             </tr>
