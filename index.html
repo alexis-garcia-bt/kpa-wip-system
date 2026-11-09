@@ -260,6 +260,53 @@
     }
 }
 
+    /* ESTILOS DEL MAPA VISUAL DE RACKS */
+        .rack-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .rack-card {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .rack-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--kpa-blue);
+        }
+        .rack-card.ocupado {
+            border-color: rgba(56, 189, 248, 0.5);
+            background: linear-gradient(145deg, #121d33, #0f244a);
+        }
+        .rack-card.vacio {
+            border-color: rgba(16, 185, 129, 0.4);
+            background: linear-gradient(145deg, #121d33, #0a241e);
+        }
+        .rack-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+        .badge-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .badge-vacio { background: rgba(16, 185, 129, 0.2); color: var(--kpa-green); border: 1px solid var(--kpa-green); }
+        .badge-ocupado { background: rgba(56, 189, 248, 0.2); color: var(--kpa-cyan); border: 1px solid var(--kpa-cyan); }
+    
+    
     </style>
 </head>
 <body>
@@ -538,6 +585,7 @@
                 </h2>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Historial cronológico de movimientos con trazabilidad completa de operadores y fechas.</p>
 
+                <!-- BARRA DE FILTROS: BUSCADOR Y RANGO DE FECHAS -->
                 <div style="display: flex; gap: 15px; margin-bottom: 22px; align-items: center; flex-wrap: wrap;">
                     <input type="text" id="filtroHistorial" placeholder="BUSCAR POR PROYECTO O OPERADOR..." oninput="aplicarFiltrosHistorial()" style="flex: 2; min-width: 200px; padding: 12px 16px;">
                     
@@ -663,6 +711,7 @@
         let usuarioActual = { rol: '', nombre: '', turno: '' };
         let tipoMovimientoSeleccionado = '';
         let listaInventarioGlobal = [];
+        let listaHistorialGlobal = [];
 
         window.onload = async () => { 
             await cargarPersonalBD(); 
@@ -1108,74 +1157,7 @@
         }
 
     
-        async function cargarHistorial() {
-    const tbody = document.getElementById('tablaHistorialBody');
-    if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Cargando movimientos...</td></tr>';
-    let registros = [];
-    try {
-        const res = await fetch('https://kpa-wip-system.onrender.com/api/historial');
-        if (res.ok) registros = await res.json();
-    } catch (e) {}
-    tbody.innerHTML = '';
-    if (registros.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Sin movimientos registrados.</td></tr>';
-        return;
-    }
-    registros.forEach(item => {
-        const esSalida = item.tipo_movimiento && item.tipo_movimiento.toUpperCase() === 'SALIDA';
         
-        // Limpiamos siglas repetidas para lectura rápida en celular
-        let textoLimpio = (item.ubicacion_destino || 'N/A')
-            .replace(/RACK\s*R/gi, 'RACK ')
-            .replace(/Nivel:\s*N/gi, 'Nivel ')
-            .replace(/Pos:\s*/gi, 'Posición ');
-
-        let detalleUbicacion = '';
-        if (esSalida) {
-            detalleUbicacion = `<span style="color: var(--danger); font-weight: bold;">SALIDA</span> → <strong style="color: var(--warning);">${item.ubicacion_destino || 'BASURA / SCRAP'}</strong>`;
-        } else {
-            detalleUbicacion = `<strong style="color: #60a5fa; font-size: 13px;">${textoLimpio}</strong>`;
-        }
-
-        const operadorReal = item.nombre_operador || item.personal || 'Operador KPA';
-        const piezasReal = item.piezas ? `${item.piezas} pzas` : 'N/A';
-        // Convertimos la fecha UTC de la base de datos a hora local de México legible con AM/PM
-        let fechaLegible = 'Reciente';
-        if (item.fecha_hora) {
-            const fechaObj = new Date(item.fecha_hora);
-            if (!isNaN(fechaObj.getTime())) {
-                fechaLegible = fechaObj.toLocaleString('es-MX', {
-                    timeZone: 'America/Mexico_City',
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true
-                });
-            } else {
-                fechaLegible = item.fecha_hora;
-            }
-        }
-
-        tbody.innerHTML += `
-            <tr>
-                <td>#${item.id || item.id_movimiento || 'KPA'}</td>
-                <td><strong>${item.tipo_proyecto || item.proyecto || 'EXP'}</strong></td>
-                <td><span style="color: ${esSalida ? 'var(--kpa-danger)' : 'var(--kpa-green)'}; font-weight: bold;">${item.tipo_movimiento}</span></td>
-                <td><strong style="color: var(--warning);">${piezasReal}</strong></td>
-                <td>${operadorReal}</td>
-                <td>
-                    ${detalleUbicacion}
-                    ${item.fecha_proceso ? `<br><small style="color: var(--kpa-green); font-weight: bold;">F. Proceso: ${item.fecha_proceso.split('T')[0]}</small>` : ''}
-                </td>
-                <td>${fechaLegible}</td>
-            </tr>
-        `;
-    });
-}
         async function agregarPersonal(e) {
             e.preventDefault();
             if (usuarioActual.rol !== 'ADMIN') {
@@ -1235,11 +1217,285 @@
             });
         }
 
-        function filtrarTablaHistorial() {
-            const filtro = document.getElementById('filtroHistorial').value.toUpperCase();
-            document.querySelectorAll('#tablaHistorialBody tr').forEach(fila => {
-                fila.style.display = fila.textContent.toUpperCase().includes(filtro) ? '' : 'none';
+       async function cargarHistorial() {
+            const tbody = document.getElementById('tablaHistorialBody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Cargando movimientos...</td></tr>';
+            try {
+                const res = await fetch(`${API_URL}/api/historial`);
+                if (res.ok) {
+                    listaHistorialGlobal = await res.json();
+                    aplicarFiltrosHistorial();
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error al cargar historial.</td></tr>';
+                }
+            } catch (e) {
+                console.error("Error al cargar historial:", e);
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error de conexión con la base de datos.</td></tr>';
+            }
+        }
+
+        function aplicarFiltrosHistorial() {
+            const tbody = document.getElementById('tablaHistorialBody');
+            if (!tbody) return;
+
+            const texto = (document.getElementById('filtroHistorial').value || '').trim().toUpperCase();
+            const fechaDesde = document.getElementById('filtroFechaDesde').value;
+            const fechaHasta = document.getElementById('filtroFechaHasta').value;
+
+            if (!listaHistorialGlobal || listaHistorialGlobal.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Sin movimientos registrados.</td></tr>';
+                return;
+            }
+
+            const filtrados = listaHistorialGlobal.filter(item => {
+                const proy = (item.tipo_proyecto || item.proyecto || '').toUpperCase();
+                const op = (item.nombre_operador || item.personal || '').toUpperCase();
+                const tipo = (item.tipo_movimiento || '').toUpperCase();
+                const ubi = (item.ubicacion_destino || item.ubicacion_origen || '').toUpperCase();
+
+                const coincideTexto = !texto || proy.includes(texto) || op.includes(texto) || tipo.includes(texto) || ubi.includes(texto);
+
+                let fechaItem = '';
+                if (item.fecha_hora) {
+                    const d = new Date(item.fecha_hora);
+                    if (!isNaN(d.getTime())) {
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const dia = String(d.getDate()).padStart(2, '0');
+                        fechaItem = `${y}-${m}-${dia}`;
+                    } else {
+                        fechaItem = String(item.fecha_hora).split('T')[0];
+                    }
+                }
+
+                const coincideDesde = !fechaDesde || (fechaItem && fechaItem >= fechaDesde);
+                const coincideHasta = !fechaHasta || (fechaItem && fechaItem <= fechaHasta);
+
+                return coincideTexto && coincideDesde && coincideHasta;
             });
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No se encontraron movimientos con los filtros aplicados.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filtrados.forEach(item => {
+                const esSalida = item.tipo_movimiento && item.tipo_movimiento.toUpperCase() === 'SALIDA';
+
+                let textoLimpio = (item.ubicacion_destino || 'N/A')
+                    .replace(/RACK\s*R/gi, 'RACK ')
+                    .replace(/Nivel:\s*N/gi, 'Nivel ')
+                    .replace(/Pos:\s*/gi, 'Posición ');
+
+                let detalleUbicacion = '';
+                if (esSalida) {
+                    detalleUbicacion = `<span style="color: var(--danger); font-weight: bold;">SALIDA</span> → <strong style="color: var(--warning);">${item.ubicacion_destino || 'BASURA / SCRAP'}</strong>`;
+                } else {
+                    detalleUbicacion = `<strong style="color: #60a5fa; font-size: 13px;">${textoLimpio}</strong>`;
+                }
+
+                const operadorReal = item.nombre_operador || item.personal || 'Operador KPA';
+                const piezasReal = item.piezas ? `${item.piezas} pzas` : 'N/A';
+
+                let fechaLegible = 'Reciente';
+                if (item.fecha_hora) {
+                    const fechaObj = new Date(item.fecha_hora);
+                    if (!isNaN(fechaObj.getTime())) {
+                        fechaLegible = fechaObj.toLocaleString('es-MX', {
+                            timeZone: 'America/Mexico_City',
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: true
+                        });
+                    } else {
+                        fechaLegible = item.fecha_hora;
+                    }
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${item.id || item.id_movimiento || 'KPA'}</td>
+                        <td><strong>${(item.tipo_proyecto || item.proyecto || 'EXP').toUpperCase()}</strong></td>
+                        <td><span style="color: ${esSalida ? 'var(--danger)' : 'var(--kpa-green)'}; font-weight: bold;">${item.tipo_movimiento}</span></td>
+                        <td><strong style="color: var(--warning);">${piezasReal}</strong></td>
+                        <td>${operadorReal}</td>
+                        <td>
+                            ${detalleUbicacion}
+                            ${item.fecha_proceso ? `<br><small style="color: var(--kpa-green); font-weight: bold;">F. Proceso: ${item.fecha_proceso.split('T')[0]}</small>` : ''}
+                        </td>
+                        <td>${fechaLegible}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function limpiarFiltrosHistorial() {
+            document.getElementById('filtroHistorial').value = '';
+            document.getElementById('filtroFechaDesde').value = '';
+            document.getElementById('filtroFechaHasta').value = '';
+            aplicarFiltrosHistorial();
+        }
+
+        function exportarHistorialExcel() {
+            if (!listaHistorialGlobal || listaHistorialGlobal.length === 0) {
+                alert("No hay movimientos en el historial para exportar.");
+                return;
+            }
+
+            const texto = (document.getElementById('filtroHistorial').value || '').trim().toUpperCase();
+            const fechaDesde = document.getElementById('filtroFechaDesde').value;
+            const fechaHasta = document.getElementById('filtroFechaHasta').value;
+
+            const datosAExportar = listaHistorialGlobal.filter(item => {
+                const proy = (item.tipo_proyecto || item.proyecto || '').toUpperCase();
+                const op = (item.nombre_operador || item.personal || '').toUpperCase();
+                const tipo = (item.tipo_movimiento || '').toUpperCase();
+                const ubi = (item.ubicacion_destino || item.ubicacion_origen || '').toUpperCase();
+
+                const coincideTexto = !texto || proy.includes(texto) || op.includes(texto) || tipo.includes(texto) || ubi.includes(texto);
+
+                let fechaItem = '';
+                if (item.fecha_hora) {
+                    const d = new Date(item.fecha_hora);
+                    if (!isNaN(d.getTime())) {
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, '0');
+                        const dia = String(d.getDate()).padStart(2, '0');
+                        fechaItem = `${y}-${m}-${dia}`;
+                    } else {
+                        fechaItem = String(item.fecha_hora).split('T')[0];
+                    }
+                }
+
+                const coincideDesde = !fechaDesde || (fechaItem && fechaItem >= fechaDesde);
+                const coincideHasta = !fechaHasta || (fechaItem && fechaItem <= fechaHasta);
+
+                return coincideTexto && coincideDesde && coincideHasta;
+            });
+
+            if (datosAExportar.length === 0) {
+                alert("No hay registros que coincidan con los filtros aplicados.");
+                return;
+            }
+
+            let csv = "\uFEFF"; // Para UTF-8 compatible con acentos en Excel
+            csv += "ID,Proyecto/Material,Movimiento,Piezas,Operador,Ubicación Destino,Ubicación Origen,Fecha Proceso,Fecha Registro\n";
+
+            datosAExportar.forEach(item => {
+                const id = item.id || item.id_movimiento || '';
+                const proy = (item.tipo_proyecto || item.proyecto || 'EXP').replace(/,/g, '');
+                const tipo = (item.tipo_movimiento || '').replace(/,/g, '');
+                const piezas = item.piezas || 0;
+                const op = (item.nombre_operador || item.personal || 'Operador KPA').replace(/,/g, '');
+                const dest = (item.ubicacion_destino || 'N/A').replace(/,/g, ' - ');
+                const orig = (item.ubicacion_origen || 'N/A').replace(/,/g, ' - ');
+                const fProc = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'N/A';
+                
+                let fReg = 'Reciente';
+                if (item.fecha_hora) {
+                    const d = new Date(item.fecha_hora);
+                    fReg = !isNaN(d.getTime()) 
+                        ? d.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }).replace(/,/g, '') 
+                        : String(item.fecha_hora).replace(/,/g, '');
+                }
+
+                csv += `${id},"${proy}","${tipo}",${piezas},"${op}","${dest}","${orig}","${fProc}","${fReg}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            const hoy = new Date().toISOString().split('T')[0];
+            a.download = `Historial_Movimientos_KPA_${hoy}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    
+        function cambiarVistaInventario(vista) {
+            const elTabla = document.getElementById('vistaTablaInventario');
+            const elMapa = document.getElementById('vistaMapaRacks');
+            const btnTabla = document.getElementById('btnVerTabla');
+            const btnMapa = document.getElementById('btnVerMapa');
+
+            if (vista === 'mapa') {
+                elTabla.style.display = 'none';
+                elMapa.style.display = 'block';
+                btnMapa.style.background = 'var(--kpa-blue)';
+                btnMapa.style.color = '#fff';
+                btnTabla.style.background = 'var(--bg-card)';
+                btnTabla.style.color = 'var(--text-muted)';
+                renderizarMapaRacks();
+            } else {
+                elTabla.style.display = 'block';
+                elMapa.style.display = 'none';
+                btnTabla.style.background = 'var(--kpa-blue)';
+                btnTabla.style.color = '#fff';
+                btnMapa.style.background = 'var(--bg-card)';
+                btnMapa.style.color = 'var(--text-muted)';
+            }
+        }
+
+        function renderizarMapaRacks() {
+            const grid = document.getElementById('gridRacksContainer');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            for (let i = 1; i <= 19; i++) {
+                // Buscamos materiales en este rack específico
+                const materialesEnRack = listaInventarioGlobal.filter(item => {
+                    let r = (item.rack && item.rack !== 'N/A') ? item.rack : '';
+                    if (!r && item.ubicacion_destino) {
+                        const m = item.ubicacion_destino.match(/RACK\s*([0-9A-Z]+)/i);
+                        if (m) r = m[1];
+                    }
+                    r = String(r).toUpperCase().replace('RACK', '').replace('R', '').trim();
+                    return r === String(i);
+                });
+
+                const totalTarimas = materialesEnRack.length;
+                const totalPiezas = materialesEnRack.reduce((acc, it) => acc + (parseInt(it.piezas, 10) || 0), 0);
+                const estaOcupado = totalTarimas > 0;
+
+                // Extraer lista de proyectos únicos en el rack
+                const proyectosUnicos = [...new Set(materialesEnRack.map(m => (m.proyecto || 'EXP').toUpperCase()))].slice(0, 2);
+                const textoProyectos = proyectosUnicos.length > 0 ? proyectosUnicos.join(', ') : 'Sin carga';
+
+                grid.innerHTML += `
+                    <div class="rack-card ${estaOcupado ? 'ocupado' : 'vacio'}" onclick="filtrarDesdeRack(${i})">
+                        <span class="badge-status ${estaOcupado ? 'badge-ocupado' : 'badge-vacio'}">
+                            ${estaOcupado ? 'Ocupado' : 'Disponible'}
+                        </span>
+                        <h3>RACK ${i}</h3>
+                        <div style="font-size: 13px; color: ${estaOcupado ? 'var(--warning)' : 'var(--text-muted)'}; font-weight: bold; margin-bottom: 4px;">
+                            ${estaOcupado ? `${totalPiezas.toLocaleString('es-MX')} pzas` : '0 pzas'}
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-muted);">
+                            ${estaOcupado ? `${totalTarimas} tarima(s)` : 'Vacío'}
+                        </div>
+                        <div style="font-size: 11px; color: var(--kpa-cyan); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${textoProyectos}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Al tocar un rack en el mapa, filtra automáticamente la tabla
+        function filtrarDesdeRack(numeroRack) {
+            cambiarVistaInventario('tabla');
+            const selectRack = document.getElementById('filtroRackInventario');
+            if (selectRack) {
+                selectRack.value = `RACK ${numeroRack}`;
+                aplicarFiltrosInventario();
+            }
         }
     </script>
 </body>
