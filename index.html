@@ -405,6 +405,7 @@
 /* ==========================================================
            VENTANA FLOTANTE CENTRADA (POPUP MODAL)
            ========================================================== */
+        /* VENTANA FLOTANTE CENTRADA (CORREGIDA) */
         .modal-rack-overlay {
             position: fixed !important;
             top: 0 !important;
@@ -414,11 +415,11 @@
             background: rgba(2, 6, 23, 0.88) !important;
             backdrop-filter: blur(8px) !important;
             z-index: 99999 !important;
-            display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             padding: 15px !important;
             box-sizing: border-box !important;
+            display: none; /* <-- Oculta por defecto para que la X pueda cerrarla */
         }
 
         .modal-rack-content {
@@ -1976,8 +1977,7 @@
             modal.style.display = 'flex';
         }
 
-        function cerrarModalRack(e) {
-            if (e && e.target && e.target.id !== 'modalDetalleRack') return;
+        function cerrarModalRack() {
             const modal = document.getElementById('modalDetalleRack');
             if (modal) modal.style.display = 'none';
         }
