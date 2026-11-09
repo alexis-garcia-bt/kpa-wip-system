@@ -495,7 +495,6 @@
                 </h2>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Consulta el inventario activo, piezas netas y ubicación exacta por coordenada en racks.</p>
 
-                <!-- BUSCADOR Y FILTRO AMPLIOS Y DESPEJADOS -->
                 <div style="display: flex; gap: 15px; margin-bottom: 25px; align-items: center; flex-wrap: wrap;">
                     <input type="text" id="inputBuscarMaterial" placeholder="ESCRIBA EL PROYECTO O MATERIAL (EJ. EXP0001)..." oninput="aplicarFiltrosInventario()" style="flex: 2; min-width: 220px; padding: 14px 18px;">
                     <select id="filtroRackInventario" onchange="aplicarFiltrosInventario()" style="flex: 1; min-width: 180px; padding: 14px 18px;">
@@ -527,14 +526,36 @@
                 </div>
             </div>
         </div>
+
         <!-- PESTAÑA 3: MOVIMIENTOS -->
         <div id="tab-historial" class="tab-content">
             <div class="card">
-                <h2>Registro General de Movimientos WIP</h2>
-                <div style="display: flex; justify-content: space-between; margin-bottom: 22px;">
-                    <input type="text" id="filtroHistorial" placeholder="Filtrar por proyecto o personal..." oninput="filtrarTablaHistorial()" style="max-width: 320px;">
-                    <button onclick="cargarHistorial()" class="btn-primary" style="max-width: 200px; padding: 10px;">Actualizar</button>
+                <h2>
+                    <span>Registro General de Movimientos WIP</span>
+                    <button type="button" onclick="exportarHistorialExcel()" style="background: #059669; color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                        📥 Descargar Excel
+                    </button>
+                </h2>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Historial cronológico de movimientos con trazabilidad completa de operadores y fechas.</p>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 22px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="filtroHistorial" placeholder="BUSCAR POR PROYECTO O OPERADOR..." oninput="aplicarFiltrosHistorial()" style="flex: 2; min-width: 200px; padding: 12px 16px;">
+                    
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 150px;">
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold;">DESDE:</span>
+                        <input type="date" id="filtroFechaDesde" onchange="aplicarFiltrosHistorial()" style="padding: 10px 12px; margin-bottom: 0;">
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 150px;">
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold;">HASTA:</span>
+                        <input type="date" id="filtroFechaHasta" onchange="aplicarFiltrosHistorial()" style="padding: 10px 12px; margin-bottom: 0;">
+                    </div>
+
+                    <button type="button" onclick="limpiarFiltrosHistorial()" style="background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 12px;">Limpiar</button>
+
+                    <button type="button" onclick="cargarHistorial()" class="btn-primary" style="flex: 0 0 120px; padding: 12px 16px; margin: 0;">Actualizar</button>
                 </div>
+
                 <div style="overflow-x: auto;">
                     <table>
                         <thead>
@@ -555,8 +576,6 @@
                 </div>
             </div>
         </div>
-
-       
         <!-- PESTAÑA 4: GESTIÓN DE PERSONAL -->
 <div id="tab-personal" class="tab-content">
     <div id="contenidoPersonalAdmin" class="card" style="display: none;">
@@ -826,9 +845,9 @@
     
     if (pestana === 'historial') cargarHistorial();
     if (pestana === 'personal') cargarPersonalBD();
+    if (pestana === 'ubicar') cargarInventarioCompleto();
+
     
-    // Forzamos la carga al cambiar a cualquier pestaña
-    cargarInventarioCompleto();
 }
       
         function filtrarPersonalPorRol() {
