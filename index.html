@@ -1,27 +1,29 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <link rel="icon" type="image/png" href="logo-kpa.png">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KPA - Control WIP v11.0</title>
     <style>
         :root {
-            --bg-base: #0b0f19;
-            --bg-panel: #121824;
-            --bg-card: #182232;
-            --bg-input: #1e293b;
-            --border-color: #2a3b55;
-            --text-main: #f8fafc;
-            --text-muted: #b5bbc5;
-            --kpa-blue: #1a2d64;       /* Azul marino institucional de KPA */
-            --kpa-blue-hover: #0e3ab4; /* Azul brillante para hover/activo */
-            --kpa-gray: #505b6b;       /* Gris corporativo elegante */
-            --kpa-gray-light: #cbd5e1; /* Gris claro secundario */
-            --kpa-green: #10b981;
+            --bg-base: #060911;          /* Fondo base grafito ultra oscuro */
+            --bg-panel: #0d1527;         /* Paneles y tarjetas azul marino industrial */
+            --bg-card: #121d33;          /* Interior de tarjetas */
+            --bg-input: #17243e;         /* Cajas de texto y selects */
+            --border-color: #1e3357;     /* Bordes sutiles metálicos */
+            --text-main: #f8fafc;        /* Texto blanco puro */
+            --text-muted: #94a3b8;       /* Gris acero institucional KPA */
+            --kpa-navy: #0a1c42;        /* Azul marino oficial del logo */
+            --kpa-blue: #1d4ed8;        /* Azul eléctrico para botones y focos */
+            --kpa-blue-hover: #2563eb;  /* Azul brillante interactivo */
+            --kpa-cyan: #38bdf8;        /* Acento cian tecnológico para contrastes */
+            --kpa-green: #10b981;       /* Verde esmeralda para entradas y stock */
             --kpa-green-hover: #059669;
-            --danger: #ef4444;
+            --danger: #ef4444;          /* Rojo para salidas y alertas */
             --danger-hover: #dc2626;
-            --warning: #f59e0b;
+            --warning: #f59e0b;         /* Ámbar para piezas y precauciones */
         }
 
 
@@ -263,8 +265,13 @@
 <body>
 
     <header>
-        <div class="logo-container">
-            <h1>KPA <span>// WIP</span></h1>
+        <header>
+        <div class="logo-container" style="display: flex; align-items: center; gap: 15px;">
+            <img src="logo-kpa.png" alt="KPA Logo" style="height: 48px; width: auto; filter: drop-shadow(0 0 8px rgba(30, 58, 138, 0.5));">
+            <div>
+                <h1 style="margin: 0; font-size: 24px; font-weight: 900; letter-spacing: 1.5px;">KPA <span style="color: #38bdf8;">// WIP</span></h1>
+                <small style="color: #94a3b8; font-size: 10px; font-weight: 700; letter-spacing: 1px; display: block;">PACKAGING & HANDLING SOLUTIONS</small>
+            </div>
         </div>
 
         <!-- CÁPSULAS DE MÉTRICAS ENCABEZADO -->
