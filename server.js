@@ -88,28 +88,27 @@ app.get('/api/materiales', (req, res) => {
             // Función para armar una coordenada única estándar
             // Ej: "EXP0001__RACK 1__N1__IZQUIERDO__POS 1"
             const generarClaveUbicacion = (proy, rackVal, nivelVal, ladoVal, posVal, textoUbicacion) => {
-                let r = 'SIN_RACK', n = 'N1', l = 'GENERAL', p = '1';
+                let r = 'SIN_RACK', n = '1', l = 'GENERAL', p = '1';
 
                 if (textoUbicacion) {
                     const matchR = textoUbicacion.match(/RACK\s*([0-9A-Z]+)/i);
-                    const matchN = textoUbicacion.match(/Nivel:\s*([0-9A-Z]+)/i);
-                    const matchL = textoUbicacion.match(/Lado:\s*([0-9A-Z]+)/i);
-                    const matchP = textoUbicacion.match(/Pos:\s*([0-9A-Z]+)/i);
+                    const matchN = textoUbicacion.match(/Nivel:?\s*([0-9A-Z]+)/i);
+                    const matchL = textoUbicacion.match(/Lado:?\s*([0-9A-Z]+)/i);
+                    const matchP = textoUbicacion.match(/Pos:?\s*([0-9A-Z]+)/i);
 
                     if (matchR) r = matchR[1].toUpperCase().replace('RACK', '').replace('R', '').trim();
-                    if (matchN) n = matchN[1].toUpperCase().trim();
+                    if (matchN) n = matchN[1].toUpperCase().replace('NIVEL', '').replace('N', '').trim();
                     if (matchL) l = matchL[1].toUpperCase().trim();
                     if (matchP) p = matchP[1].toUpperCase().trim();
                 }
 
                 if (rackVal && rackVal !== 'N/A') r = rackVal.toString().toUpperCase().replace('RACK', '').replace('R', '').trim();
-                if (nivelVal && nivelVal !== 'N/A') n = nivelVal.toString().toUpperCase().trim();
+                if (nivelVal && nivelVal !== 'N/A') n = nivelVal.toString().toUpperCase().replace('NIVEL', '').replace('N', '').trim();
                 if (ladoVal && ladoVal !== 'N/A') l = ladoVal.toString().toUpperCase().trim();
                 if (posVal && posVal !== 'N/A') p = posVal.toString().toUpperCase().trim();
 
                 return `${proy}__RACK ${r}__NIVEL ${n}__${l}__POS ${p}`;
             };
-
             const inventarioMap = {};
 
             filas.forEach(item => {
@@ -239,6 +238,7 @@ app.get('/api/historial', (req, res) => {
 
 
 // Registro de movimientos incluyendo la fecha de proceso solicitada y manejo seguro de nulos
+a// Registro de movimientos con sanitización limpia (Paso 1) y seguridad
 app.post('/api/movimientos', (req, res) => {
     if (!db) {
         return res.status(500).json({ success: false, error: 'Base de datos no conectada' });
@@ -247,12 +247,11 @@ app.post('/api/movimientos', (req, res) => {
     const data = req.body || {};
     const tipoMov = (data.tipo_movimiento || 'REGISTRO').toUpperCase();
 
-    // 1. VALIDACIÓN DE SEGURIDAD: Si es SALIDA o REUBICACIÓN, verificamos que el material exista previamente en el inventario activo
+    // 1. VALIDACIÓN DE SEGURIDAD (Solo si viene un id_material explícito)
     const validarExistencia = (callback) => {
-        if (tipoMov === 'SALIDA' || tipoMov === 'REUBICACION') {
-            const idMatQuery = data.id_material || data.idMaterial || 1;
-            // Consultamos el historial para ver si su último movimiento no fue una salida
-            const sqlCheck = `SELECT * FROM movimientos WHERE id_material = ? ORDER BY fecha_hora DESC LIMIT 1`;
+        if ((tipoMov === 'SALIDA' || tipoMov === 'REUBICACION') && (data.id_material || data.idMaterial)) {
+            const idMatQuery = data.id_material || data.idMaterial;
+            const sqlCheck = `SELECT tipo_movimiento FROM movimientos WHERE id_material = ? ORDER BY fecha_hora DESC LIMIT 1`;
             db.query(sqlCheck, [idMatQuery], (err, filas) => {
                 if (err || filas.length === 0) {
                     return res.status(400).json({ success: false, error: 'Error: El material no existe en el inventario activo.' });
@@ -264,45 +263,55 @@ app.post('/api/movimientos', (req, res) => {
                 callback();
             });
         } else {
+            // El candado principal por Proyecto y Rack ya lo ejecuta el frontend
             callback();
         }
     };
 
     validarExistencia(() => {
-        // 2. ORIGEN: Capturamos de dónde viene en las entradas o reubicaciones
-        let procedenciaOrVal = data.procedencia_origen || data.origen || 'PRODUCCIÓN';
+        // 2. ORIGEN: Limpieza de "R" y "N"
+        const procedenciaOrVal = data.procedencia_origen || data.origen || 'PRODUCCIÓN';
         let ubicacionOrigenVal = procedenciaOrVal;
         
-        if (data.rack_origen && data.rack_origen !== 'N/A') {
-            ubicacionOrigenVal = `Retirado de: RACK ${data.rack_origen}, Nivel: ${data.nivel_origen || 'N/A'}, Lado: ${data.lado_origen || 'A'}, Pos: ${data.apilado_origen || '1'}`;
+        const rackOrigenRaw = (data.rack_origen || 'N/A').toString().trim();
+        const nivelOrigenRaw = (data.nivel_origen || 'N/A').toString().trim();
+
+        if (rackOrigenRaw !== 'N/A' && rackOrigenRaw !== '') {
+            const rackOrigenLimpio = rackOrigenRaw.replace(/^RACK\s*/i, '').replace(/^R/i, '').trim();
+            const nivelOrigenLimpio = nivelOrigenRaw.replace(/^NIVEL\s*/i, '').replace(/^N/i, '').trim() || '1';
+            const ladoOrigen = data.lado_origen || 'IZQUIERDO';
+            const posOrigen = data.apilado_origen || '1';
+
+            ubicacionOrigenVal = `Retirado de: RACK ${rackOrigenLimpio}, Nivel: ${nivelOrigenLimpio}, Lado: ${ladoOrigen}, Pos: ${posOrigen}`;
         } else {
             ubicacionOrigenVal = `Procedencia: ${procedenciaOrVal}`;
         }
 
-        // 3. DESTINO: Si es SALIDA, guardamos el destino externo exacto
-        const rackDestinoRaw = data.rack_destino || data.rackDestino || data.rack || 'N/A';
-        
-        let rackDestino = rackDestinoRaw;
-        let nivelDestino = data.nivel_destino || data.nivelDestino || data.nivel || 'N1';
-        let ladoDestino = data.lado_destino || data.ladoDestino || data.lado || 'IZQUIERDO';
-        let posDestino = data.apilado || data.posicion || data.pos || '1';
+        // 3. DESTINO: Limpieza de "R" y "N"
+        const rackDestinoRaw = (data.rack_destino || data.rackDestino || data.rack || 'N/A').toString().trim();
+        let rackDestinoFinal = rackDestinoRaw;
+        let nivelDestinoFinal = (data.nivel_destino || data.nivelDestino || data.nivel || '1').toString().replace(/^NIVEL\s*/i, '').replace(/^N/i, '').trim();
+        let ladoDestinoFinal = data.lado_destino || data.ladoDestino || data.lado || 'IZQUIERDO';
+        let posDestinoFinal = data.apilado || data.posicion || data.pos || '1';
 
         let ubicacionDestinoVal = '';
         if (tipoMov === 'SALIDA') {
             ubicacionDestinoVal = `Destino Externo: ${rackDestinoRaw}`;
-            rackDestino = 'N/A'; 
-            nivelDestino = 'N/A';
-            ladoDestino = 'N/A';
-            posDestino = '1';
-        } else if (rackDestino !== 'N/A') {
-            ubicacionDestinoVal = `RACK ${rackDestino}, Nivel: ${nivelDestino}, Lado: ${ladoDestino}, Pos: ${posDestino}`;
+            rackDestinoFinal = 'N/A'; 
+            nivelDestinoFinal = 'N/A';
+            ladoDestinoFinal = 'N/A';
+            posDestinoFinal = '1';
+        } else if (rackDestinoRaw !== 'N/A' && rackDestinoRaw !== '') {
+            const rackLimpio = rackDestinoRaw.replace(/^RACK\s*/i, '').replace(/^R/i, '').trim();
+            rackDestinoFinal = rackLimpio;
+            ubicacionDestinoVal = `RACK ${rackLimpio}, Nivel: ${nivelDestinoFinal}, Lado: ${ladoDestinoFinal}, Pos: ${posDestinoFinal}`;
         } else {
             ubicacionDestinoVal = data.ubicacion_destino || 'N/A';
         }
 
         const nombreOperadorVal = data.nombre_operador || data.operador || data.usuario || data.personal || 'OPERADOR GENERAL';
         const idOperadorVal = data.id_operador || data.idOperador || 1;
-        const idMaterialVal = data.id_material || data.idMaterial || 1;
+        const idMaterialVal = data.id_material || data.idMaterial || null;
 
         let fechaProcesoVal = data.fecha_proceso;
         if (!fechaProcesoVal || fechaProcesoVal.includes('1111') || fechaProcesoVal.length < 8) {
@@ -319,15 +328,15 @@ app.post('/api/movimientos', (req, res) => {
             idMaterialVal,
             idOperadorVal,
             tipoMov,
-            data.proyecto ? data.proyecto.toUpperCase() : 'GENERAL',
+            data.proyecto ? data.proyecto.toUpperCase().trim() : 'GENERAL',
             data.piezas || 0,
             fechaProcesoVal,
             ubicacionOrigenVal,
             ubicacionDestinoVal,
-            rackDestino,
-            nivelDestino,
-            ladoDestino,
-            posDestino,
+            rackDestinoFinal,
+            nivelDestinoFinal,
+            ladoDestinoFinal,
+            posDestinoFinal,
             nombreOperadorVal
         ], (err, resultado) => {
             if (err) {

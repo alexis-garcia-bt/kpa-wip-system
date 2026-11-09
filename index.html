@@ -398,17 +398,21 @@
                             </select>
                         </div>
 
-                        <!-- ESTE BLOQUE SOLO APARECE SI VIENE DE OTRO RACK -->
+                        
+                       <!-- ESTE BLOQUE SOLO APARECE SI VIENE DE OTRO RACK -->
                         <div id="detallesRackOrigen" style="display: none;">
                             <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                                 <select id="rackOrigen">
                                     <option value="">RACK ORIGEN (1-19)</option>
-                                    <script> for(let i=1; i<=19; i++) document.write(`<option value="R${i}">RACK ${i}</option>`); </script>
+                                    <script> for(let i=1; i<=19; i++) document.write(`<option value="${i}">RACK ${i}</option>`); </script>
                                 </select>
-                                <option value="Nivel 1">Nivel 1 (Piso)</option>
-                                <option value="Nivel 2">Nivel 2</option>
-                                <option value="Nivel 3">Nivel 3</option>
-                                <option value="Nivel 4">Nivel 4 (Alto)</option>
+                                <select id="nivelOrigen">
+                                    <option value="">NIVEL ORIGEN</option>
+                                    <option value="1">Nivel 1 (Piso)</option>
+                                    <option value="2">Nivel 2</option>
+                                    <option value="3">Nivel 3</option>
+                                    <option value="4">Nivel 4 (Alto)</option>
+                                </select>
                             </div>
                             <div style="display: flex; gap: 15px;">
                                 <select id="ladoOrigen">
@@ -422,7 +426,6 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
                         
 
                     
@@ -433,11 +436,14 @@
                             <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                                 <select id="rackDestino">
                                     <option value="">RACK DESTINO (1-19)</option>
-                                    <script> for(let i=1; i<=19; i++) document.write(`<option value="R${i}">RACK ${i}</option>`); </script>
-                                </select>
+                                    <script> for(let i=1; i<=19; i++) document.write(`<option value="${i}">RACK ${i}</option>`); </script>
+                                 </select>
                                 <select id="nivelDestino">
-                                    <option value="">NIVEL (N1-N4)</option>
-                                    <option value="N1">N1</option><option value="N2">N2</option><option value="N3">N3</option><option value="N4">N4</option>
+                                    <option value="">NIVEL DESTINO</option>
+                                    <option value="1">Nivel 1 (Piso)</option>
+                                    <option value="2">Nivel 2</option>
+                                    <option value="3">Nivel 3</option>
+                                    <option value="4">Nivel 4 (Alto)</option>
                                 </select>
                             </div>
                             <div style="display: flex; gap: 15px;">
@@ -1051,10 +1057,10 @@
                 rack: tipoMovimientoSeleccionado === 'SALIDA' 
                     ? 'N/A' 
                     : (document.getElementById('rackDestino').value || 'N/A'),
-                nivel_destino: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (document.getElementById('nivelDestino').value || 'N1'),
+                nivel_destino: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (document.getElementById('nivelDestino').value || '1'),
                 lado: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : ladoFinal,
                 apilado: tipoMovimientoSeleccionado === 'SALIDA' ? '1' : (document.getElementById('apiladoDestino').value || '1')
-            }
+            };
 
 
 
