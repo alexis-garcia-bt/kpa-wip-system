@@ -5,7 +5,6 @@
  
  */
 
-const CATALOGO_MASTER_KPA = require('./proyectosMaster.json');
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -441,6 +440,7 @@ app.delete('/api/personal/:id', (req, res) => {
 });
 
 // Carga el catálogo limpio desde el archivo JSON
+// CARGA EL ARCHIVO JSON (Solo una vez)
 const CATALOGO_MASTER_KPA = require('./proyectosMaster.json');
 
 app.get('/api/sugerencias', (req, res) => {
@@ -457,7 +457,15 @@ app.get('/api/sugerencias', (req, res) => {
                (qNum && idSinEXP.includes(qNum));
     });
 
-    res.json(filtrados.slice(0, 10)); // Solo envía los 10 mejores resultados
+    // Mapeo compatible para que index.html lea tanto .id como .id_proyecto
+    const respuesta = filtrados.slice(0, 10).map(item => ({
+        id: item.id,
+        id_proyecto: item.id,
+        desc: item.desc,
+        nombre_producto: `${item.desc} [${item.comp}]`
+    }));
+
+    res.json(respuesta);
 });
 const PUERTO = process.env.PORT || 3000;
 app.listen(PUERTO, () => {
