@@ -835,56 +835,59 @@
                 </div>
             </div>
         </div>
-        <!-- PESTAÑA 4: GESTIÓN DE PERSONAL -->
-<div id="contenidoPersonalAdmin" class="card" style="display: none;">
-        <h2>
-            <span>Gestión de Personal & Accesos</span>
-            <span style="font-size: 11px; color: var(--kpa-green); background: rgba(16, 185, 129, 0.15); padding: 4px 10px; border-radius: 20px;">Panel de Administrador</span>
-        </h2>
-        <form onsubmit="agregarPersonal(event)" style="margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label for="nuevoRolPersonal">Rol Operativo:</label>
-                    <select id="nuevoRolPersonal" required>
-                        <option value="MONTACARGUISTA">MONTACARGUISTA</option>
-                        <option value="LIDER">LÍDER DE ÁREA</option>
-                    </select>
+        
+<!-- PESTAÑA 4: GESTIÓN DE PERSONAL -->
+        <div id="tab-personal" class="tab-content">
+            <div id="contenidoPersonalAdmin" class="card">
+                <h2>
+                    <span>Gestión de Personal & Accesos</span>
+                    <span style="font-size: 11px; color: var(--kpa-green); background: rgba(16, 185, 129, 0.15); padding: 4px 10px; border-radius: 20px;">Panel de Administrador</span>
+                </h2>
+                <form onsubmit="agregarPersonal(event)" style="margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label for="nuevoRolPersonal">Rol Operativo:</label>
+                            <select id="nuevoRolPersonal" required>
+                                <option value="MONTACARGUISTA">MONTACARGUISTA</option>
+                                <option value="LIDER">LÍDER DE ÁREA</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label for="inputNuevoNombre">Nombre Completo:</label>
+                            <input type="text" id="inputNuevoNombre" placeholder="EJ. JUAN PÉREZ" required oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 12px;">
+                            <label for="inputNuevoPin">PIN de Acceso (4 dígitos o Apellido):</label>
+                            <input type="text" id="inputNuevoPin" placeholder="EJ. 1234 (OPCIONAL)" maxlength="15" oninput="this.value = this.value.toUpperCase()">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-primary" style="padding: 14px; font-size: 14px;">+ Registrar Operador en Base de Datos</button>
+                    <div id="statusPersonal" style="margin-top: 12px; font-weight: bold; text-align: center;"></div>
+                </form>
+
+                <!-- BUSCADOR RÁPIDO DE OPERADORES -->
+                <div style="margin-bottom: 15px;">
+                    <input type="text" id="filtroTablaPersonal" placeholder="BUSCAR OPERADOR POR NOMBRE O ROL..." oninput="filtrarOperadoresAdmin()" style="padding: 10px 14px; font-size: 13px;">
                 </div>
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label for="inputNuevoNombre">Nombre Completo:</label>
-                    <input type="text" id="inputNuevoNombre" placeholder="EJ. JUAN PÉREZ" required oninput="this.value = this.value.toUpperCase()">
-                </div>
-                <div class="form-group" style="margin-bottom: 12px;">
-                    <label for="inputNuevoPin">PIN de Acceso (4 dígitos o Apellido):</label>
-                    <input type="text" id="inputNuevoPin" placeholder="EJ. 1234 (OPCIONAL)" maxlength="15" oninput="this.value = this.value.toUpperCase()">
+
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Rol</th>
+                                <th>Nombre Completo</th>
+                                <th>Clave / PIN de Acceso</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaPersonalBody">
+                            <tr><td colspan="5" style="text-align: center;">Cargando personal...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            <button type="submit" class="btn-primary" style="padding: 14px; font-size: 14px;">+ Registrar Operador en Base de Datos</button>
-            <div id="statusPersonal" style="margin-top: 12px; font-weight: bold; text-align: center;"></div>
-        </form>
-
-        <!-- BUSCADOR RÁPIDO DE OPERADORES -->
-        <div style="margin-bottom: 15px;">
-            <input type="text" id="filtroTablaPersonal" placeholder="BUSCAR OPERADOR POR NOMBRE O ROL..." oninput="filtrarOperadoresAdmin()" style="padding: 10px 14px; font-size: 13px;">
         </div>
-
-        <div style="overflow-x: auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Rol</th>
-                        <th>Nombre Completo</th>
-                        <th>Clave / PIN de Acceso</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaPersonalBody">
-                    <tr><td colspan="5" style="text-align: center;">Cargando personal...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
        
        <!-- PESTAÑA 5: CONTACTO Y SOPORTE INDUSTRIAL -->
         <div id="tab-contacto" class="tab-content">
@@ -1946,14 +1949,10 @@
             document.getElementById('stepOperacion').style.display = 'block';
 
             if (usuarioActual.rol === 'ADMIN') {
-                document.getElementById('btnTabPersonal').style.display = 'block';
-                document.getElementById('contenidoPersonalAdmin').style.display = 'block';
-                document.getElementById('mensajeAccesoDenegado').style.display = 'none';
-            } else {
-                document.getElementById('btnTabPersonal').style.display = 'none';
-                document.getElementById('contenidoPersonalAdmin').style.display = 'none';
-                document.getElementById('mensajeAccesoDenegado').style.display = 'block';
-            }
+        document.getElementById('btnTabPersonal').style.display = 'block';
+    } else {
+        document.getElementById('btnTabPersonal').style.display = 'none';
+    }
         }
 
         function continuarAlSistema(e) {
