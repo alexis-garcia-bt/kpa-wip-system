@@ -584,7 +584,7 @@
 
                     <div class="form-group">
                     <label for="inputPiezas">Cantidad de Piezas Movidas:</label>
-                    <input type="number" id="inputPiezas" placeholder="EJ. 150" min="1" onkeydown="evitarEnterEnvio(event)" required>
+                    <input type="number" id="inputPiezas" inputmode="numeric" placeholder="EJ. 150" min="1" onkeydown="evitarEnterEnvio(event)" required style="font-size: 16px;">
                 </div>
 
                     <div class="form-group">
@@ -1377,6 +1377,11 @@
             if (elemento) elemento.classList.add('active');
             
             document.getElementById('formMovimiento').style.display = 'block';
+            // PONE AUTOMÁTICAMENTE LA FECHA DE HOY
+            const campoFecha = document.getElementById('inputFechaProceso');
+            if (campoFecha && !campoFecha.value) {
+                campoFecha.value = new Date().toISOString().split('T')[0];
+            }
 
             const bloqueOrigen = document.getElementById('bloqueOrigen');
             const bloqueDestino = document.getElementById('bloqueDestino');
@@ -1566,9 +1571,14 @@ document.addEventListener('click', (e) => {
                 if (!response.ok) throw new Error();
                 mensaje.style.color = 'var(--kpa-green)';
                 mensaje.textContent = '¡Movimiento guardado con éxito!';
+                // Actualiza el inventario, los racks y los KPIs al instante en pantalla
+                await cargarInventarioCompleto();
+                if (tipoMovimientoSeleccionado === 'REUBICACION' || tipoMovimientoSeleccionado === 'SALIDA') {
+                    if (typeof renderizarMapaRacks === 'function') renderizarMapaRacks();
+                }
                 document.getElementById('proyectoInput').value = '';
                 document.getElementById('inputPiezas').value = '';
-                document.getElementById('inputFechaProceso').value = '';
+                document.getElementById('inputFechaProceso').value = new Date().toISOString().split('T')[0];
                 setTimeout(() => { mensaje.textContent = ''; }, 3500);
             } catch (err) {
                 mensaje.style.color = 'var(--danger)';
