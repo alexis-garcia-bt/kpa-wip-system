@@ -576,15 +576,9 @@
                 </div>
                 <form id="formMovimiento" style="display:none;" onsubmit="registrarMovimiento(event)">
                     
-                    <!-- REEMPLAZA EL GRUPO DE PROYECTO POR ESTE: -->
                     <div class="form-group">
                         <label for="proyectoInput">Número de Proyecto / Material:</label>
-                        <div style="display: flex; gap: 10px; align-items: stretch;">
-                            <input type="text" id="proyectoInput" placeholder="EJ. EXP0001" oninput="buscarSugerencias(this.value)" onkeydown="evitarEnterEnvio(event)" autocomplete="off" required style="flex: 1; margin-bottom: 0;">
-                            <button type="button" onclick="abrirEscanerCamara()" style="background: var(--kpa-blue); color: #fff; border: none; padding: 0 18px; border-radius: 12px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);" title="Escanear etiqueta con cámara">
-                                
-                            </button>
-                        </div>
+                        <input type="text" id="proyectoInput" placeholder="EJ. 5030 O CHAROLA" oninput="buscarSugerencias(this.value)" onkeydown="evitarEnterEnvio(event)" autocomplete="off" required>
                         <div id="sugerenciasLista" class="sugerencias-lista"></div>
                     </div>
 
@@ -1434,28 +1428,63 @@
             }
         }
         async function buscarSugerencias(query) {
-            const contenedor = document.getElementById('sugerenciasLista');
-            if (!contenedor || query.length < 1) { if (contenedor) contenedor.style.display = 'none'; return; }
-            try {
-                const res = await fetch(`https://kpa-wip-system.onrender.com/api/sugerencias`);
-                if (res.ok) { mostrarListaSugerencias(await res.json()); return; }
-            } catch (err) {}
-            contenedor.style.display = 'none';
-        }
+    const contenedor = document.getElementById('sugerenciasLista');
+    const texto = (query || '').trim().toUpperCase();
+    
+    if (!contenedor || texto.length < 1) { 
+        if (contenedor) contenedor.style.display = 'none'; 
+        return; 
+    }
 
-        function mostrarListaSugerencias(items) {
-            const contenedor = document.getElementById('sugerenciasLista');
-            contenedor.innerHTML = '';
-            if (!items || items.length === 0) { contenedor.style.display = 'none'; return; }
-            items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'sugerencia-item';
-                div.textContent = `${item.id_proyecto} - ${item.nombre_producto || 'Material WIP'}`;
-                div.onclick = () => { document.getElementById('proyectoInput').value = item.id_proyecto; contenedor.style.display = 'none'; };
-                contenedor.appendChild(div);
-            });
-            contenedor.style.display = 'block';
+    try {
+        const res = await fetch(`${API_URL}/api/sugerencias?q=${encodeURIComponent(texto)}`);
+        if (res.ok) { 
+            const sugerencias = await res.json();
+            mostrarListaSugerencias(sugerencias); 
+            return; 
         }
+    } catch (err) {
+        console.error("Error al obtener sugerencias:", err);
+    }
+    contenedor.style.display = 'none';
+}
+
+function mostrarListaSugerencias(items) {
+    const contenedor = document.getElementById('sugerenciasLista');
+    contenedor.innerHTML = '';
+    
+    if (!items || items.length === 0) { 
+        contenedor.style.display = 'none'; 
+        return; 
+    }
+
+    items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'sugerencia-item';
+        div.style.padding = '10px 14px';
+        div.style.cursor = 'pointer';
+        div.innerHTML = `
+            <strong style="color: var(--kpa-green);">${item.id_proyecto}</strong> 
+            <span style="color: var(--text-muted); font-size: 12px; margin-left: 8px;">— ${item.nombre_producto || 'Material WIP'}</span>
+        `;
+        div.onclick = () => { 
+            document.getElementById('proyectoInput').value = item.id_proyecto; 
+            contenedor.style.display = 'none'; 
+        };
+        contenedor.appendChild(div);
+    });
+    
+    contenedor.style.display = 'block';
+}
+
+// Cierra la lista si da clic afuera
+document.addEventListener('click', (e) => {
+    const contenedor = document.getElementById('sugerenciasLista');
+    const input = document.getElementById('proyectoInput');
+    if (contenedor && e.target !== input && !contenedor.contains(e.target)) {
+        contenedor.style.display = 'none';
+    }
+});
 
        
     async function registrarMovimiento(e) {
@@ -2114,51 +2143,6 @@
         }
 
 
-
-        let instanciaHtml5QrCode = null;
-
-function abrirEscanerCamara() {
-    const modal = document.getElementById('modalEscanerCamara');
-    modal.style.display = 'flex';
-
-    instanciaHtml5QrCode = new Html5Qrcode("lectorCamaraContenedor");
-    const configuracion = { fps: 10, qrbox: { width: 250, height: 180 } };
-
-    // Inicia usando la cámara trasera del celular (environment)
-    instanciaHtml5QrCode.start(
-        { facingMode: "environment" },
-        configuracion,
-        (codigoTexto) => {
-            // AL DETECTAR EL CÓDIGO CON ÉXITO:
-            document.getElementById('proyectoInput').value = codigoTexto.toUpperCase().trim();
-            cerrarEscanerCamara();
-            // Vibra el cel si el dispositivo lo soporta
-            if (navigator.vibrate) navigator.vibrate(100);
-        },
-        (errorLectura) => {
-            // Ignorar errores por cuadro mientras enfoca
-        }
-    ).catch(err => {
-        alert("No se pudo iniciar la cámara. Verifica que diste permisos en tu navegador.");
-        cerrarEscanerCamara();
-    });
-}
-
-function cerrarEscanerCamara() {
-    if (instanciaHtml5QrCode) {
-        instanciaHtml5QrCode.stop().then(() => {
-            instanciaHtml5QrCode.clear();
-            instanciaHtml5QrCode = null;
-        }).catch(() => {
-            instanciaHtml5QrCode = null;
-        });
-    }
-    const modal = document.getElementById('modalEscanerCamara');
-    if (modal) modal.style.display = 'none';
-}
-
-
-
         // ============
         // MOTOR DE IA
         // =============
@@ -2318,21 +2302,5 @@ function cerrarEscanerCamara() {
             }
         }
     </script>
-    <!-- VENTANA MODAL PARA ESCÁNER DE CÁMARA -->
-<div id="modalEscanerCamara" class="modal-rack-overlay" style="display: none;" onclick="cerrarEscanerCamara()">
-    <div class="modal-rack-content" onclick="event.stopPropagation()" style="max-width: 480px; text-align: center;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <strong style="color: var(--kpa-cyan); font-size: 16px;"> ESCANEAR ETIQUETA / CÓDIGO</strong>
-            <button type="button" onclick="cerrarEscanerCamara()" style="background: var(--danger); color: #fff; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-weight: bold;">✕</button>
-        </div>
-        <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 15px;">
-            Apunta la cámara del celular hacia el código de barras o QR de la tarima.
-        </p>
-        <div id="lectorCamaraContenedor" style="width: 100%; border-radius: 12px; overflow: hidden; background: #000;"></div>
-        <button type="button" onclick="cerrarEscanerCamara()" style="margin-top: 15px; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted); padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer;">
-            Cancelar Escaneo
-        </button>
-    </div>
-</div>
 </body>
 </html>

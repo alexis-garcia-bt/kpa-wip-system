@@ -5,6 +5,7 @@
  
  */
 
+const CATALOGO_MASTER_KPA = require('./proyectosMaster.json');
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
@@ -439,8 +440,24 @@ app.delete('/api/personal/:id', (req, res) => {
     });
 });
 
+// Carga el catálogo limpio desde el archivo JSON
+const CATALOGO_MASTER_KPA = require('./proyectosMaster.json');
+
 app.get('/api/sugerencias', (req, res) => {
-    res.json([]);
+    const q = (req.query.q || '').toUpperCase().trim();
+    if (!q || q.length < 1) return res.json([]);
+
+    const qNum = q.replace(/^EXP0*/i, '').trim();
+
+    const filtrados = CATALOGO_MASTER_KPA.filter(item => {
+        const idSinEXP = (item.id || '').replace(/^EXP0*/i, '');
+        return (item.id && item.id.toUpperCase().includes(q)) || 
+               (item.desc && item.desc.toUpperCase().includes(q)) || 
+               (item.comp && item.comp.toUpperCase().includes(q)) ||
+               (qNum && idSinEXP.includes(qNum));
+    });
+
+    res.json(filtrados.slice(0, 10)); // Solo envía los 10 mejores resultados
 });
 const PUERTO = process.env.PORT || 3000;
 app.listen(PUERTO, () => {
