@@ -456,6 +456,8 @@
 
 
     </style>
+    <!-- LECTOR DE CÓDIGO DE BARRAS INDUSTRIAL -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
 <body>
 
@@ -531,7 +533,7 @@
                     <div class="form-group">
                         <label for="inputPassword">Contraseña / PIN de 4 dígitos:</label>
                         <!-- inputmode="numeric" abre el teclado numérico gigante en celular -->
-                        <input type="password" id="inputPassword" placeholder="EJ. 1397 O SU APELLIDO" required autocomplete="current-password" style="font-size: 16px; letter-spacing: 2px;">
+                        <input type="password" id="inputPassword" placeholder="••••••••" required autocomplete="current-password" style="font-size: 16px; letter-spacing: 2px;">
                     </div>
 
                     <div class="form-group">
@@ -574,9 +576,15 @@
                 </div>
                 <form id="formMovimiento" style="display:none;" onsubmit="registrarMovimiento(event)">
                     
+                    <!-- REEMPLAZA EL GRUPO DE PROYECTO POR ESTE: -->
                     <div class="form-group">
                         <label for="proyectoInput">Número de Proyecto / Material:</label>
-                        <input type="text" id="proyectoInput" placeholder="EJ. EXP0001" oninput="buscarSugerencias(this.value)" onkeydown="evitarEnterEnvio(event)" autocomplete="off" required>
+                        <div style="display: flex; gap: 10px; align-items: stretch;">
+                            <input type="text" id="proyectoInput" placeholder="EJ. EXP0001" oninput="buscarSugerencias(this.value)" onkeydown="evitarEnterEnvio(event)" autocomplete="off" required style="flex: 1; margin-bottom: 0;">
+                            <button type="button" onclick="abrirEscanerCamara()" style="background: var(--kpa-blue); color: #fff; border: none; padding: 0 18px; border-radius: 12px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.4);" title="Escanear etiqueta con cámara">
+                                
+                            </button>
+                        </div>
                         <div id="sugerenciasLista" class="sugerencias-lista"></div>
                     </div>
 
@@ -1981,7 +1989,7 @@
                 const pinValido = operadorObj && operadorObj.pin ? String(operadorObj.pin).trim().toUpperCase() : apellidoReal;
 
                 if (passwordIngresada !== pinValido && passwordIngresada !== apellidoReal) {
-                    alert(`Contraseña incorrecta. (Tu clave es tu apellido: "${apellidoReal}")`);
+                   alert("Contraseña o PIN incorrecto. Intente de nuevo.");
                     return;
                 }
             }
@@ -2104,6 +2112,51 @@
                 fila.style.display = fila.textContent.toUpperCase().includes(filtro) ? '' : 'none';
             });
         }
+
+
+
+        let instanciaHtml5QrCode = null;
+
+function abrirEscanerCamara() {
+    const modal = document.getElementById('modalEscanerCamara');
+    modal.style.display = 'flex';
+
+    instanciaHtml5QrCode = new Html5Qrcode("lectorCamaraContenedor");
+    const configuracion = { fps: 10, qrbox: { width: 250, height: 180 } };
+
+    // Inicia usando la cámara trasera del celular (environment)
+    instanciaHtml5QrCode.start(
+        { facingMode: "environment" },
+        configuracion,
+        (codigoTexto) => {
+            // AL DETECTAR EL CÓDIGO CON ÉXITO:
+            document.getElementById('proyectoInput').value = codigoTexto.toUpperCase().trim();
+            cerrarEscanerCamara();
+            // Vibra el cel si el dispositivo lo soporta
+            if (navigator.vibrate) navigator.vibrate(100);
+        },
+        (errorLectura) => {
+            // Ignorar errores por cuadro mientras enfoca
+        }
+    ).catch(err => {
+        alert("No se pudo iniciar la cámara. Verifica que diste permisos en tu navegador.");
+        cerrarEscanerCamara();
+    });
+}
+
+function cerrarEscanerCamara() {
+    if (instanciaHtml5QrCode) {
+        instanciaHtml5QrCode.stop().then(() => {
+            instanciaHtml5QrCode.clear();
+            instanciaHtml5QrCode = null;
+        }).catch(() => {
+            instanciaHtml5QrCode = null;
+        });
+    }
+    const modal = document.getElementById('modalEscanerCamara');
+    if (modal) modal.style.display = 'none';
+}
+
 
 
         // ============
@@ -2265,5 +2318,21 @@
             }
         }
     </script>
+    <!-- VENTANA MODAL PARA ESCÁNER DE CÁMARA -->
+<div id="modalEscanerCamara" class="modal-rack-overlay" style="display: none;" onclick="cerrarEscanerCamara()">
+    <div class="modal-rack-content" onclick="event.stopPropagation()" style="max-width: 480px; text-align: center;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <strong style="color: var(--kpa-cyan); font-size: 16px;"> ESCANEAR ETIQUETA / CÓDIGO</strong>
+            <button type="button" onclick="cerrarEscanerCamara()" style="background: var(--danger); color: #fff; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; font-weight: bold;">✕</button>
+        </div>
+        <p style="color: var(--text-muted); font-size: 12px; margin-bottom: 15px;">
+            Apunta la cámara del celular hacia el código de barras o QR de la tarima.
+        </p>
+        <div id="lectorCamaraContenedor" style="width: 100%; border-radius: 12px; overflow: hidden; background: #000;"></div>
+        <button type="button" onclick="cerrarEscanerCamara()" style="margin-top: 15px; width: 100%; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted); padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer;">
+            Cancelar Escaneo
+        </button>
+    </div>
+</div>
 </body>
 </html>
