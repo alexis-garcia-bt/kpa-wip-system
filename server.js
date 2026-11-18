@@ -438,23 +438,31 @@ app.delete('/api/personal/:id', (req, res) => {
 });
 
 
-// ELIMINAR MOVIMIENTO / MATERIAL (EXCLUSIVO ADMINISTRADOR)
+
 app.delete('/api/movimientos/:id', (req, res) => {
     if (!db) return res.status(500).json({ error: 'Base de datos no conectada' });
 
     const id = req.params.id;
-    // Borra por id o id_movimiento
-    const sql = "DELETE FROM movimientos WHERE id = ? OR id_movimiento = ?";
-    
-    db.query(sql, [id, id], (err, resultado) => {
-        if (err) {
-            console.error("Error al eliminar movimiento:", err.message);
-            return res.status(500).json({ error: err.message });
+
+    // 1. Intenta borrar por id_movimiento
+    db.query("DELETE FROM movimientos WHERE id_movimiento = ?", [id], (err1, res1) => {
+        if (!err1 && res1 && res1.affectedRows > 0) {
+            return res.json({ success: true, message: `Movimiento #${id} eliminado` });
         }
-        res.json({ success: true, message: `Movimiento #${id} eliminado con éxito` });
+
+        // 2. Si no encontró o la columna se llama 'id', prueba por id
+        db.query("DELETE FROM movimientos WHERE id = ?", [id], (err2, res2) => {
+            if (!err2 && res2 && res2.affectedRows > 0) {
+                return res.json({ success: true, message: `Movimiento #${id} eliminado` });
+            }
+
+            // Si hubo un error real de MySQL, lo imprime y lo manda al cliente
+            const detalleError = err1?.message || err2?.message || 'No se encontró el ID en la tabla';
+            console.error("Error al eliminar movimiento:", detalleError);
+            return res.status(500).json({ error: detalleError });
+        });
     });
 });
-
 // Carga el catálogo limpio desde el archivo JSON
 
 const CATALOGO_MASTER_KPA = require('./proyectosMaster.json');

@@ -1017,8 +1017,8 @@
     </div>
     <script>
          const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-            ? 'https://kpa-wip-system.onrender.com' // Si abres con Live Server apunta a Render
-            : ''; // Si se sirve desde el mismo Express, usa rutas relativas limpias
+            ? 'https://kpa-wip-system.onrender.com' 
+            : ''; 
 
         setInterval(() => {
             document.getElementById('relojTiempoReal').textContent = new Date().toLocaleTimeString();
@@ -2327,19 +2327,19 @@ document.addEventListener('click', (e) => {
                 return;
             }
 
-            const confirmar = confirm(` ATENCIÓN ADMINISTRADOR:\n\n¿Estás seguro de eliminar el movimiento #${id}?\n\nAl eliminarlo, el inventario activo, los Racks y los KPIs se recalcularán automáticamente.`);
+            const confirmar = confirm(` ATENCIÓN ADMINISTRADOR:\n\n¿Estás seguro de eliminar el movimiento #${id}?\n\nAl eliminarlo, el inventario activo, los Racks y los contadores se recalcularán automáticamente.`);
             if (!confirmar) return;
 
             try {
                 const res = await fetch(`${API_URL}/api/movimientos/${id}`, { method: 'DELETE' });
                 if (res.ok) {
                     alert(` Movimiento #${id} eliminado correctamente.`);
-                    // Recarga las tablas y los racks en vivo
                     await cargarHistorial();
                     await cargarInventarioCompleto();
                     if (typeof renderizarMapaRacks === 'function') renderizarMapaRacks();
                 } else {
-                    alert("Error al eliminar el movimiento de la base de datos.");
+                    const errorJson = await res.json().catch(() => ({}));
+                    alert(`⚠️ Error al eliminar: ${errorJson.error || 'Ruta no encontrada en el servidor'}`);
                 }
             } catch (err) {
                 console.error("Error al eliminar:", err);
