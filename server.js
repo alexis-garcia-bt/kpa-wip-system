@@ -24,7 +24,7 @@ const dbConfig = {
     ssl: { rejectUnauthorized: false },
     connectTimeout: 20000,
     waitForConnections: true,
-    connectionLimit: 5,
+    connectionLimit: 2,
     queueLimit: 0
 };
 
@@ -345,9 +345,7 @@ app.post('/api/movimientos', (req, res) => {
         });
     });
 });
-// ====================================================================
-// 1. ESTA RUTA YA LA TIENES: DÉJALA TAL CUAL (CONSULTA LOS OPERADORES)
-// ====================================================================
+
 app.get('/api/personal', (req, res) => {
     const operadoresCompletos = [
         { id_operador: 1, rol: 'ADMIN', nombre: 'ALEXIS GARCIA', turno: 'MATUTINO' },
@@ -389,7 +387,7 @@ app.get('/api/personal', (req, res) => {
 });
 
 // ====================================================================
-// 2. ESTA ES LA NUEVA QUE SE AGREGA AQUÍ ABAJO (GUARDA EN CLEVER CLOUD)
+// GUARDA EN CLEVER CLOUD
 // ====================================================================
 app.post('/api/personal', (req, res) => {
     if (!db) return res.status(500).json({ error: 'Base de datos no conectada' });
@@ -423,7 +421,7 @@ app.post('/api/personal', (req, res) => {
 });
 
 // ====================================================================
-// 3. ESTA TAMBIÉN SE AGREGA AQUÍ ABAJO (ELIMINA DE CLEVER CLOUD)
+// ELIMINA DE CLEVER CLOUD
 // ====================================================================
 app.delete('/api/personal/:id', (req, res) => {
     if (!db) return res.status(500).json({ error: 'Base de datos no conectada' });
@@ -439,8 +437,26 @@ app.delete('/api/personal/:id', (req, res) => {
     });
 });
 
+
+// ELIMINAR MOVIMIENTO / MATERIAL (EXCLUSIVO ADMINISTRADOR)
+app.delete('/api/movimientos/:id', (req, res) => {
+    if (!db) return res.status(500).json({ error: 'Base de datos no conectada' });
+
+    const id = req.params.id;
+    // Borra por id o id_movimiento
+    const sql = "DELETE FROM movimientos WHERE id = ? OR id_movimiento = ?";
+    
+    db.query(sql, [id, id], (err, resultado) => {
+        if (err) {
+            console.error("Error al eliminar movimiento:", err.message);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ success: true, message: `Movimiento #${id} eliminado con éxito` });
+    });
+});
+
 // Carga el catálogo limpio desde el archivo JSON
-// CARGA EL ARCHIVO JSON (Solo una vez)
+
 const CATALOGO_MASTER_KPA = require('./proyectosMaster.json');
 
 app.get('/api/sugerencias', (req, res) => {

@@ -828,10 +828,11 @@
                                 <th>Personal</th>
                                 <th>Ubicación y Detalles</th>
                                 <th>Fecha Exacta</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="tablaHistorialBody">
-                            <tr><td colspan="7" style="text-align: center;">Cargando movimientos...</td></tr>
+                            <tr><td colspan="8" style="text-align: center;">Cargando movimientos...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1563,7 +1564,8 @@ document.addEventListener('click', (e) => {
             mensaje.textContent = 'Guardando movimiento con fecha de proceso...';
 
             try {
-                const response = await fetch('https://kpa-wip-system.onrender.com/api/movimientos', {
+                // DESPUÉS (Adaptable con API_URL):
+                const response = await fetch(`${API_URL}/api/movimientos`, {
                 method: 'POST',
              headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -1607,7 +1609,7 @@ document.addEventListener('click', (e) => {
                 }
             } catch (e) {
                 console.error("Error al cargar historial:", e);
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--danger);">Error de conexión con la base de datos.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--danger);">Error de conexión con la base de datos.</td></tr>';
             }
         }
 
@@ -1620,7 +1622,7 @@ document.addEventListener('click', (e) => {
             const fechaHasta = document.getElementById('filtroFechaHasta').value;
 
             if (!listaHistorialGlobal || listaHistorialGlobal.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Sin movimientos registrados.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Sin movimientos registrados.</td></tr>';
                 return;
             }
 
@@ -1659,6 +1661,13 @@ document.addEventListener('click', (e) => {
             tbody.innerHTML = '';
             filtrados.forEach(item => {
                 const esSalida = item.tipo_movimiento && item.tipo_movimiento.toUpperCase() === 'SALIDA';
+
+
+                // BOTÓN SOLO PARA ADMIN
+                const botonEliminar = usuarioActual.rol === 'ADMIN'
+                    ? `<button onclick="eliminarMovimiento(${item.id || item.id_movimiento})" class="btn-danger" style="padding: 6px 12px; font-size: 11px; cursor: pointer;">✕ Eliminar</button>`
+                    : `<span style="color: var(--text-muted); font-size: 11px;">Solo lectura</span>`;
+
 
                 let textoLimpio = (item.ubicacion_destino || 'N/A')
                     .replace(/RACK\s*R/gi, 'RACK ')
@@ -1706,6 +1715,7 @@ document.addEventListener('click', (e) => {
                             ${item.fecha_proceso ? `<br><small style="color: var(--kpa-green); font-weight: bold;">F. Proceso: ${item.fecha_proceso.split('T')[0]}</small>` : ''}
                         </td>
                         <td>${fechaLegible}</td>
+                        <td>${botonEliminar}</td>
                     </tr>
                 `;
             });
@@ -2153,9 +2163,9 @@ document.addEventListener('click', (e) => {
         }
 
 
-        // ============
-        // MOTOR DE IA
-        // =============
+        
+         // MOTOR DE IA//
+        
         function sugerirUbicacionIA() {
             const proyectoInput = (document.getElementById('proyectoInput').value || '').trim().toUpperCase();
             const piezasInput = parseInt(document.getElementById('inputPiezas').value, 10) || 0;
@@ -2309,6 +2319,31 @@ document.addEventListener('click', (e) => {
                 });
             } else {
                 alert(" Almacén al 100% de capacidad. No se encontraron bahías disponibles.");
+            }
+        }
+        async function eliminarMovimiento(id) {
+            if (usuarioActual.rol !== 'ADMIN') {
+                alert("Acceso denegado: Solo los administradores pueden eliminar registros.");
+                return;
+            }
+
+            const confirmar = confirm(` ATENCIÓN ADMINISTRADOR:\n\n¿Estás seguro de eliminar el movimiento #${id}?\n\nAl eliminarlo, el inventario activo, los Racks y los KPIs se recalcularán automáticamente.`);
+            if (!confirmar) return;
+
+            try {
+                const res = await fetch(`${API_URL}/api/movimientos/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert(` Movimiento #${id} eliminado correctamente.`);
+                    // Recarga las tablas y los racks en vivo
+                    await cargarHistorial();
+                    await cargarInventarioCompleto();
+                    if (typeof renderizarMapaRacks === 'function') renderizarMapaRacks();
+                } else {
+                    alert("Error al eliminar el movimiento de la base de datos.");
+                }
+            } catch (err) {
+                console.error("Error al eliminar:", err);
+                alert("Error de conexión con el servidor.");
             }
         }
     </script>
