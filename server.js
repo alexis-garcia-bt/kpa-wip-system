@@ -481,7 +481,6 @@ app.get('/api/sugerencias', (req, res) => {
                (qNum && idSinEXP.includes(qNum));
     });
 
-    // Mapeo compatible para que index.html lea tanto .id como .id_proyecto
     const respuesta = filtrados.slice(0, 10).map(item => ({
         id: item.id,
         id_proyecto: item.id,

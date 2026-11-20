@@ -144,12 +144,10 @@
 
 
 
-/* DISEÑO RESPONSIVO DEFINITIVO PARA MÓVILES */
 
- /* ==========================================================
-   DISEÑO INDUSTRIAL ULTRA-RESPONSIVO PARA PISO DE PLANTA (KPA)
+ /* 
    Optimizado para celular y uso con pulgares
-   ========================================================== */
+    */
 @media screen and (max-width: 768px) {
     /* 1. Reset limpio sin desbordamientos laterales */
     html, body {
@@ -453,6 +451,87 @@
                 grid-template-columns: 1fr !important;
             }
         }
+        /* ==========================================================
+           DISEÑO DE RACKS FÍSICOS (ELEVACIÓN 4 NIVELES X 2 LADOS)
+           ========================================================== */
+        .racks-tablero-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 14px;
+            margin-top: 15px;
+        }
+
+        @media screen and (max-width: 768px) {
+            .racks-tablero-grid {
+                grid-template-columns: repeat(3, 1fr) !important; /* 3 racks por fila en celular */
+                gap: 8px !important;
+            }
+        }
+
+        @media screen and (max-width: 480px) {
+            .racks-tablero-grid {
+                grid-template-columns: repeat(2, 1fr) !important; /* 2 racks por fila en cel chico */
+                gap: 8px !important;
+            }
+        }
+
+        .rack-modulo {
+            background: #081225;
+            border: 2px solid #1e3a5f;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .rack-modulo:hover {
+            transform: translateY(-3px);
+            border-color: #38bdf8;
+            box-shadow: 0 8px 20px rgba(56, 189, 248, 0.25);
+        }
+
+        .rack-modulo-header {
+            background: #0a2540;
+            color: #ffffff;
+            font-weight: 900;
+            font-size: 13px;
+            letter-spacing: 0.8px;
+            padding: 6px 4px;
+            text-align: center;
+            border-bottom: 2px solid #1e3a5f;
+        }
+
+        .rack-matriz-slots {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 2 columnas: Izquierda y Derecha */
+            gap: 4px;
+            padding: 6px;
+            background: #040a14;
+        }
+
+        .slot-celda {
+            height: 22px;
+            border-radius: 4px;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        /* SEMÁFORO DE 3 ESTADOS */
+        .slot-verde {
+            background-color: #10b981 !important; /* 100% LIBRE */
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.25);
+        }
+
+        .slot-naranja {
+            background-color: #f59e0b !important; /* TIENE MATERIAL, CABE OTRA TARIMA */
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+        }
+
+        .slot-rojo {
+            background-color: #ef4444 !important; /* LLENO AL TOPE */
+            box-shadow: inset 0 0 6px rgba(0,0,0,0.35);
+        }
 
 
     </style>
@@ -642,7 +721,7 @@
                 <!-- BOTÓN Y TARJETA DEL MOTOR DE IA (SMART SLOTTING) -->
                         <div style="margin-bottom: 18px;">
                             <button type="button" onclick="sugerirUbicacionIA()" style="background: linear-gradient(135deg, #1d4ed8, #7c3aed); color: #fff; border: 1px solid #a855f7; padding: 14px 18px; border-radius: 12px; font-weight: 800; font-size: 14px; width: 100%; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 15px rgba(124, 58, 237, 0.35); text-transform: uppercase; letter-spacing: 0.5px;">
-                                ✨ Sugerir Mejor Ubicación con IA
+                                 Sugerir Mejor Ubicación con IA
                             </button>
                             <div id="cajaSugerenciaIA" style="display: none; margin-top: 12px; background: rgba(124, 58, 237, 0.12); border: 1px solid rgba(168, 85, 247, 0.4); padding: 14px 16px; border-radius: 12px; font-size: 13px; line-height: 1.6;">
                                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
@@ -713,7 +792,6 @@
         </div>
     </div>
 
-       <!-- PESTAÑA 2: UBICAR MATERIAL -->
         <!-- PESTAÑA 2: UBICAR MATERIAL & MAPA VISUAL -->
         <div id="tab-ubicar" class="tab-content">
             <div class="card">
@@ -739,15 +817,27 @@
 
                 <!-- 1. VISTA: MAPA VISUAL DE RACKS -->
                 <div id="vistaMapaRacks" style="display: none; margin-bottom: 25px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                        <span style="font-size: 12px; color: var(--text-muted);">Toca cualquier rack para ver sus tarimas en detalle:</span>
-                        <div style="display: flex; gap: 12px; font-size: 11px;">
-                            <span style="color: var(--kpa-green); font-weight: bold;">● Disponible (0 tarimas)</span>
-                            <span style="color: var(--kpa-cyan); font-weight: bold;">● Ocupado con Carga</span>
+                    
+                    <!-- LEYENDA DEL SEMÁFORO DE 3 COLORES -->
+                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: bold;">
+                             Toca cualquier Rack para abrir radiografía de piezas y proyectos:
+                        </span>
+                        <div style="display: flex; gap: 12px; font-size: 11px; font-weight: 800;">
+                            <span style="display: flex; align-items: center; gap: 5px; color: #10b981;">
+                                <span style="width: 12px; height: 12px; background: #10b981; border-radius: 3px; display: inline-block;"></span> Libre (0)
+                            </span>
+                            <span style="display: flex; align-items: center; gap: 5px; color: #f59e0b;">
+                                <span style="width: 12px; height: 12px; background: #f59e0b; border-radius: 3px; display: inline-block;"></span> Con espacio (Cabe otra)
+                            </span>
+                            <span style="display: flex; align-items: center; gap: 5px; color: #ef4444;">
+                                <span style="width: 12px; height: 12px; background: #ef4444; border-radius: 3px; display: inline-block;"></span> Lleno al tope
+                            </span>
                         </div>
                     </div>
-                    <div id="gridRacksContainer" class="rack-grid">
-                        <!-- Casillas generadas dinámicamente con JavaScript -->
+
+                    <div id="gridRacksContainer" class="racks-tablero-grid">
+                        <!-- Cuadrícula 4x2 generada dinámicamente -->
                     </div>
                 </div>
 
@@ -1088,62 +1178,69 @@
             grid.innerHTML = '';
 
             for (let i = 1; i <= 19; i++) {
-                // Buscamos los materiales de este rack exacto
+                // Filtra materiales que pertenecen a este rack exacto
                 const materialesEnRack = (listaInventarioGlobal || []).filter(item => {
                     let r = '';
                     if (item.rack && item.rack !== 'N/A') {
                         r = String(item.rack).replace(/RACK/gi, '').replace(/R/gi, '').trim();
                     } else if (item.ubicacion_destino) {
-                        const m = item.ubicacion_destino.match(/RACK\s*([0-9]+)/i);
+                        const m = item.ubicacion_destino.match(/RACK\s*R?([0-9]+)/i);
                         if (m) r = m[1].trim();
                     }
                     return r === String(i);
                 });
 
-                const totalTarimas = materialesEnRack.length;
-                const totalPiezas = materialesEnRack.reduce((acc, it) => acc + (parseInt(it.piezas, 10) || 0), 0);
+                // Construimos los 8 slots (Nivel 4 Arriba a Nivel 1 Piso, Lado Izquierdo y Derecho)
+                let htmlSlots = '';
+                const niveles = [4, 3, 2, 1]; // De arriba hacia abajo (elevación física real)
 
-                // 3 ESTADOS FÍSICOS REALES:
-                let claseEstado = 'estado-vacio';
-                let claseBadge = 'badge-vacio';
-                let textoBadge = ' DISPONIBLE';
+                niveles.forEach(nivel => {
+                    ['IZQUIERDO', 'DERECHO'].forEach(lado => {
+                        // Busca si hay tarima en este nivel y lado
+                        const itemsEnSlot = materialesEnRack.filter(m => {
+                            const txt = (m.ubicacion_destino || '').toUpperCase();
+                            const ladoPuro = (m.lado || '').toUpperCase();
+                            const nivelPuro = m.nivel ? String(m.nivel).replace(/\D/g, '') : '';
+                            const matchNivel = new RegExp(`Nivel:?\\s*N?${nivel}\\b`, 'i').test(txt) || nivelPuro === String(nivel);
 
-                if (totalTarimas === 0) {
-                    claseEstado = 'estado-vacio';
-                    claseBadge = 'badge-vacio';
-                    textoBadge = ' DISPONIBLE';
-                } else if (totalTarimas >= 8) {
-                    claseEstado = 'estado-lleno';
-                    claseBadge = 'badge-lleno';
-                    textoBadge = ' LLENO AL TOPE';
-                } else {
-                    claseEstado = 'estado-parcial';
-                    claseBadge = 'badge-parcial';
-                    textoBadge = ` PARCIAL (${totalTarimas} tarimas)`;
-                }
+                            if (!matchNivel) return false;
 
-                const proyectosUnicos = [...new Set(materialesEnRack.map(m => (m.proyecto || 'EXP').toUpperCase()))].slice(0, 2);
-                const textoProyectos = proyectosUnicos.length > 0 ? proyectosUnicos.join(', ') : 'Sin carga';
+                            if (lado === 'IZQUIERDO') {
+                                return txt.includes('IZQUIERDO') || txt.includes('IZQ') || txt.includes('MANGA') || txt.includes('AMBOS') ||
+                                       ladoPuro.includes('IZQUIERDO') || ladoPuro.includes('AMBOS');
+                            } else {
+                                return txt.includes('DERECHO') || txt.includes('DER') || txt.includes('MANGA') || txt.includes('AMBOS') ||
+                                       ladoPuro.includes('DERECHO') || ladoPuro.includes('AMBOS');
+                            }
+                        });
+
+                        // Determina el color según el semáforo de 3 estados
+                        let claseColor = 'slot-verde'; // Por defecto: LIBRE
+                        if (itemsEnSlot.length > 0) {
+                            const estaLlenoAlTope = itemsEnSlot.some(it => {
+                                const txt = (it.ubicacion_destino || '').toUpperCase();
+                                return txt.includes('LLENO') || txt.includes('MANGA') || txt.includes('AMBOS');
+                            });
+
+                            if (estaLlenoAlTope || itemsEnSlot.length >= 2) {
+                                claseColor = 'slot-rojo'; // LLENO AL TOPE
+                            } else {
+                                claseColor = 'slot-naranja'; // TIENE MATERIAL, CABE OTRA
+                            }
+                        }
+
+                        htmlSlots += `<div class="slot-celda ${claseColor}" title="Nivel ${nivel} - Lado ${lado}"></div>`;
+                    });
+                });
+
+                // Formato de 2 dígitos: "Rack 01", "Rack 02", etc.
+                const numeroFormateado = String(i).padStart(2, '0');
 
                 grid.innerHTML += `
-                    <div class="rack-card ${claseEstado}" onclick="abrirRadiografiaRack(${i})">
-                        <div>
-                            <span class="badge-status ${claseBadge}">${textoBadge}</span>
-                            <h3>RACK ${i}</h3>
-                        </div>
-                        <div>
-                            <div style="font-size: 15px; color: ${totalTarimas > 0 ? 'var(--warning)' : 'var(--text-muted)'}; font-weight: 800; margin-bottom: 2px;">
-                                ${totalTarimas > 0 ? `${totalPiezas.toLocaleString('es-MX')} pzas` : '0 pzas'}
-                            </div>
-                            <div style="font-size: 11px; color: var(--text-muted);">
-                                ${totalTarimas > 0 ? `${totalTarimas} tarima(s) • Con espacio` : '100% Vacío'}
-                            </div>
-                            <div style="font-size: 10px; color: var(--kpa-cyan); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;">
-                                ${textoProyectos}
-                            </div>
-                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 6px; font-weight: bold;">
-                                 Toca para ver niveles y lados
-                            </div>
+                    <div class="rack-modulo" onclick="abrirRadiografiaRack(${i})" title="Toca para ver detalles de Rack ${numeroFormateado}">
+                        <div class="rack-modulo-header">Rack ${numeroFormateado}</div>
+                        <div class="rack-matriz-slots">
+                            ${htmlSlots}
                         </div>
                     </div>
                 `;
@@ -2339,7 +2436,7 @@ document.addEventListener('click', (e) => {
                     if (typeof renderizarMapaRacks === 'function') renderizarMapaRacks();
                 } else {
                     const errorJson = await res.json().catch(() => ({}));
-                    alert(`⚠️ Error al eliminar: ${errorJson.error || 'Ruta no encontrada en el servidor'}`);
+                    alert(` Error al eliminar: ${errorJson.error || 'Ruta no encontrada en el servidor'}`);
                 }
             } catch (err) {
                 console.error("Error al eliminar:", err);
