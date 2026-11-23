@@ -1024,6 +1024,7 @@
                             <select id="nuevoRolPersonal" required>
                                 <option value="MONTACARGUISTA">MONTACARGUISTA</option>
                                 <option value="LIDER">LÍDER DE ÁREA</option>
+                                <option value="ADMIN">ADMINISTRADOR</option> <!-- <-- AGREGAR ESTA LÍNEA -->
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
@@ -1032,7 +1033,7 @@
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
                             <label for="inputNuevoPin">PIN de Acceso (4 dígitos o Apellido):</label>
-                            <input type="text" id="inputNuevoPin" placeholder="EJ. 1234 (OPCIONAL)" maxlength="15" oninput="this.value = this.value.toUpperCase()">
+                            <input type="text" id="inputNuevoPin" placeholder="PIN PERSONALIZADO (OBLIGATORIO)" required maxlength="15" oninput="this.value = this.value.toUpperCase()">
                         </div>
                     </div>
                     <button type="submit" class="btn-primary" style="padding: 14px; font-size: 14px;">+ Registrar Operador en Base de Datos</button>
@@ -2221,20 +2222,26 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 return;
             }
 
-            // Validación de contraseña
+            // Busca si tiene PIN específico en la base de datos
+            const operadorObj = listaPersonalGlobal.find(p => p.nombre === nombre);
+            const apellidoReal = nombre.trim().split(' ').pop().toUpperCase();
+            const pinPersonal = operadorObj && operadorObj.pin ? String(operadorObj.pin).trim().toUpperCase() : apellidoReal;
+
             if (rol === 'ADMIN') {
-                if (passwordIngresada !== '1397') {
-                    alert('Contraseña de Administrador incorrecta.');
-                    return;
+                if (nombre.toUpperCase().includes('ALEXIS GARCIA')) {
+                    if (passwordIngresada !== '1397' && passwordIngresada !== pinPersonal) {
+                        alert("Contraseña de Administrador Principal incorrecta.");
+                        return;
+                    }
+                } else {
+                    if (passwordIngresada !== pinPersonal) {
+                        alert("PIN de Administrador incorrecto.");
+                        return;
+                    }
                 }
             } else {
-                // Busca si tiene PIN específico o usa su apellido
-                const operadorObj = listaPersonalGlobal.find(p => p.nombre === nombre);
-                const apellidoReal = nombre.trim().split(' ').pop();
-                const pinValido = operadorObj && operadorObj.pin ? String(operadorObj.pin).trim().toUpperCase() : apellidoReal;
-
-                if (passwordIngresada !== pinValido && passwordIngresada !== apellidoReal) {
-                   alert("Contraseña o PIN incorrecto. Intente de nuevo.");
+                if (passwordIngresada !== pinPersonal && passwordIngresada !== apellidoReal) {
+                    alert("PIN o contraseña incorrecta.");
                     return;
                 }
             }
@@ -2334,18 +2341,31 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">No hay personal registrado.</td></tr>';
                 return;
             }
+            // Solo ALEXIS GARCIA tiene permiso de ver las contraseñas reales
+            const soyAlexis = usuarioActual.nombre.toUpperCase().includes('ALEXIS GARCIA');
+
             listaPersonalGlobal.forEach(p => {
                 const apellido = p.nombre.trim().split(' ').pop();
-                const claveVisible = p.pin || apellido;
+                const pinReal = p.pin || apellido;
+
+                // Si eres tú (Alexis), ves el PIN real en amarillo. Si es cualquier otro admin, ve puntitos negros
+                const claveVisible = soyAlexis 
+                    ? `<span style="color: var(--warning); font-family: monospace; font-weight: bold;">${p.nombre.toUpperCase().includes('ALEXIS GARCIA') ? '1397' : pinReal}</span>` 
+                    : `<span style="color: var(--text-muted); letter-spacing: 2px;">••••••••</span>`;
+
+                // Solo protege tu cuenta de no ser eliminada
+                const esAdminPrincipal = p.nombre.toUpperCase().includes('ALEXIS GARCIA');
+                const botonAccion = esAdminPrincipal 
+                    ? '<span style="color: var(--kpa-green); font-size: 11px; font-weight: bold;">Super Admin</span>' 
+                    : `<button onclick="eliminarPersonal(${p.id_operador || p.id})" class="btn-danger" style="cursor: pointer;">Eliminar</button>`;
+
                 tbody.innerHTML += `
                     <tr>
                         <td>#${p.id_operador || p.id || 'BD'}</td>
-                        <td><span style="color: var(--kpa-cyan); font-weight: bold;">${p.rol}</span></td>
+                        <td><span style="color: ${p.rol === 'ADMIN' ? 'var(--warning)' : 'var(--kpa-cyan)'}; font-weight: bold;">${p.rol}</span></td>
                         <td><strong>${p.nombre}</strong></td>
-                        <td><span style="color: var(--warning); font-family: monospace; font-weight: bold;">${p.rol === 'ADMIN' ? '1397' : claveVisible}</span></td>
-                        <td>
-                            ${p.rol === 'ADMIN' ? '<span style="color:var(--text-muted); font-size:11px;">Protegido</span>' : `<button onclick="eliminarPersonal(${p.id_operador || p.id})" class="btn-danger">Eliminar</button>`}
-                        </td>
+                        <td>${claveVisible}</td>
+                        <td>${botonAccion}</td>
                     </tr>
                 `;
             });
