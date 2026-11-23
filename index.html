@@ -2365,6 +2365,7 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
         function sugerirUbicacionIA() {
             const proyectoInput = (document.getElementById('proyectoInput').value || '').trim().toUpperCase();
             const piezasInput = parseInt(document.getElementById('inputPiezas').value, 10) || 0;
+            const compSel = (document.getElementById('selectComponente')?.value || '').toUpperCase();
             const cajaSugerencia = document.getElementById('cajaSugerenciaIA');
             const tituloSugerencia = document.getElementById('aiTituloSugerencia');
             const explicacion = document.getElementById('aiExplicacion');
@@ -2469,7 +2470,12 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 mejorRack = racksOrdenadosPorMenosCarga[0];
 
                 // Si son muchas piezas (>75 pzas), la IA prefiere Piso (Nivel 1) por seguridad y peso
-                const ordenNiveles = piezasInput > 75 ? [1, 2, 3, 4] : [2, 3, 1, 4];
+                // Si es rejilla/separador aguanta hasta 800 pzas; si es manga/charola/tapa, con 120 ya es pesada
+                        const esPiezaChica = compSel.includes('REJILLA') || compSel.includes('SEPARADOR') || compSel.includes('INSERTO');
+                        const esCargaPesada = esPiezaChica ? (piezasInput >= 800) : (piezasInput >= 120);
+
+                        // Si es pesada prioriza Piso (Nivel 1), si es ligera Nivel 2 o 3
+                        const ordenNiveles = esCargaPesada ? [1, 2, 3, 4] : [2, 3, 1, 4];
 
                 for (let n of ordenNiveles) {
                     for (let lado of ['IZQUIERDO', 'DERECHO']) {
@@ -2483,10 +2489,10 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                     if (mejorNivel) break;
                 }
 
-                if (piezasInput > 75) {
-                    razonIA = `Optimización de Carga Pesada: Al ser un lote de <strong>${piezasInput} piezas</strong>, la IA prioriza el <strong>Nivel ${mejorNivel} (Piso/Bajo)</strong> en el RACK ${mejorRack} para minimizar desgaste de mástil del montacargas y balancear tráfico en pasillo.`;
+                if (esCargaPesada) {
+                    razonIA = ` Tarima pesada (${piezasInput.toLocaleString('es-MX')} pzas de ${compSel || 'material'}): mejor en piso por seguridad.`;
                 } else {
-                    razonIA = `Balanceo de Almacén: Proyecto nuevo sin historial previo. La IA seleccionó el <strong>RACK ${mejorRack}</strong> por tener la menor tasa de ocupación actual en planta.`;
+                    razonIA = ` Es el rack con más espacio disponible .`;
                 }
             }
 
@@ -2640,7 +2646,7 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 `;
             });
         }
-        
+
         function actualizarVistaPreviaComponente() {
             const proy = document.getElementById('proyectoInput')?.value.trim().toUpperCase();
             const sel = document.getElementById('selectComponente');
