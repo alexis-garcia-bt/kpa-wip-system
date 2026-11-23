@@ -577,6 +577,7 @@
     <div class="nav-tabs">
         <button class="tab-btn active" onclick="cambiarPestana('operacion', this)"> Operación WIP</button>
         <button class="tab-btn" onclick="cambiarPestana('ubicar', this)"> Inventario WIP</button>
+        <button class="tab-btn" onclick="cambiarPestana('lote6', this)">  Lote 6 </button>
         <button class="tab-btn" onclick="cambiarPestana('historial', this)"> Movimientos</button>
         <button id="btnTabPersonal" class="tab-btn" onclick="cambiarPestana('personal', this)" style="display: none;"> Personal & Accesos</button>
         <button class="tab-btn" onclick="cambiarPestana('contacto', this)"> Contacto</button>
@@ -734,10 +735,11 @@
 
                            <label>Ubicación de Destino / Almacenamiento:</label>
                             <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                                <select id="rackDestino">
-                                    <option value="">RACK DESTINO (1-19)</option>
+                                <select id="rackDestino" onchange="verificarDestinoLote6()">
+                                    <option value="">-- SELECCIONE DESTINO --</option>
+                                    <option value="LOTE 6" style="color: #38bdf8; font-weight: bold;">📦 LOTE 6 (ESTIBA EN PISO)</option>
                                     <script> for(let i=1; i<=19; i++) document.write(`<option value="${i}">RACK ${i}</option>`); </script>
-                                 </select>
+                                </select>
                                 <select id="nivelDestino">
                                     <option value="">NIVEL DESTINO</option>
                                     <option value="1">Nivel 1 (Piso)</option>
@@ -756,6 +758,11 @@
                                     <option value="">POSICIÓN APILADO (1-10)</option>
                                     <script> for(let i=1; i<=10; i++) document.write(`<option value="${i}">POS ${i}</option>`); </script>
                                 </select>
+                            </div>
+                            <!-- CAMPO ESPECIAL DE REFERENCIA VISUAL EN LOTE 6 -->
+                            <div id="bloqueNotaLote6" style="display: none; margin-top: 12px;">
+                                <label for="inputNotaLote6" style="color: var(--kpa-cyan);">Referencia/Ubicación en Lote 6 (Opcional):</label>
+                                <input type="text" id="inputNotaLote6" placeholder="EJ. JUNTO A LA CORTINA, AL FONDO, FILA 2" oninput="this.value = this.value.toUpperCase()">
                             </div>
                         </div>
 
@@ -874,6 +881,55 @@
                     </div>
                 </div>
 
+            </div>
+        </div>
+
+        <!-- PESTAÑA NUEVA: ALMACÉN LOTE 6 (EN PISO) -->
+        <div id="tab-lote6" class="tab-content">
+            <div class="card">
+                <h2>
+                    <span>Lote 6 (Piso)</span>
+                    <button type="button" onclick="cargarLote6()" class="btn-primary" style="flex: 0 0 130px; padding: 10px 16px; font-size: 12px; margin: 0;">
+                        ↻ Actualizar
+                    </button>
+                </h2>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                    Control de material en lote 6.
+                </p>
+
+                <div style="display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap;">
+                    <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); padding: 10px 18px; border-radius: 12px; flex: 1; min-width: 140px; text-align: center;">
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; display: block;">PIEZAS EN LOTE 6</span>
+                        <strong id="kpiPiezasLote6" style="font-size: 18px; color: var(--warning);">0 pzas</strong>
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); padding: 10px 18px; border-radius: 12px; flex: 1; min-width: 140px; text-align: center;">
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; display: block;">TARIMAS EN PISO</span>
+                        <strong id="kpiTarimasLote6" style="font-size: 18px; color: var(--kpa-green);">0</strong>
+                    </div>
+                </div>
+
+                <!-- BUSCADOR DE LOTE 6 -->
+                <div style="margin-bottom: 20px;">
+                    <input type="text" id="filtroLote6" placeholder="BUSCAR POR PROYECTO O REFERENCIA EN PISO..." oninput="aplicarFiltrosLote6()" style="padding: 12px 16px;">
+                </div>
+
+                <!-- TABLA DE MATERIAL EN LOTE 6 -->
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Proyecto / Material</th>
+                                <th>Piezas</th>
+                                <th>Referencia / Nota en Piso</th>
+                                <th>Personal</th>
+                                <th>Fechas (Registro / Proceso)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaLote6Body">
+                            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Consultando Lote 6...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -1426,6 +1482,7 @@
     if (pestana === 'historial') cargarHistorial();
     if (pestana === 'personal') cargarPersonalBD();
     if (pestana === 'ubicar') cargarInventarioCompleto();
+    if (pestana === 'lote6') cargarLote6();
 
     
 }
@@ -1595,20 +1652,27 @@ document.addEventListener('click', (e) => {
             const proyecto = document.getElementById('proyectoInput').value;
             const piezas = document.getElementById('inputPiezas').value;
             const fechaProceso = document.getElementById('inputFechaProceso').value;
-            const ambosLados = document.getElementById('ambosLadosCheck').checked;
+            const ambosLados = document.getElementById('ambosLadosCheck')?.checked;
             const estadoLlenado = document.getElementById('selectCapacidadLado') ? document.getElementById('selectCapacidadLado').value : 'ESPACIO';
             let etiquetaLlenado = (ambosLados || estadoLlenado === 'LLENO') ? ' [LLENO AL TOPE]' : ' [CON ESPACIO]';
+            
             const ladoFinal = ambosLados 
                 ? 'AMBOS (IZQ Y DER - MANGA LARGA) [LLENO AL TOPE]' 
-                : `${document.getElementById('ladoDestino').value || 'IZQUIERDO'}${etiquetaLlenado}`;
+                : `${document.getElementById('ladoDestino')?.value || 'IZQUIERDO'}${etiquetaLlenado}`;
+
+            // --- VARIABLES DE LOTE 6 ---
+            const selectDestinoVal = document.getElementById('rackDestino')?.value || '';
+            const esLote6 = selectDestinoVal === 'LOTE 6';
+            const notaLote6 = document.getElementById('inputNotaLote6')?.value.trim() || 'PISO GENERAL';
+            const procedencia = document.getElementById('origenProcedencia')?.value || 'RACKS';
+            const vieneDeLote6 = procedencia === 'LOTE 6';
 
             // --- CANDADO DE SEGURIDAD EN SALIDAS ---
             if (tipoMovimientoSeleccionado === 'SALIDA') {
                 const cantSalida = parseInt(piezas, 10);
                 const proyBuscado = proyecto.trim().toUpperCase();
-                const rackOrigenSel = (document.getElementById('rackOrigen').value || '').toUpperCase().replace('R', '').trim();
+                const rackOrigenSel = vieneDeLote6 ? 'LOTE 6' : (document.getElementById('rackOrigen')?.value || '').toUpperCase().replace('R', '').trim();
 
-                // Buscamos si existe stock activo en ese rack
                 const loteEncontrado = listaInventarioGlobal.find(item => {
                     const coincideProy = (item.proyecto || '').toUpperCase().trim() === proyBuscado;
                     const rackItem = (item.rack || '').toUpperCase().replace('RACK', '').replace('R', '').trim();
@@ -1616,19 +1680,21 @@ document.addEventListener('click', (e) => {
                 });
 
                 if (!loteEncontrado) {
-                    alert(` STOCK NO ENCONTRADO:\n\nNo hay registro de inventario activo para el proyecto "${proyBuscado}" en el Rack seleccionado.`);
+                    alert(` STOCK NO ENCONTRADO:\n\nNo hay registro de inventario activo para el proyecto "${proyBuscado}" en el origen seleccionado.`);
                     return;
                 }
 
                 if (cantSalida > loteEncontrado.piezas) {
-                    alert(` STOCK INSUFICIENTE:\n\nSolo hay ${loteEncontrado.piezas} piezas disponibles en ese Rack.\nNo es posible retirar ${cantSalida} piezas.`);
+                    alert(` STOCK INSUFICIENTE:\n\nSolo hay ${loteEncontrado.piezas} piezas disponibles.\nNo es posible retirar ${cantSalida} piezas.`);
                     return;
                 }
+
+                const destinoSalidaTexto = document.getElementById('destinoSalidaSelect')?.value || 'BASURA / SCRAP';
+                const confirmar = confirm(` CONFIRMACIÓN DE SALIDA:\n\n¿Estás seguro de registrar la SALIDA de ${piezas} piezas del material "${proyecto.toUpperCase()}" con destino a: ${destinoSalidaTexto}?`);
+                if (!confirmar) return;
             }
-            // --- FIN DEL CANDADO ---
 
-
-            // Aseguramos que viajen explícitamente el nombre del operador activo y el rack destino
+            // --- OBJETO PAYLOAD CON SOPORTE PARA LOTE 6 Y RACKS ---
             const payload = {
                 nombre_operador: usuarioActual.nombre ? `${usuarioActual.nombre} (${usuarioActual.rol})` : 'OPERADOR GENERAL',
                 personal: usuarioActual.nombre ? `${usuarioActual.nombre} (${usuarioActual.rol})` : 'OPERADOR GENERAL',
@@ -1637,51 +1703,54 @@ document.addEventListener('click', (e) => {
                 proyecto: proyecto,
                 piezas: piezas,
                 fecha_proceso: fechaProceso,
-                procedencia_origen: document.getElementById('origenProcedencia').value || 'RACKS',
-                rack_origen: document.getElementById('rackOrigen').value || 'N/A',
-                nivel_origen: document.getElementById('nivelOrigen').value || 'N/A',
-                lado_origen: document.getElementById('ladoOrigen').value || 'N/A',
-                apilado_origen: document.getElementById('apiladoOrigen').value || 'N/A',
+                procedencia_origen: procedencia,
+                rack_origen: vieneDeLote6 ? 'LOTE 6' : (document.getElementById('rackOrigen')?.value || 'N/A'),
+                nivel_origen: vieneDeLote6 ? 'PISO' : (document.getElementById('nivelOrigen')?.value || 'N/A'),
+                lado_origen: vieneDeLote6 ? 'PISO' : (document.getElementById('ladoOrigen')?.value || 'N/A'),
+                apilado_origen: vieneDeLote6 ? '1' : (document.getElementById('apiladoOrigen')?.value || 'N/A'),
                 rack_destino: tipoMovimientoSeleccionado === 'SALIDA' 
-                    ? (document.getElementById('destinoSalidaSelect') ? document.getElementById('destinoSalidaSelect').value : 'BASURA / SCRAP') 
-                    : (document.getElementById('rackDestino').value || 'N/A'),
+                    ? (document.getElementById('destinoSalidaSelect')?.value || 'BASURA / SCRAP') 
+                    : (esLote6 ? 'LOTE 6' : selectDestinoVal),
                 rack: tipoMovimientoSeleccionado === 'SALIDA' 
                     ? 'N/A' 
-                    : (document.getElementById('rackDestino').value || 'N/A'),
-                nivel_destino: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (document.getElementById('nivelDestino').value || '1'),
-                lado: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : ladoFinal,
-                apilado: tipoMovimientoSeleccionado === 'SALIDA' ? '1' : (document.getElementById('apiladoDestino').value || '1')
+                    : (esLote6 ? 'LOTE 6' : selectDestinoVal),
+                nivel_destino: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (esLote6 ? 'PISO' : (document.getElementById('nivelDestino')?.value || '1')),
+                lado: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (esLote6 ? `PISO (${notaLote6})` : ladoFinal),
+                apilado: tipoMovimientoSeleccionado === 'SALIDA' ? '1' : (document.getElementById('apiladoDestino')?.value || '1')
             };
-
-
-
 
             const mensaje = document.getElementById('mensajeEstado');
             mensaje.style.color = 'var(--kpa-blue)';
-            mensaje.textContent = 'Guardando movimiento con fecha de proceso...';
+            mensaje.textContent = 'Guardando movimiento...';
 
             try {
-                // DESPUÉS (Adaptable con API_URL):
                 const response = await fetch(`${API_URL}/api/movimientos`, {
-                method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-               });  
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
                 if (!response.ok) throw new Error();
+                
                 mensaje.style.color = 'var(--kpa-green)';
                 mensaje.textContent = '¡Movimiento guardado con éxito!';
-                // Actualiza el inventario, los racks y los KPIs al instante en pantalla
+
+                // Actualiza inventarios y racks en vivo
                 await cargarInventarioCompleto();
-                if (tipoMovimientoSeleccionado === 'REUBICACION' || tipoMovimientoSeleccionado === 'SALIDA') {
-                    if (typeof renderizarMapaRacks === 'function') renderizarMapaRacks();
-                }
+                if (typeof cargarLote6 === 'function') await cargarLote6();
+                if (typeof renderizarMapaRacks === 'function') renderizarMapaRacks();
+
+                // Limpia campos y resetea la fecha de hoy
                 document.getElementById('proyectoInput').value = '';
                 document.getElementById('inputPiezas').value = '';
+                const inputNota = document.getElementById('inputNotaLote6');
+                if (inputNota) inputNota.value = '';
                 document.getElementById('inputFechaProceso').value = new Date().toISOString().split('T')[0];
+
                 setTimeout(() => { mensaje.textContent = ''; }, 3500);
             } catch (err) {
                 mensaje.style.color = 'var(--danger)';
-                mensaje.textContent = 'Error al guardar.';
+                mensaje.textContent = 'Error al guardar el movimiento.';
             }
         }
 
@@ -2442,6 +2511,104 @@ document.addEventListener('click', (e) => {
                 console.error("Error al eliminar:", err);
                 alert("Error de conexión con el servidor.");
             }
+        }
+        function verificarDestinoLote6() {
+            const selectRack = document.getElementById('rackDestino');
+            const bloqueNota = document.getElementById('bloqueNotaLote6');
+            const selectNivel = document.getElementById('nivelDestino');
+            const selectLado = document.getElementById('ladoDestino');
+            const selectApilado = document.getElementById('apiladoDestino');
+            const checkAmbos = document.getElementById('ambosLadosCheck');
+            const bloqueLlenado = document.getElementById('bloqueEstadoLlenado');
+
+            if (selectRack && selectRack.value === 'LOTE 6') {
+                // Oculta niveles y lados (porque en piso no hay racks)
+                if (bloqueNota) bloqueNota.style.display = 'block';
+                if (selectNivel) selectNivel.parentElement.style.display = 'none';
+                if (selectLado) selectLado.parentElement.style.display = 'none';
+                if (checkAmbos) checkAmbos.parentElement.style.display = 'none';
+                if (bloqueLlenado) bloqueLlenado.style.display = 'none';
+            } else {
+                // Vuelve a mostrar todo normal para Racks 1-19
+                if (bloqueNota) bloqueNota.style.display = 'none';
+                if (selectNivel) selectNivel.parentElement.style.display = 'flex';
+                if (selectLado) selectLado.parentElement.style.display = 'flex';
+                if (checkAmbos) checkAmbos.parentElement.style.display = 'block';
+                if (bloqueLlenado) bloqueLlenado.style.display = 'block';
+            }
+        }
+
+        // 2. Consulta y calcula el inventario de Lote 6
+        let listaLote6Global = [];
+
+        async function cargarLote6() {
+            const tbody = document.getElementById('tablaLote6Body');
+            if (!tbody) return;
+
+            // Filtra de la lista de inventario todos los que estén en LOTE 6
+            listaLote6Global = (listaInventarioGlobal || []).filter(item => {
+                const r = String(item.rack || '').toUpperCase();
+                const ubi = String(item.ubicacion_destino || '').toUpperCase();
+                return r === 'LOTE 6' || ubi.includes('LOTE 6');
+            });
+
+            // Actualiza los contadores
+            const totalPzas = listaLote6Global.reduce((acc, it) => acc + (parseInt(it.piezas, 10) || 0), 0);
+            const totalTarimas = listaLote6Global.length;
+
+            const elPzas = document.getElementById('kpiPiezasLote6');
+            const elTar = document.getElementById('kpiTarimasLote6');
+            if (elPzas) elPzas.textContent = `${totalPzas.toLocaleString('es-MX')} pzas`;
+            if (elTar) elTar.textContent = totalTarimas;
+
+            aplicarFiltrosLote6();
+        }
+
+        // 3. Pinta la tabla y permite buscar por proyecto o nota
+        function aplicarFiltrosLote6() {
+            const tbody = document.getElementById('tablaLote6Body');
+            if (!tbody) return;
+
+            const texto = (document.getElementById('filtroLote6')?.value || '').trim().toUpperCase();
+
+            const filtrados = listaLote6Global.filter(item => {
+                const proy = (item.proyecto || '').toUpperCase();
+                const ubi = (item.ubicacion_destino || '').toUpperCase();
+                const op = (item.personal || item.nombre_operador || '').toUpperCase();
+                return !texto || proy.includes(texto) || ubi.includes(texto) || op.includes(texto);
+            });
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No hay material registrado en Lote 6 actualmente.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filtrados.forEach(item => {
+                let fProc = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'N/A';
+                let fReg = item.fecha_hora ? String(item.fecha_hora).split('T')[0] : 'Reciente';
+
+                // Limpia el texto de la referencia en piso
+                let referencia = (item.ubicacion_destino || 'Piso general')
+                    .replace(/RACK\s*LOTE 6,?/gi, '')
+                    .replace(/Nivel:\s*PISO,?/gi, '')
+                    .replace(/Lado:\s*/gi, '')
+                    .replace(/Pos:\s*1/gi, '')
+                    .trim() || 'Estiba libre en piso';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong style="color: var(--kpa-cyan); font-size: 14px;">${(item.proyecto || 'EXP').toUpperCase()}</strong></td>
+                        <td><strong style="color: var(--warning); font-size: 15px;">${item.piezas || 0} pzas</strong></td>
+                        <td><span style="color: #cbd5e1;">📍 ${referencia}</span></td>
+                        <td>${item.personal || item.nombre_operador || 'Operador'}</td>
+                        <td>
+                            <div><strong>Reg:</strong> ${fReg}</div>
+                            <small style="color: var(--kpa-green); font-weight: bold;">F. Proceso: ${fProc}</small>
+                        </td>
+                    </tr>
+                `;
+            });
         }
     </script>
 </body>
