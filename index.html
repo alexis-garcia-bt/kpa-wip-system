@@ -1519,11 +1519,11 @@
             });
         }
 
+        
         // ====================================================================
-        // EXPORTAR INVENTARIO WIP A EXCEL FORMAL (CENTRADO Y CON DISEÑO KPA)
+        // EXPORTAR INVENTARIO WIP 
         // ====================================================================
         async function exportarInventarioExcel() {
-            // Si la lista está vacía, la consulta primero del servidor
             if (!listaInventarioGlobal || listaInventarioGlobal.length === 0) {
                 try {
                     const res = await fetch(`${API_URL}/api/materiales`);
@@ -1531,7 +1531,6 @@
                 } catch(e) {}
             }
 
-            // Filtra solo los Racks 1 al 19 (sin Lote 6)
             const listaExportar = (listaInventarioGlobal || []).filter(item => {
                 const r = String(item.rack || '').toUpperCase();
                 const ubi = String(item.ubicacion_destino || '').toUpperCase();
@@ -1557,12 +1556,12 @@
 
                 filasHTML += `
                     <tr>
-                        <td style="text-align: center; font-weight: bold; font-size: 11pt;">${(item.proyecto || 'GENERAL').toUpperCase()}</td>
-                        <td style="text-align: center; font-weight: bold; color: #d97706; font-size: 12pt;">${item.piezas || 0} pzas</td>
-                        <td style="text-align: center; color: #0284c7; font-weight: bold;">${ubicacionLimpia}</td>
-                        <td style="text-align: center;">${item.personal || item.nombre_operador || 'Operador KPA'}</td>
-                        <td style="text-align: center; color: #059669; font-weight: bold;">${fProceso}</td>
-                        <td style="text-align: center;">${fRegistro}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${(item.proyecto || 'GENERAL').toUpperCase()}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${item.piezas || 0}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${ubicacionLimpia}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${item.personal || item.nombre_operador || 'Operador KPA'}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${fProceso}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${fRegistro}</td>
                     </tr>
                 `;
             });
@@ -1585,28 +1584,18 @@
                     <![endif]-->
                     <style>
                         table { border-collapse: collapse; width: 100%; font-family: Calibri, Arial, sans-serif; }
-                        th { background-color: #0a1c42; color: #ffffff; font-weight: bold; text-align: center; padding: 12px 18px; border: 1px solid #1e293b; font-size: 11pt; }
-                        td { border: 1px solid #cbd5e1; padding: 10px 16px; font-size: 10pt; vertical-align: middle; mso-number-format: "\\@"; }
+                        th { background-color: #ffffff; color: #000000; font-weight: normal; text-align: center; padding: 10px 16px; border: 1px solid #000000; font-size: 11pt; }
+                        td { background-color: #ffffff; color: #000000; font-weight: normal; text-align: center; border: 1px solid #000000; padding: 8px 14px; font-size: 10pt; vertical-align: middle; mso-number-format: "\\@"; }
                     </style>
                 </head>
                 <body>
                     <table>
-                        <tr>
-                            <td colspan="6" style="text-align: center; font-size: 16pt; font-weight: bold; color: #0a1c42; padding: 15px; border: none;">
-                                KPA PACKAGING & HANDLING SOLUTIONS — INVENTARIO GENERAL WIP
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="6" style="text-align: center; font-size: 10pt; color: #64748b; padding-bottom: 15px; border: none;">
-                                Planta Polígono de Buenavista • Fecha de reporte: ${hoy} • Usuario: ${usuarioActual.nombre || 'Administrador'}
-                            </td>
-                        </tr>
                         <thead>
                             <tr>
                                 <th>PROYECTO / MATERIAL</th>
                                 <th>PIEZAS DISPONIBLES</th>
                                 <th>UBICACIÓN EN RACK</th>
-                                <th>OPERADOR RESPONSABLE</th>
+                                <th>OPERADOR</th>
                                 <th>FECHA DE PROCESO</th>
                                 <th>FECHA DE REGISTRO</th>
                             </tr>
@@ -1623,10 +1612,9 @@
         }
 
         // ====================================================================
-        // EXPORTAR HISTORIAL DE MOVIMIENTOS A EXCEL FORMAL (CENTRADO)
+        // EXPORTAR HISTORIAL MOVIMIENTOS (LIMPIO, NEGRO, SIN NEGRITAS, CENTRADO)
         // ====================================================================
         async function exportarHistorialExcel() {
-            // Si el historial aún no está cargado en memoria, lo pide a la API
             if (!listaHistorialGlobal || listaHistorialGlobal.length === 0) {
                 try {
                     const res = await fetch(`${API_URL}/api/historial`);
@@ -1644,7 +1632,6 @@
             const fDesde = document.getElementById('filtroFechaDesde')?.value;
             const fHasta = document.getElementById('filtroFechaHasta')?.value;
 
-            // Aplica los mismos filtros de pantalla si el usuario tiene una búsqueda activa
             const datosFiltrados = listaHistorialGlobal.filter(item => {
                 const proy = (item.tipo_proyecto || item.proyecto || '').toUpperCase();
                 const op = (item.nombre_operador || item.personal || '').toUpperCase();
@@ -1673,9 +1660,6 @@
             let filasHTML = '';
 
             datosFiltrados.forEach(item => {
-                const esSalida = (item.tipo_movimiento || '').toUpperCase() === 'SALIDA';
-                const colorMov = esSalida ? '#dc2626' : '#059669';
-
                 let ubicacionLimpia = (item.ubicacion_destino || item.ubicacion_origen || 'N/A')
                     .replace(/RACK\s+R/gi, 'RACK ')
                     .replace(/Nivel:\s*N/gi, 'Nivel ')
@@ -1692,14 +1676,14 @@
 
                 filasHTML += `
                     <tr>
-                        <td style="text-align: center; font-weight: bold;">#${item.id || item.id_movimiento || 'KPA'}</td>
-                        <td style="text-align: center; font-weight: bold; font-size: 11pt;">${(item.tipo_proyecto || item.proyecto || 'EXP').toUpperCase()}</td>
-                        <td style="text-align: center; font-weight: bold; color: ${colorMov};">${item.tipo_movimiento || 'ENTRADA'}</td>
-                        <td style="text-align: center; font-weight: bold; color: #d97706; font-size: 12pt;">${item.piezas || 0} pzas</td>
-                        <td style="text-align: center;">${item.nombre_operador || item.personal || 'Operador KPA'}</td>
-                        <td style="text-align: center; color: #0284c7;">${ubicacionLimpia}</td>
-                        <td style="text-align: center; color: #059669; font-weight: bold;">${fProc}</td>
-                        <td style="text-align: center;">${fReg}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">#${item.id || item.id_movimiento || 'KPA'}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${(item.tipo_proyecto || item.proyecto || 'EXP').toUpperCase()}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${item.tipo_movimiento || 'ENTRADA'}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${item.piezas || 0}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${item.nombre_operador || item.personal || 'Operador KPA'}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${ubicacionLimpia}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${fProc}</td>
+                        <td style="text-align: center; color: #000000; font-weight: normal;">${fReg}</td>
                     </tr>
                 `;
             });
@@ -1722,22 +1706,12 @@
                     <![endif]-->
                     <style>
                         table { border-collapse: collapse; width: 100%; font-family: Calibri, Arial, sans-serif; }
-                        th { background-color: #0a1c42; color: #ffffff; font-weight: bold; text-align: center; padding: 12px 18px; border: 1px solid #1e293b; font-size: 11pt; }
-                        td { border: 1px solid #cbd5e1; padding: 10px 16px; font-size: 10pt; vertical-align: middle; mso-number-format: "\\@"; }
+                        th { background-color: #ffffff; color: #000000; font-weight: normal; text-align: center; padding: 10px 16px; border: 1px solid #000000; font-size: 11pt; }
+                        td { background-color: #ffffff; color: #000000; font-weight: normal; text-align: center; border: 1px solid #000000; padding: 8px 14px; font-size: 10pt; vertical-align: middle; mso-number-format: "\\@"; }
                     </style>
                 </head>
                 <body>
                     <table>
-                        <tr>
-                            <td colspan="8" style="text-align: center; font-size: 16pt; font-weight: bold; color: #0a1c42; padding: 15px; border: none;">
-                                KPA PACKAGING & HANDLING SOLUTIONS — HISTORIAL GENERAL DE MOVIMIENTOS
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="8" style="text-align: center; font-size: 10pt; color: #64748b; padding-bottom: 15px; border: none;">
-                                Planta Polígono de Buenavista • Fecha de reporte: ${hoy} • Usuario: ${usuarioActual.nombre || 'Administrador'}
-                            </td>
-                        </tr>
                         <thead>
                             <tr>
                                 <th>FOLIO ID</th>
@@ -1761,7 +1735,7 @@
             descargarArchivoExcel(contenidoExcel, `Historial_Movimientos_KPA_${hoy}.xls`);
         }
 
-        // Función auxiliar de descarga para el navegador
+        // Función de descarga del navegador
         function descargarArchivoExcel(htmlString, nombreArchivo) {
             const blob = new Blob([htmlString], { type: 'application/vnd.ms-excel;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
