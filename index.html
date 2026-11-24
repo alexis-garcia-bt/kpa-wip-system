@@ -1364,11 +1364,19 @@
         // Calcula las 3 métricas en tiempo real
         function actualizarKPIs(lista) {
             if (!lista) return;
-            const totalPiezas = lista.reduce((acc, item) => acc + (parseInt(item.piezas, 10) || 0), 0);
-            const totalTarimas = lista.length;
+
+            // Filtra solo el material que está en los Racks 1 al 19 (ignora Lote 6)
+            const soloRacksWIP = lista.filter(item => {
+                const r = String(item.rack || '').toUpperCase();
+                const ubi = String(item.ubicacion_destino || '').toUpperCase();
+                return r !== 'LOTE 6' && !ubi.includes('LOTE 6');
+            });
+
+            const totalPiezas = soloRacksWIP.reduce((acc, item) => acc + (parseInt(item.piezas, 10) || 0), 0);
+            const totalTarimas = soloRacksWIP.length;
             const racksUnicos = new Set();
             
-            lista.forEach(item => {
+            soloRacksWIP.forEach(item => {
                 let r = (item.rack && item.rack !== 'N/A') ? item.rack : '';
                 if (!r && item.ubicacion_destino) {
                     const m = item.ubicacion_destino.match(/RACK\s*([0-9A-Z]+)/i);
@@ -1404,8 +1412,14 @@
             const numRackFiltro = rackSeleccionado ? rackSeleccionado.replace(/RACK/gi, '').replace(/R/gi, '').trim() : '';
 
             const filtrados = listaInventarioGlobal.filter(item => {
+                //  SI ES DE LOTE 6, NO LO MUESTRA EN ESTA TABLA DE RACKS
+                const esLote6 = String(item.rack || '').toUpperCase() === 'LOTE 6' || 
+                                String(item.ubicacion_destino || '').toUpperCase().includes('LOTE 6');
+                if (esLote6) return false;
+
                 const proyecto = (item.proyecto || '').toUpperCase();
                 const operador = (item.personal || item.nombre_operador || '').toUpperCase();
+                
                 
                 let ubicacionLimpia = (item.ubicacion_destino || 'N/A')
                     .replace(/RACK\s+R/gi, 'RACK ')
