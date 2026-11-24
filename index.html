@@ -910,51 +910,92 @@
         </div>
 
         <!-- PESTAÑA NUEVA: ALMACÉN LOTE 6 (EN PISO) -->
+        <!-- PESTAÑA: ALMACÉN LOTE 6 (INVENTARIO Y MOVIMIENTOS) -->
         <div id="tab-lote6" class="tab-content">
             <div class="card">
                 <h2>
-                    <span>Lote 6 (Piso)</span>
+                    <span>📦 Almacén Pulmón - Lote 6 (Piso)</span>
                     <button type="button" onclick="cargarLote6()" class="btn-primary" style="flex: 0 0 130px; padding: 10px 16px; font-size: 12px; margin: 0;">
                         ↻ Actualizar
                     </button>
                 </h2>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
-                    Control de material en lote 6.
+                    Control de material, estiba en piso y trazabilidad de movimientos en Lote 6.
                 </p>
 
-                <div style="display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap;">
-                    <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); padding: 10px 18px; border-radius: 12px; flex: 1; min-width: 140px; text-align: center;">
-                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; display: block;">PIEZAS EN LOTE 6</span>
-                        <strong id="kpiPiezasLote6" style="font-size: 18px; color: var(--warning);">0 pzas</strong>
+                <!-- BOTONES SELECTORES DE VISTA EN LOTE 6 -->
+                <div style="display: flex; gap: 10px; margin-bottom: 22px;">
+                    <button type="button" id="btnVistaLote6Stock" onclick="cambiarVistaLote6('stock')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; background: var(--kpa-blue); color: #fff; border: 1px solid var(--kpa-blue);">
+                        📦 Material en Piso (Inventario)
+                    </button>
+                    <button type="button" id="btnVistaLote6Historial" onclick="cambiarVistaLote6('historial')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color);">
+                        ⏱️ Movimientos de Lote 6
+                    </button>
+                </div>
+
+                <!-- 1. VISTA: INVENTARIO EN PISO -->
+                <div id="contenedorLote6Stock">
+                    <!-- CÁPSULAS DE MÉTRICAS -->
+                    <div style="display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap;">
+                        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); padding: 10px 18px; border-radius: 12px; flex: 1; min-width: 140px; text-align: center;">
+                            <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; display: block;">PIEZAS EN LOTE 6</span>
+                            <strong id="kpiPiezasLote6" style="font-size: 18px; color: var(--warning);">0 pzas</strong>
+                        </div>
+                        <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); padding: 10px 18px; border-radius: 12px; flex: 1; min-width: 140px; text-align: center;">
+                            <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; display: block;">TARIMAS EN PISO</span>
+                            <strong id="kpiTarimasLote6" style="font-size: 18px; color: var(--kpa-green);">0</strong>
+                        </div>
                     </div>
-                    <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); padding: 10px 18px; border-radius: 12px; flex: 1; min-width: 140px; text-align: center;">
-                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; display: block;">TARIMAS EN PISO</span>
-                        <strong id="kpiTarimasLote6" style="font-size: 18px; color: var(--kpa-green);">0</strong>
+
+                    <div style="margin-bottom: 20px;">
+                        <input type="text" id="filtroLote6" placeholder="BUSCAR MATERIAL EN PISO O REFERENCIA..." oninput="aplicarFiltrosLote6()" style="padding: 12px 16px;">
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Proyecto / Material</th>
+                                    <th>Piezas</th>
+                                    <th>Referencia / Nota en Piso</th>
+                                    <th>Personal</th>
+                                    <th>Fechas (Registro / Proceso)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaLote6Body">
+                                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Consultando Lote 6...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <!-- BUSCADOR DE LOTE 6 -->
-                <div style="margin-bottom: 20px;">
-                    <input type="text" id="filtroLote6" placeholder="BUSCAR POR PROYECTO O REFERENCIA EN PISO..." oninput="aplicarFiltrosLote6()" style="padding: 12px 16px;">
+                <!-- 2. VISTA: HISTORIAL DE MOVIMIENTOS DE LOTE 6 -->
+                <div id="contenedorLote6Historial" style="display: none;">
+                    <div style="margin-bottom: 20px;">
+                        <input type="text" id="filtroHistorialLote6" placeholder="BUSCAR MOVIMIENTO EN LOTE 6 POR PROYECTO U OPERADOR..." oninput="aplicarFiltrosHistorialLote6()" style="padding: 12px 16px;">
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Proyecto</th>
+                                    <th>Movimiento</th>
+                                    <th>Piezas</th>
+                                    <th>Personal</th>
+                                    <th>Detalles / Trayecto</th>
+                                    <th>Fecha</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaHistorialLote6Body">
+                                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Cargando movimientos de Lote 6...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <!-- TABLA DE MATERIAL EN LOTE 6 -->
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Proyecto / Material</th>
-                                <th>Piezas</th>
-                                <th>Referencia / Nota en Piso</th>
-                                <th>Personal</th>
-                                <th>Fechas (Registro / Proceso)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tablaLote6Body">
-                            <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Consultando Lote 6...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
             </div>
         </div>
 
@@ -1828,9 +1869,9 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
             const tbody = document.getElementById('tablaHistorialBody');
             if (!tbody) return;
 
-            const texto = (document.getElementById('filtroHistorial').value || '').trim().toUpperCase();
-            const fechaDesde = document.getElementById('filtroFechaDesde').value;
-            const fechaHasta = document.getElementById('filtroFechaHasta').value;
+            const texto = (document.getElementById('filtroHistorial')?.value || '').trim().toUpperCase();
+            const fechaDesde = document.getElementById('filtroFechaDesde')?.value;
+            const fechaHasta = document.getElementById('filtroFechaHasta')?.value;
 
             if (!listaHistorialGlobal || listaHistorialGlobal.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Sin movimientos registrados.</td></tr>';
@@ -1838,6 +1879,15 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
             }
 
             const filtrados = listaHistorialGlobal.filter(item => {
+                // Excluye movimientos exclusivos de Lote 6 (no tocaron racks WIP)
+                const orig = (item.ubicacion_origen || '').toUpperCase();
+                const dest = (item.ubicacion_destino || '').toUpperCase();
+                const r = (item.rack || '').toUpperCase();
+
+                const tieneQueVerConWIP = orig.includes('RACK') || dest.includes('RACK') || (r && r !== 'N/A' && r !== 'LOTE 6');
+                const esPuroLote6 = (orig.includes('LOTE 6') || dest.includes('LOTE 6')) && !tieneQueVerConWIP;
+                if (esPuroLote6) return false;
+
                 const proy = (item.tipo_proyecto || item.proyecto || '').toUpperCase();
                 const op = (item.nombre_operador || item.personal || '').toUpperCase();
                 const tipo = (item.tipo_movimiento || '').toUpperCase();
@@ -1865,32 +1915,22 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
             });
 
             if (filtrados.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No se encontraron movimientos con los filtros aplicados.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No se encontraron movimientos con los filtros aplicados.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = '';
             filtrados.forEach(item => {
-                const esSalida = item.tipo_movimiento && item.tipo_movimiento.toUpperCase() === 'SALIDA';
-
-
-                // BOTÓN SOLO PARA ADMIN
-                const botonEliminar = usuarioActual.rol === 'ADMIN'
-                    ? `<button onclick="eliminarMovimiento(${item.id || item.id_movimiento})" class="btn-danger" style="padding: 6px 12px; font-size: 11px; cursor: pointer;">✕ Eliminar</button>`
-                    : `<span style="color: var(--text-muted); font-size: 11px;">Solo lectura</span>`;
-
+                const esSalida = (item.tipo_movimiento || '').toUpperCase() === 'SALIDA';
 
                 let textoLimpio = (item.ubicacion_destino || 'N/A')
                     .replace(/RACK\s*R/gi, 'RACK ')
                     .replace(/Nivel:\s*N/gi, 'Nivel ')
                     .replace(/Pos:\s*/gi, 'Posición ');
 
-                let detalleUbicacion = '';
-                if (esSalida) {
-                    detalleUbicacion = `<span style="color: var(--danger); font-weight: bold;">SALIDA</span> → <strong style="color: var(--warning);">${item.ubicacion_destino || 'BASURA / SCRAP'}</strong>`;
-                } else {
-                    detalleUbicacion = `<strong style="color: #60a5fa; font-size: 13px;">${textoLimpio}</strong>`;
-                }
+                let detalleUbicacion = esSalida
+                    ? `<span style="color: var(--danger); font-weight: bold;">SALIDA</span> → <strong style="color: var(--warning);">${item.ubicacion_destino || 'BASURA / SCRAP'}</strong>`
+                    : `<strong style="color: #60a5fa; font-size: 13px;">${textoLimpio}</strong>`;
 
                 const operadorReal = item.nombre_operador || item.personal || 'Operador KPA';
                 const piezasReal = item.piezas ? `${item.piezas} pzas` : 'N/A';
@@ -1914,6 +1954,10 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                     }
                 }
 
+                const botonEliminar = usuarioActual.rol === 'ADMIN'
+                    ? `<button onclick="eliminarMovimiento(${item.id || item.id_movimiento})" class="btn-danger" style="padding: 6px 12px; font-size: 11px; cursor: pointer;">✕ Eliminar</button>`
+                    : `<span style="color: var(--text-muted); font-size: 11px;">Solo lectura</span>`;
+
                 tbody.innerHTML += `
                     <tr>
                         <td>#${item.id || item.id_movimiento || 'KPA'}</td>
@@ -1931,91 +1975,6 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 `;
             });
         }
-
-        function limpiarFiltrosHistorial() {
-            document.getElementById('filtroHistorial').value = '';
-            document.getElementById('filtroFechaDesde').value = '';
-            document.getElementById('filtroFechaHasta').value = '';
-            aplicarFiltrosHistorial();
-        }
-
-        function exportarHistorialExcel() {
-            if (!listaHistorialGlobal || listaHistorialGlobal.length === 0) {
-                alert("No hay movimientos en el historial para exportar.");
-                return;
-            }
-
-            const texto = (document.getElementById('filtroHistorial').value || '').trim().toUpperCase();
-            const fechaDesde = document.getElementById('filtroFechaDesde').value;
-            const fechaHasta = document.getElementById('filtroFechaHasta').value;
-
-            const datosAExportar = listaHistorialGlobal.filter(item => {
-                const proy = (item.tipo_proyecto || item.proyecto || '').toUpperCase();
-                const op = (item.nombre_operador || item.personal || '').toUpperCase();
-                const tipo = (item.tipo_movimiento || '').toUpperCase();
-                const ubi = (item.ubicacion_destino || item.ubicacion_origen || '').toUpperCase();
-
-                const coincideTexto = !texto || proy.includes(texto) || op.includes(texto) || tipo.includes(texto) || ubi.includes(texto);
-
-                let fechaItem = '';
-                if (item.fecha_hora) {
-                    const d = new Date(item.fecha_hora);
-                    if (!isNaN(d.getTime())) {
-                        const y = d.getFullYear();
-                        const m = String(d.getMonth() + 1).padStart(2, '0');
-                        const dia = String(d.getDate()).padStart(2, '0');
-                        fechaItem = `${y}-${m}-${dia}`;
-                    } else {
-                        fechaItem = String(item.fecha_hora).split('T')[0];
-                    }
-                }
-
-                const coincideDesde = !fechaDesde || (fechaItem && fechaItem >= fechaDesde);
-                const coincideHasta = !fechaHasta || (fechaItem && fechaItem <= fechaHasta);
-
-                return coincideTexto && coincideDesde && coincideHasta;
-            });
-
-            if (datosAExportar.length === 0) {
-                alert("No hay registros que coincidan con los filtros aplicados.");
-                return;
-            }
-
-            let csv = "\uFEFF"; // Para UTF-8 compatible con acentos en Excel
-            csv += "ID,Proyecto/Material,Movimiento,Piezas,Operador,Ubicación Destino,Ubicación Origen,Fecha Proceso,Fecha Registro\n";
-
-            datosAExportar.forEach(item => {
-                const id = item.id || item.id_movimiento || '';
-                const proy = (item.tipo_proyecto || item.proyecto || 'EXP').replace(/,/g, '');
-                const tipo = (item.tipo_movimiento || '').replace(/,/g, '');
-                const piezas = item.piezas || 0;
-                const op = (item.nombre_operador || item.personal || 'Operador KPA').replace(/,/g, '');
-                const dest = (item.ubicacion_destino || 'N/A').replace(/,/g, ' - ');
-                const orig = (item.ubicacion_origen || 'N/A').replace(/,/g, ' - ');
-                const fProc = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'N/A';
-                
-                let fReg = 'Reciente';
-                if (item.fecha_hora) {
-                    const d = new Date(item.fecha_hora);
-                    fReg = !isNaN(d.getTime()) 
-                        ? d.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }).replace(/,/g, '') 
-                        : String(item.fecha_hora).replace(/,/g, '');
-                }
-
-                csv += `${id},"${proy}","${tipo}",${piezas},"${op}","${dest}","${orig}","${fProc}","${fReg}"\n`;
-            });
-
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            const hoy = new Date().toISOString().split('T')[0];
-            a.download = `Historial_Movimientos_KPA_${hoy}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-    
         function cambiarVistaInventario(vista) {
             const elTabla = document.getElementById('vistaTablaInventario');
             const elMapa = document.getElementById('vistaMapaRacks');
@@ -2711,6 +2670,97 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
 
         // Si cambian el texto del proyecto, también se actualiza la vista previa
         document.getElementById('proyectoInput')?.addEventListener('input', actualizarVistaPreviaComponente);
+
+        // Alternar entre ver el material en piso o el historial de Lote 6
+        function cambiarVistaLote6(vista) {
+            const elStock = document.getElementById('contenedorLote6Stock');
+            const elHist = document.getElementById('contenedorLote6Historial');
+            const btnStock = document.getElementById('btnVistaLote6Stock');
+            const btnHist = document.getElementById('btnVistaLote6Historial');
+
+            if (vista === 'historial') {
+                elStock.style.display = 'none';
+                elHist.style.display = 'block';
+                btnHist.style.background = 'var(--kpa-blue)';
+                btnHist.style.color = '#fff';
+                btnStock.style.background = 'var(--bg-card)';
+                btnStock.style.color = 'var(--text-muted)';
+                cargarHistorialLote6();
+            } else {
+                elStock.style.display = 'block';
+                elHist.style.display = 'none';
+                btnStock.style.background = 'var(--kpa-blue)';
+                btnStock.style.color = '#fff';
+                btnHist.style.background = 'var(--bg-card)';
+                btnHist.style.color = 'var(--text-muted)';
+                cargarLote6();
+            }
+        }
+
+        // Carga y filtra únicamente los movimientos que tocaron Lote 6
+        let listaHistorialLote6Global = [];
+
+        async function cargarHistorialLote6() {
+            // Asegura tener el historial más reciente
+            if (!listaHistorialGlobal || listaHistorialGlobal.length === 0) {
+                try {
+                    const res = await fetch(`${API_URL}/api/historial`);
+                    if (res.ok) listaHistorialGlobal = await res.json();
+                } catch(e) {}
+            }
+
+            // Filtra solo los movimientos donde el origen o destino sea Lote 6
+            listaHistorialLote6Global = (listaHistorialGlobal || []).filter(item => {
+                const orig = (item.ubicacion_origen || '').toUpperCase();
+                const dest = (item.ubicacion_destino || '').toUpperCase();
+                const r = (item.rack || '').toUpperCase();
+                return orig.includes('LOTE 6') || dest.includes('LOTE 6') || r === 'LOTE 6';
+            });
+
+            aplicarFiltrosHistorialLote6();
+        }
+
+        function aplicarFiltrosHistorialLote6() {
+            const tbody = document.getElementById('tablaHistorialLote6Body');
+            if (!tbody) return;
+
+            const texto = (document.getElementById('filtroHistorialLote6')?.value || '').trim().toUpperCase();
+
+            const filtrados = listaHistorialLote6Global.filter(item => {
+                const proy = (item.tipo_proyecto || item.proyecto || '').toUpperCase();
+                const op = (item.nombre_operador || item.personal || '').toUpperCase();
+                const ubi = (item.ubicacion_destino || item.ubicacion_origen || '').toUpperCase();
+                return !texto || proy.includes(texto) || op.includes(texto) || ubi.includes(texto);
+            });
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Sin movimientos registrados para Lote 6.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filtrados.forEach(item => {
+                const esSalida = (item.tipo_movimiento || '').toUpperCase() === 'SALIDA';
+                const botonEliminar = usuarioActual.rol === 'ADMIN'
+                    ? `<button onclick="eliminarMovimiento(${item.id || item.id_movimiento})" class="btn-danger" style="padding: 6px 12px; font-size: 11px; cursor: pointer;">✕ Eliminar</button>`
+                    : `<span style="color: var(--text-muted); font-size: 11px;">Solo lectura</span>`;
+
+                let fechaLegible = item.fecha_hora ? String(item.fecha_hora).split('T')[0] : 'Reciente';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${item.id || item.id_movimiento || 'KPA'}</td>
+                        <td><strong style="color: var(--kpa-cyan);">${(item.tipo_proyecto || item.proyecto || 'EXP').toUpperCase()}</strong></td>
+                        <td><span style="color: ${esSalida ? 'var(--danger)' : 'var(--kpa-green)'}; font-weight: bold;">${item.tipo_movimiento}</span></td>
+                        <td><strong style="color: var(--warning);">${item.piezas || 0} pzas</strong></td>
+                        <td>${item.nombre_operador || item.personal || 'Operador'}</td>
+                        <td><small style="color: #cbd5e1;">${item.ubicacion_destino || item.ubicacion_origen || 'Lote 6'}</small></td>
+                        <td>${fechaLegible}</td>
+                        <td>${botonEliminar}</td>
+                    </tr>
+                `;
+            });
+        }
     </script>
 </body>
 </html>
