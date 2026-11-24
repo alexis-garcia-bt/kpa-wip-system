@@ -578,6 +578,7 @@
         <button class="tab-btn active" onclick="cambiarPestana('operacion', this)"> Operación WIP</button>
         <button class="tab-btn" onclick="cambiarPestana('ubicar', this)"> Inventario WIP</button>
         <button class="tab-btn" onclick="cambiarPestana('lote6', this)">  Lote 6 </button>
+        <button class="tab-btn" onclick="cambiarPestana('piso', this)">  Piso Temporal</button>
         <button class="tab-btn" onclick="cambiarPestana('historial', this)"> Movimientos</button>
         <button id="btnTabPersonal" class="tab-btn" onclick="cambiarPestana('personal', this)" style="display: none;"> Personal & Accesos</button>
         <button class="tab-btn" onclick="cambiarPestana('contacto', this)"> Contacto</button>
@@ -703,7 +704,8 @@
                              <select id="origenProcedencia" onchange="verificarProcedenciaOrigen()">
                                 <option value="PRODUCCION">PRODUCCIÓN DIRECTA</option>
                                 <option value="LOTE 6">LOTE 6</option>
-                                <option value="TRAILER / EMBARQUES">EMBARQUES (CAMIÓN)</option>
+                                <option value="PISO">PISO TEMPORAL</option> 
+                                <option value="TRAILER / EMBARQUES">EMBARQUES </option>
                                 <option value="OTRO RACK WIP">OTRO RACK DE WIP (REUBICACIÓN)</option>
                             </select>
                         </div>
@@ -762,7 +764,8 @@
                             <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                                 <select id="rackDestino" onchange="verificarDestinoLote6()">
                                     <option value=""> SELECCIONE DESTINO </option>
-                                    <option value="LOTE 6" style="color: #38bdf8; font-weight: bold;">📦 LOTE 6 (ESTIBA EN PISO)</option>
+                                    <option value="LOTE 6" style="color: #38bdf8; font-weight: bold;"> LOTE 6</option>
+                                    <option value="PISO" style="color: #f59e0b; font-weight: bold;"> PISO TEMPORAL</option> 
                                     <script> for(let i=1; i<=19; i++) document.write(`<option value="${i}">RACK ${i}</option>`); </script>
                                 </select>
                                 <select id="nivelDestino">
@@ -998,6 +1001,96 @@
 
             </div>
         </div>
+
+        <!-- PESTAÑA: PISO TEMPORAL (MATERIAL EN SUELO / OVERFLOW) -->
+        <div id="tab-piso" class="tab-content">
+            <div class="card">
+                <h2>
+                    <span> Control de Piso Temporal</span>
+                    <button type="button" onclick="cargarPiso()" class="btn-primary" style="flex: 0 0 130px; padding: 10px 16px; font-size: 12px; margin: 0;">
+                        ↻ Actualizar
+                    </button>
+                </h2>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
+                    Control temporal de tarimas en suelo por saturación de racks.
+                </p>
+
+                <!-- BOTONES DE VISTA: INVENTARIO EN PISO VS HISTORIAL DE PISO -->
+                <div style="display: flex; gap: 10px; margin-bottom: 22px;">
+                    <button type="button" id="btnVistaPisoStock" onclick="cambiarVistaPiso('stock')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; background: var(--kpa-blue); color: #fff; border: 1px solid var(--kpa-blue);">
+                         Material en Piso 
+                    </button>
+                    <button type="button" id="btnVistaPisoHistorial" onclick="cambiarVistaPiso('historial')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color);">
+                         Movimientos de Piso
+                    </button>
+                </div>
+
+                <!-- 1. VISTA: MATERIAL ACTUAL EN PISO -->
+                <div id="contenedorPisoStock">
+                    <div style="display: flex; gap: 12px; margin-bottom: 22px; flex-wrap: wrap;">
+                        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.4); padding: 10px 18px; border-radius: 12px; flex: 1; min-width: 140px; text-align: center;">
+                            <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; display: block;">PIEZAS EN PISO</span>
+                            <strong id="kpiPiezasPiso" style="font-size: 18px; color: var(--warning);">0 pzas</strong>
+                        </div>
+                        <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.4); padding: 10px 18px; border-radius: 12px; flex: 1; min-width: 140px; text-align: center;">
+                            <span style="font-size: 11px; color: var(--text-muted); font-weight: bold; display: block;">TARIMAS EN SUELO</span>
+                            <strong id="kpiTarimasPiso" style="font-size: 18px; color: var(--danger);">0</strong>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 20px;">
+                        <input type="text" id="filtroPiso" placeholder="BUSCAR MATERIAL EN PISO O REFERENCIA..." oninput="aplicarFiltrosPiso()" style="padding: 12px 16px;">
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Proyecto / Componente</th>
+                                    <th>Piezas</th>
+                                    <th>Referencia en Piso (Pasillo/Zona)</th>
+                                    <th>Operador</th>
+                                    <th>Fechas (Registro / Proceso)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaPisoBody">
+                                <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Consultando material en suelo...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 2. VISTA: HISTORIAL DE PISO -->
+                <div id="contenedorPisoHistorial" style="display: none;">
+                    <div style="margin-bottom: 20px;">
+                        <input type="text" id="filtroHistorialPiso" placeholder="BUSCAR MOVIMIENTO DE PISO POR PROYECTO U OPERADOR..." oninput="aplicarFiltrosHistorialPiso()" style="padding: 12px 16px;">
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Proyecto</th>
+                                    <th>Movimiento</th>
+                                    <th>Piezas</th>
+                                    <th>Personal</th>
+                                    <th>Detalles / Trayecto</th>
+                                    <th>Fecha</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaHistorialPisoBody">
+                                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Cargando historial de piso...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    
 
         <!-- PESTAÑA 3: MOVIMIENTOS -->
         <div id="tab-historial" class="tab-content">
@@ -1417,11 +1510,11 @@
         function actualizarKPIs(lista) {
             if (!lista) return;
 
-            // Filtra solo el material que está en los Racks 1 al 19 (ignora Lote 6)
+            // Filtra solo el material que está en los Racks 1 al 19 (ignora Lote 6 y Piso)
             const soloRacksWIP = lista.filter(item => {
                 const r = String(item.rack || '').toUpperCase();
                 const ubi = String(item.ubicacion_destino || '').toUpperCase();
-                return r !== 'LOTE 6' && !ubi.includes('LOTE 6');
+                return r !== 'LOTE 6' && r !== 'PISO' && !ubi.includes('LOTE 6') && !ubi.includes('PISO');
             });
 
             const totalPiezas = soloRacksWIP.reduce((acc, item) => acc + (parseInt(item.piezas, 10) || 0), 0);
@@ -1464,10 +1557,12 @@
             const numRackFiltro = rackSeleccionado ? rackSeleccionado.replace(/RACK/gi, '').replace(/R/gi, '').trim() : '';
 
             const filtrados = listaInventarioGlobal.filter(item => {
-                //  SI ES DE LOTE 6, NO LO MUESTRA EN ESTA TABLA DE RACKS
-                const esLote6 = String(item.rack || '').toUpperCase() === 'LOTE 6' || 
-                                String(item.ubicacion_destino || '').toUpperCase().includes('LOTE 6');
-                if (esLote6) return false;
+                //  SI ES DE LOTE 6 O DE PISO, NO LO MUESTRA EN LA TABLA DE RACKS
+                const esFueraDeRacks = String(item.rack || '').toUpperCase() === 'LOTE 6' || 
+                                       String(item.rack || '').toUpperCase() === 'PISO' ||
+                                       String(item.ubicacion_destino || '').toUpperCase().includes('LOTE 6') ||
+                                       String(item.ubicacion_destino || '').toUpperCase().includes('PISO');
+                if (esFueraDeRacks) return false;
 
                 const proyecto = (item.proyecto || '').toUpperCase();
                 const operador = (item.personal || item.nombre_operador || '').toUpperCase();
@@ -1774,6 +1869,7 @@
     if (pestana === 'personal') cargarPersonalBD();
     if (pestana === 'ubicar') cargarInventarioCompleto();
     if (pestana === 'lote6') cargarLote6();
+    if (pestana === 'piso') cargarPiso();
 
     
 }
@@ -1940,13 +2036,15 @@ document.addEventListener('click', (e) => {
        
     async function registrarMovimiento(e) {
             e.preventDefault();
-const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCase();
+            
+            // --- 1. PROYECTO Y COMPONENTE (FORMATO PROYECTO-COMPONENTE) ---
+            const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCase();
             const compSel = document.getElementById('selectComponente')?.value || '';
             const compOtro = (document.getElementById('inputComponenteOtro')?.value || '').trim().toUpperCase();
             const componenteElegido = compSel === 'OTRO' ? compOtro : compSel;
+            const proyecto = componenteElegido ? `${proyBase}-${componenteElegido}` : proyBase;
 
-            // Se guarda automáticamente como: "EXP005030-REJILLA A"
-            const proyecto = componenteElegido ? `${proyBase}-${componenteElegido}` : proyBase;            const piezas = document.getElementById('inputPiezas').value;
+            const piezas = document.getElementById('inputPiezas').value;
             const fechaProceso = document.getElementById('inputFechaProceso').value;
             const ambosLados = document.getElementById('ambosLadosCheck')?.checked;
             const estadoLlenado = document.getElementById('selectCapacidadLado') ? document.getElementById('selectCapacidadLado').value : 'ESPACIO';
@@ -1956,18 +2054,28 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 ? 'AMBOS (IZQ Y DER - MANGA LARGA) [LLENO AL TOPE]' 
                 : `${document.getElementById('ladoDestino')?.value || 'IZQUIERDO'}${etiquetaLlenado}`;
 
-            // --- VARIABLES DE LOTE 6 ---
+            // --- 2. DETECCIÓN DE DESTINO (RACKS VS LOTE 6 VS PISO) ---
             const selectDestinoVal = document.getElementById('rackDestino')?.value || '';
             const esLote6 = selectDestinoVal === 'LOTE 6';
-            const notaLote6 = document.getElementById('inputNotaLote6')?.value.trim() || 'PISO GENERAL';
-            const procedencia = document.getElementById('origenProcedencia')?.value || 'RACKS';
+            const esPiso = selectDestinoVal === 'PISO';
+            const esSinRacks = esLote6 || esPiso;
+            const notaEspecial = document.getElementById('inputNotaLote6')?.value.trim() || (esPiso ? 'PISO SUELO' : 'PISO GENERAL');
+            
+            // --- 3. DETECCIÓN DE PROCEDENCIA / ORIGEN ---
+            const procedencia = document.getElementById('origenProcedencia')?.value || 'PRODUCCION';
             const vieneDeLote6 = procedencia === 'LOTE 6';
+            const vieneDePiso = procedencia === 'PISO';
+            const vieneDeSuelo = vieneDeLote6 || vieneDePiso;
 
-            // --- CANDADO DE SEGURIDAD EN SALIDAS ---
+            // --- 4. CANDADO DE SEGURIDAD EN SALIDAS ---
             if (tipoMovimientoSeleccionado === 'SALIDA') {
                 const cantSalida = parseInt(piezas, 10);
                 const proyBuscado = proyecto.trim().toUpperCase();
-                const rackOrigenSel = vieneDeLote6 ? 'LOTE 6' : (document.getElementById('rackOrigen')?.value || '').toUpperCase().replace('R', '').trim();
+                let rackOrigenSel = '';
+
+                if (vieneDePiso) rackOrigenSel = 'PISO';
+                else if (vieneDeLote6) rackOrigenSel = 'LOTE 6';
+                else rackOrigenSel = (document.getElementById('rackOrigen')?.value || '').toUpperCase().replace('R', '').trim();
 
                 const loteEncontrado = listaInventarioGlobal.find(item => {
                     const coincideProy = (item.proyecto || '').toUpperCase().trim() === proyBuscado;
@@ -1976,7 +2084,7 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 });
 
                 if (!loteEncontrado) {
-                    alert(` STOCK NO ENCONTRADO:\n\nNo hay registro de inventario activo para el proyecto "${proyBuscado}" en el origen seleccionado.`);
+                    alert(` STOCK NO ENCONTRADO:\n\nNo hay registro de inventario activo para "${proyBuscado}" en el origen seleccionado.`);
                     return;
                 }
 
@@ -1986,11 +2094,11 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 }
 
                 const destinoSalidaTexto = document.getElementById('destinoSalidaSelect')?.value || 'BASURA / SCRAP';
-                const confirmar = confirm(` CONFIRMACIÓN DE SALIDA:\n\n¿Estás seguro de registrar la SALIDA de ${piezas} piezas del material "${proyecto.toUpperCase()}" con destino a: ${destinoSalidaTexto}?`);
+                const confirmar = confirm(` CONFIRMACIÓN DE SALIDA:\n\n¿Estás seguro de retirar ${piezas} piezas de "${proyecto}" con destino a: ${destinoSalidaTexto}?`);
                 if (!confirmar) return;
             }
 
-            // --- OBJETO PAYLOAD CON SOPORTE PARA LOTE 6 Y RACKS ---
+            // --- 5. OBJETO PAYLOAD ---
             const payload = {
                 nombre_operador: usuarioActual.nombre ? `${usuarioActual.nombre} (${usuarioActual.rol})` : 'OPERADOR GENERAL',
                 personal: usuarioActual.nombre ? `${usuarioActual.nombre} (${usuarioActual.rol})` : 'OPERADOR GENERAL',
@@ -2000,18 +2108,18 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 piezas: piezas,
                 fecha_proceso: fechaProceso,
                 procedencia_origen: procedencia,
-                rack_origen: vieneDeLote6 ? 'LOTE 6' : (document.getElementById('rackOrigen')?.value || 'N/A'),
-                nivel_origen: vieneDeLote6 ? 'PISO' : (document.getElementById('nivelOrigen')?.value || 'N/A'),
-                lado_origen: vieneDeLote6 ? 'PISO' : (document.getElementById('ladoOrigen')?.value || 'N/A'),
-                apilado_origen: vieneDeLote6 ? '1' : (document.getElementById('apiladoOrigen')?.value || 'N/A'),
+                rack_origen: vieneDeSuelo ? (vieneDePiso ? 'PISO' : 'LOTE 6') : (document.getElementById('rackOrigen')?.value || 'N/A'),
+                nivel_origen: vieneDeSuelo ? 'SUELO' : (document.getElementById('nivelOrigen')?.value || 'N/A'),
+                lado_origen: vieneDeSuelo ? 'SUELO' : (document.getElementById('ladoOrigen')?.value || 'N/A'),
+                apilado_origen: vieneDeSuelo ? '1' : (document.getElementById('apiladoOrigen')?.value || 'N/A'),
                 rack_destino: tipoMovimientoSeleccionado === 'SALIDA' 
                     ? (document.getElementById('destinoSalidaSelect')?.value || 'BASURA / SCRAP') 
-                    : (esLote6 ? 'LOTE 6' : selectDestinoVal),
+                    : (esSinRacks ? (esPiso ? 'PISO' : 'LOTE 6') : selectDestinoVal),
                 rack: tipoMovimientoSeleccionado === 'SALIDA' 
                     ? 'N/A' 
-                    : (esLote6 ? 'LOTE 6' : selectDestinoVal),
-                nivel_destino: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (esLote6 ? 'PISO' : (document.getElementById('nivelDestino')?.value || '1')),
-                lado: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (esLote6 ? `PISO (${notaLote6})` : ladoFinal),
+                    : (esSinRacks ? (esPiso ? 'PISO' : 'LOTE 6') : selectDestinoVal),
+                nivel_destino: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (esSinRacks ? 'SUELO' : (document.getElementById('nivelDestino')?.value || '1')),
+                lado: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (esSinRacks ? `SUELO (${notaEspecial})` : ladoFinal),
                 apilado: tipoMovimientoSeleccionado === 'SALIDA' ? '1' : (document.getElementById('apiladoDestino')?.value || '1')
             };
 
@@ -2031,14 +2139,21 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 mensaje.style.color = 'var(--kpa-green)';
                 mensaje.textContent = '¡Movimiento guardado con éxito!';
 
-                // Actualiza inventarios y racks en vivo
+                // Actualiza en vivo Racks, Lote 6 y Piso
                 await cargarInventarioCompleto();
                 if (typeof cargarLote6 === 'function') await cargarLote6();
+                if (typeof cargarPiso === 'function') await cargarPiso();
                 if (typeof renderizarMapaRacks === 'function') renderizarMapaRacks();
 
-                // Limpia campos y resetea la fecha de hoy
+                // Limpia campos del formulario
                 document.getElementById('proyectoInput').value = '';
                 document.getElementById('inputPiezas').value = '';
+                const selectComp = document.getElementById('selectComponente');
+                if (selectComp) selectComp.value = '';
+                const inputOtro = document.getElementById('inputComponenteOtro');
+                if (inputOtro) { inputOtro.value = ''; inputOtro.style.display = 'none'; }
+                const vistaPrevia = document.getElementById('vistaPreviaMaterial');
+                if (vistaPrevia) vistaPrevia.style.display = 'none';
                 const inputNota = document.getElementById('inputNotaLote6');
                 if (inputNota) inputNota.value = '';
                 document.getElementById('inputFechaProceso').value = new Date().toISOString().split('T')[0];
@@ -2595,6 +2710,12 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
 
             // Llenamos el mapa con el inventario actual
             (listaInventarioGlobal || []).forEach(item => {
+                //  LA IA NUNCA SUGIERE PISO NI TOMA EN CUENTA MATERIAL FUERA DE RACKS
+                const rRaw = String(item.rack || '').toUpperCase();
+                const ubiRaw = String(item.ubicacion_destino || '').toUpperCase();
+                if (rRaw === 'PISO' || rRaw === 'LOTE 6' || ubiRaw.includes('PISO') || ubiRaw.includes('LOTE 6')) {
+                    return; // Brinca el material de suelo; la IA solo calcula Racks 1-19
+                }
                 let rNum = null;
                 if (item.rack && item.rack !== 'N/A') {
                     rNum = parseInt(String(item.rack).replace(/\D/g, ''), 10);
@@ -2754,21 +2875,28 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
         function verificarDestinoLote6() {
             const selectRack = document.getElementById('rackDestino');
             const bloqueNota = document.getElementById('bloqueNotaLote6');
+            const inputNota = document.getElementById('inputNotaLote6');
             const selectNivel = document.getElementById('nivelDestino');
             const selectLado = document.getElementById('ladoDestino');
-            const selectApilado = document.getElementById('apiladoDestino');
             const checkAmbos = document.getElementById('ambosLadosCheck');
             const bloqueLlenado = document.getElementById('bloqueEstadoLlenado');
 
-            if (selectRack && selectRack.value === 'LOTE 6') {
-                // Oculta niveles y lados (porque en piso no hay racks)
-                if (bloqueNota) bloqueNota.style.display = 'block';
+            const esSinRacks = selectRack && (selectRack.value === 'LOTE 6' || selectRack.value === 'PISO');
+
+            if (esSinRacks) {
+                if (bloqueNota) {
+                    bloqueNota.style.display = 'block';
+                    if (inputNota) {
+                        inputNota.placeholder = selectRack.value === 'PISO' 
+                            ? "EJ. FRENTE A RACK 4, PASILLO CENTRAL, JUNTO A PORTÓN" 
+                            : "EJ. JUNTO A LA CORTINA, AL FONDO, FILA 2";
+                    }
+                }
                 if (selectNivel) selectNivel.parentElement.style.display = 'none';
                 if (selectLado) selectLado.parentElement.style.display = 'none';
                 if (checkAmbos) checkAmbos.parentElement.style.display = 'none';
                 if (bloqueLlenado) bloqueLlenado.style.display = 'none';
             } else {
-                // Vuelve a mostrar todo normal para Racks 1-19
                 if (bloqueNota) bloqueNota.style.display = 'none';
                 if (selectNivel) selectNivel.parentElement.style.display = 'flex';
                 if (selectLado) selectLado.parentElement.style.display = 'flex';
@@ -2971,6 +3099,163 @@ const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCa
                 `;
             });
         }
+// ==========================================================
+        // MÓDULO PISO TEMPORAL (INVENTARIO Y MOVIMIENTOS)
+        // ==========================================================
+        function cambiarVistaPiso(vista) {
+            const elStock = document.getElementById('contenedorPisoStock');
+            const elHist = document.getElementById('contenedorPisoHistorial');
+            const btnStock = document.getElementById('btnVistaPisoStock');
+            const btnHist = document.getElementById('btnVistaPisoHistorial');
+
+            if (vista === 'historial') {
+                if (elStock) elStock.style.display = 'none';
+                if (elHist) elHist.style.display = 'block';
+                if (btnHist) { btnHist.style.background = 'var(--kpa-blue)'; btnHist.style.color = '#fff'; }
+                if (btnStock) { btnStock.style.background = 'var(--bg-card)'; btnStock.style.color = 'var(--text-muted)'; }
+                cargarHistorialPiso();
+            } else {
+                if (elStock) elStock.style.display = 'block';
+                if (elHist) elHist.style.display = 'none';
+                if (btnStock) { btnStock.style.background = 'var(--kpa-blue)'; btnStock.style.color = '#fff'; }
+                if (btnHist) { btnHist.style.background = 'var(--bg-card)'; btnHist.style.color = 'var(--text-muted)'; }
+                cargarPiso();
+            }
+        }
+
+        let listaPisoGlobal = [];
+
+        async function cargarPiso() {
+            const tbody = document.getElementById('tablaPisoBody');
+            if (!tbody) return;
+
+            // Filtra solo el material ubicado en PISO
+            listaPisoGlobal = (listaInventarioGlobal || []).filter(item => {
+                const r = String(item.rack || '').toUpperCase();
+                const ubi = String(item.ubicacion_destino || '').toUpperCase();
+                return (r === 'PISO' || ubi.includes('PISO TEMPORAL') || ubi.includes('SUELO')) && !r.includes('LOTE 6') && !ubi.includes('LOTE 6');
+            });
+
+            const totalPzas = listaPisoGlobal.reduce((acc, it) => acc + (parseInt(it.piezas, 10) || 0), 0);
+            const totalTarimas = listaPisoGlobal.length;
+
+            const elPzas = document.getElementById('kpiPiezasPiso');
+            const elTar = document.getElementById('kpiTarimasPiso');
+            if (elPzas) elPzas.textContent = `${totalPzas.toLocaleString('es-MX')} pzas`;
+            if (elTar) elTar.textContent = totalTarimas;
+
+            aplicarFiltrosPiso();
+        }
+
+        function aplicarFiltrosPiso() {
+            const tbody = document.getElementById('tablaPisoBody');
+            if (!tbody) return;
+
+            const texto = (document.getElementById('filtroPiso')?.value || '').trim().toUpperCase();
+
+            const filtrados = listaPisoGlobal.filter(item => {
+                const proy = (item.proyecto || '').toUpperCase();
+                const ubi = (item.ubicacion_destino || '').toUpperCase();
+                const op = (item.personal || item.nombre_operador || '').toUpperCase();
+                return !texto || proy.includes(texto) || ubi.includes(texto) || op.includes(texto);
+            });
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">No hay material temporal en piso actualmente.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filtrados.forEach(item => {
+                let fProc = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'N/A';
+                let fReg = item.fecha_hora ? String(item.fecha_hora).split('T')[0] : 'Reciente';
+
+                let referencia = (item.ubicacion_destino || 'Piso sin nota')
+                    .replace(/RACK\s*PISO,?/gi, '')
+                    .replace(/Nivel:\s*SUELO,?/gi, '')
+                    .replace(/Lado:\s*/gi, '')
+                    .replace(/Pos:\s*1/gi, '')
+                    .trim() || 'Estiba en suelo';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong style="color: var(--kpa-cyan); font-size: 14px;">${(item.proyecto || 'EXP').toUpperCase()}</strong></td>
+                        <td><strong style="color: var(--warning); font-size: 15px;">${item.piezas || 0} pzas</strong></td>
+                        <td><span style="color: #cbd5e1;">📍 ${referencia}</span></td>
+                        <td>${item.personal || item.nombre_operador || 'Operador'}</td>
+                        <td>
+                            <div><strong>Reg:</strong> ${fReg}</div>
+                            <small style="color: var(--kpa-green); font-weight: bold;">F. Proceso: ${fProc}</small>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        let listaHistorialPisoGlobal = [];
+
+        async function cargarHistorialPiso() {
+            if (!listaHistorialGlobal || listaHistorialGlobal.length === 0) {
+                try {
+                    const res = await fetch(`${API_URL}/api/historial`);
+                    if (res.ok) listaHistorialGlobal = await res.json();
+                } catch(e) {}
+            }
+
+            listaHistorialPisoGlobal = (listaHistorialGlobal || []).filter(item => {
+                const orig = (item.ubicacion_origen || '').toUpperCase();
+                const dest = (item.ubicacion_destino || '').toUpperCase();
+                const r = (item.rack || '').toUpperCase();
+                const tocaPiso = orig.includes('PISO') || dest.includes('PISO') || r === 'PISO';
+                const tocaLote6 = orig.includes('LOTE 6') || dest.includes('LOTE 6') || r === 'LOTE 6';
+                return tocaPiso && !tocaLote6;
+            });
+
+            aplicarFiltrosHistorialPiso();
+        }
+
+        function aplicarFiltrosHistorialPiso() {
+            const tbody = document.getElementById('tablaHistorialPisoBody');
+            if (!tbody) return;
+
+            const texto = (document.getElementById('filtroHistorialPiso')?.value || '').trim().toUpperCase();
+
+            const filtrados = listaHistorialPisoGlobal.filter(item => {
+                const proy = (item.tipo_proyecto || item.proyecto || '').toUpperCase();
+                const op = (item.nombre_operador || item.personal || '').toUpperCase();
+                const ubi = (item.ubicacion_destino || item.ubicacion_origen || '').toUpperCase();
+                return !texto || proy.includes(texto) || op.includes(texto) || ubi.includes(texto);
+            });
+
+            if (filtrados.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Sin movimientos registrados en piso temporal.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filtrados.forEach(item => {
+                const esSalida = (item.tipo_movimiento || '').toUpperCase() === 'SALIDA';
+                const botonEliminar = usuarioActual.rol === 'ADMIN'
+                    ? `<button onclick="eliminarMovimiento(${item.id || item.id_movimiento})" class="btn-danger" style="padding: 6px 12px; font-size: 11px; cursor: pointer;">✕ Eliminar</button>`
+                    : `<span style="color: var(--text-muted); font-size: 11px;">Solo lectura</span>`;
+
+                let fechaLegible = item.fecha_hora ? String(item.fecha_hora).split('T')[0] : 'Reciente';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${item.id || item.id_movimiento || 'KPA'}</td>
+                        <td><strong style="color: var(--kpa-cyan);">${(item.tipo_proyecto || item.proyecto || 'EXP').toUpperCase()}</strong></td>
+                        <td><span style="color: ${esSalida ? 'var(--danger)' : 'var(--kpa-green)'}; font-weight: bold;">${item.tipo_movimiento}</span></td>
+                        <td><strong style="color: var(--warning);">${item.piezas || 0} pzas</strong></td>
+                        <td>${item.nombre_operador || item.personal || 'Operador'}</td>
+                        <td><small style="color: #cbd5e1;">${item.ubicacion_destino || item.ubicacion_origen || 'Piso'}</small></td>
+                        <td>${fechaLegible}</td>
+                        <td>${botonEliminar}</td>
+                    </tr>
+                `;
+            });
+        }
+
     </script>
 </body>
 </html>
