@@ -665,7 +665,7 @@
                     <div class="form-group">
                         <label for="selectComponente">Componente que se está moviendo:</label>
                         <select id="selectComponente" onchange="actualizarVistaPreviaComponente()" required style="margin-bottom: 8px;">
-                            <option value="">-- SELECCIONA EL COMPONENTE --</option>
+                            <option value=""> SELECCIONA EL COMPONENTE </option>
                             <option value="REJILLA A">REJILLA A</option>
                             <option value="REJILLA B">REJILLA B</option>
                             <option value="REJILLA C">REJILLA C</option>
@@ -758,10 +758,10 @@
                             </div>
                         </div>
 
-                           <label>Ubicación de Destino / Almacenamiento:</label>
+                           <label>Ubicación de Destino:</label>
                             <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                                 <select id="rackDestino" onchange="verificarDestinoLote6()">
-                                    <option value="">-- SELECCIONE DESTINO --</option>
+                                    <option value=""> SELECCIONE DESTINO </option>
                                     <option value="LOTE 6" style="color: #38bdf8; font-weight: bold;">📦 LOTE 6 (ESTIBA EN PISO)</option>
                                     <script> for(let i=1; i<=19; i++) document.write(`<option value="${i}">RACK ${i}</option>`); </script>
                                 </select>
@@ -780,7 +780,7 @@
                                     <option value="DERECHO">DERECHO</option>
                                 </select>
                                 <select id="apiladoDestino">
-                                    <option value="">POSICIÓN APILADO (1-10)</option>
+                                    <option value="">POSICIÓN APILADO</option>
                                     <script> for(let i=1; i<=10; i++) document.write(`<option value="${i}">POS ${i}</option>`); </script>
                                 </select>
                             </div>
@@ -853,7 +853,7 @@
                     <!-- LEYENDA DEL SEMÁFORO DE 3 COLORES -->
                     <div style="background: var(--bg-card); border: 1px solid var(--border-color); padding: 10px 14px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                         <span style="font-size: 12px; color: var(--text-muted); font-weight: bold;">
-                             Toca cualquier Rack para abrir radiografía de piezas y proyectos:
+                             Toca cualquier Rack para ver información de piezas y proyectos:
                         </span>
                         <div style="display: flex; gap: 12px; font-size: 11px; font-weight: 800;">
                             <span style="display: flex; align-items: center; gap: 5px; color: #10b981;">
@@ -914,22 +914,22 @@
         <div id="tab-lote6" class="tab-content">
             <div class="card">
                 <h2>
-                    <span> Almacén Pulmón - Lote 6 (Piso)</span>
+                    <span> Almacén - Lote 6 </span>
                     <button type="button" onclick="cargarLote6()" class="btn-primary" style="flex: 0 0 130px; padding: 10px 16px; font-size: 12px; margin: 0;">
                         ↻ Actualizar
                     </button>
                 </h2>
                 <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
-                    Control de material, estiba en piso y trazabilidad de movimientos en Lote 6.
+                    Control de material en Lote 6.
                 </p>
 
                 <!-- BOTONES SELECTORES DE VISTA EN LOTE 6 -->
                 <div style="display: flex; gap: 10px; margin-bottom: 22px;">
                     <button type="button" id="btnVistaLote6Stock" onclick="cambiarVistaLote6('stock')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; background: var(--kpa-blue); color: #fff; border: 1px solid var(--kpa-blue);">
-                         Material en Piso (Inventario)
+                         Material Inventario
                     </button>
                     <button type="button" id="btnVistaLote6Historial" onclick="cambiarVistaLote6('historial')" style="flex: 1; padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer; background: var(--bg-card); color: var(--text-muted); border: 1px solid var(--border-color);">
-                        ⏱ Movimientos de Lote 6
+                         Movimientos de Lote 6
                     </button>
                 </div>
 
@@ -1008,7 +1008,7 @@
                          Descargar Excel
                     </button>
                 </h2>
-                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Historial cronológico de movimientos con trazabilidad completa de operadores y fechas.</p>
+                <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 25px;">Historial cronológico de movimientos.</p>
 
                 <!-- BARRA DE FILTROS: BUSCADOR Y RANGO DE FECHAS -->
                 <div style="display: flex; gap: 15px; margin-bottom: 22px; align-items: center; flex-wrap: wrap;">
@@ -1061,19 +1061,19 @@
                 <form onsubmit="agregarPersonal(event)" style="margin-bottom: 25px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px;">
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
                         <div class="form-group" style="margin-bottom: 12px;">
-                            <label for="nuevoRolPersonal">Rol Operativo:</label>
+                            <label for="nuevoRolPersonal">Rol:</label>
                             <select id="nuevoRolPersonal" required>
                                 <option value="MONTACARGUISTA">MONTACARGUISTA</option>
                                 <option value="LIDER">LÍDER DE ÁREA</option>
-                                <option value="ADMIN">ADMINISTRADOR</option> <!-- <-- AGREGAR ESTA LÍNEA -->
+                                <option value="ADMIN">ADMINISTRADOR</option> <!
                             </select>
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
-                            <label for="inputNuevoNombre">Nombre Completo:</label>
+                            <label for="inputNuevoNombre">Primer nombre y primer apellido:</label>
                             <input type="text" id="inputNuevoNombre" placeholder="EJ. JUAN PÉREZ" required oninput="this.value = this.value.toUpperCase()">
                         </div>
                         <div class="form-group" style="margin-bottom: 12px;">
-                            <label for="inputNuevoPin">PIN de Acceso (4 dígitos o Apellido):</label>
+                            <label for="inputNuevoPin">PIN de Acceso:</label>
                             <input type="text" id="inputNuevoPin" placeholder="PIN PERSONALIZADO (OBLIGATORIO)" required maxlength="15" oninput="this.value = this.value.toUpperCase()">
                         </div>
                     </div>
