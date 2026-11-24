@@ -1519,36 +1519,261 @@
             });
         }
 
-        function exportarInventarioExcel() {
+        // ====================================================================
+        // EXPORTAR INVENTARIO WIP A EXCEL FORMAL (CENTRADO Y CON DISEÑO KPA)
+        // ====================================================================
+        async function exportarInventarioExcel() {
+            // Si la lista está vacía, la consulta primero del servidor
             if (!listaInventarioGlobal || listaInventarioGlobal.length === 0) {
-                alert("No hay materiales en el inventario para exportar.");
+                try {
+                    const res = await fetch(`${API_URL}/api/materiales`);
+                    if (res.ok) listaInventarioGlobal = await res.json();
+                } catch(e) {}
+            }
+
+            // Filtra solo los Racks 1 al 19 (sin Lote 6)
+            const listaExportar = (listaInventarioGlobal || []).filter(item => {
+                const r = String(item.rack || '').toUpperCase();
+                const ubi = String(item.ubicacion_destino || '').toUpperCase();
+                return r !== 'LOTE 6' && !ubi.includes('LOTE 6');
+            });
+
+            if (listaExportar.length === 0) {
+                alert("No hay materiales en el inventario WIP para exportar.");
                 return;
             }
 
-            // \uFEFF asegura que Excel reconozca los acentos en español
-            let csv = "\uFEFF"; // Para que Excel respete los acentos
-            csv += "Proyecto/Material,Piezas,Ubicación en Rack,Operador,Fecha Registro,Fecha Proceso\n";
+            const hoy = new Date().toISOString().split('T')[0];
+            let filasHTML = '';
 
-            listaInventarioGlobal.forEach(item => {
-                let proy = (item.proyecto || 'GENERAL').replace(/,/g, '');
-                let piezas = item.piezas || 0;
-                let ubi = (item.ubicacion_destino || 'N/A').replace(/,/g, ' - ');
-                let op = (item.personal || item.nombre_operador || 'Operador KPA').replace(/,/g, '');
-                let fReg = item.fecha_hora ? String(item.fecha_hora).split('T')[0] : 'Reciente';
-                let fProc = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'N/A';
+            listaExportar.forEach(item => {
+                let ubicacionLimpia = (item.ubicacion_destino || 'N/A')
+                    .replace(/RACK\s+R/gi, 'RACK ')
+                    .replace(/Nivel:\s*N/gi, 'Nivel ')
+                    .replace(/Pos:\s*/gi, 'Posición ');
 
-                csv += `"${proy}",${piezas},"${ubi}","${op}","${fReg}","${fProc}"\n`;
+                let fProceso = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'N/A';
+                let fRegistro = item.fecha_hora ? String(item.fecha_hora).split('T')[0] : 'Reciente';
+
+                filasHTML += `
+                    <tr>
+                        <td style="text-align: center; font-weight: bold; font-size: 11pt;">${(item.proyecto || 'GENERAL').toUpperCase()}</td>
+                        <td style="text-align: center; font-weight: bold; color: #d97706; font-size: 12pt;">${item.piezas || 0} pzas</td>
+                        <td style="text-align: center; color: #0284c7; font-weight: bold;">${ubicacionLimpia}</td>
+                        <td style="text-align: center;">${item.personal || item.nombre_operador || 'Operador KPA'}</td>
+                        <td style="text-align: center; color: #059669; font-weight: bold;">${fProceso}</td>
+                        <td style="text-align: center;">${fRegistro}</td>
+                    </tr>
+                `;
             });
 
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const contenidoExcel = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+                    <!--[if gte mso 9]>
+                    <xml>
+                    <x:ExcelWorkbook>
+                        <x:ExcelWorksheets>
+                            <x:ExcelWorksheet>
+                                <x:Name>Inventario_WIP</x:Name>
+                                <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+                            </x:ExcelWorksheet>
+                        </x:ExcelWorksheets>
+                    </x:ExcelWorkbook>
+                    </xml>
+                    <![endif]-->
+                    <style>
+                        table { border-collapse: collapse; width: 100%; font-family: Calibri, Arial, sans-serif; }
+                        th { background-color: #0a1c42; color: #ffffff; font-weight: bold; text-align: center; padding: 12px 18px; border: 1px solid #1e293b; font-size: 11pt; }
+                        td { border: 1px solid #cbd5e1; padding: 10px 16px; font-size: 10pt; vertical-align: middle; mso-number-format: "\\@"; }
+                    </style>
+                </head>
+                <body>
+                    <table>
+                        <tr>
+                            <td colspan="6" style="text-align: center; font-size: 16pt; font-weight: bold; color: #0a1c42; padding: 15px; border: none;">
+                                KPA PACKAGING & HANDLING SOLUTIONS — INVENTARIO GENERAL WIP
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="6" style="text-align: center; font-size: 10pt; color: #64748b; padding-bottom: 15px; border: none;">
+                                Planta Polígono de Buenavista • Fecha de reporte: ${hoy} • Usuario: ${usuarioActual.nombre || 'Administrador'}
+                            </td>
+                        </tr>
+                        <thead>
+                            <tr>
+                                <th>PROYECTO / MATERIAL</th>
+                                <th>PIEZAS DISPONIBLES</th>
+                                <th>UBICACIÓN EN RACK</th>
+                                <th>OPERADOR RESPONSABLE</th>
+                                <th>FECHA DE PROCESO</th>
+                                <th>FECHA DE REGISTRO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filasHTML}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+
+            descargarArchivoExcel(contenidoExcel, `Inventario_WIP_KPA_${hoy}.xls`);
+        }
+
+        // ====================================================================
+        // EXPORTAR HISTORIAL DE MOVIMIENTOS A EXCEL FORMAL (CENTRADO)
+        // ====================================================================
+        async function exportarHistorialExcel() {
+            // Si el historial aún no está cargado en memoria, lo pide a la API
+            if (!listaHistorialGlobal || listaHistorialGlobal.length === 0) {
+                try {
+                    const res = await fetch(`${API_URL}/api/historial`);
+                    if (res.ok) listaHistorialGlobal = await res.json();
+                } catch(e) {}
+            }
+
+            if (!listaHistorialGlobal || listaHistorialGlobal.length === 0) {
+                alert("No hay movimientos registrados en la base de datos para exportar.");
+                return;
+            }
+
+            const hoy = new Date().toISOString().split('T')[0];
+            const textoFiltro = (document.getElementById('filtroHistorial')?.value || '').trim().toUpperCase();
+            const fDesde = document.getElementById('filtroFechaDesde')?.value;
+            const fHasta = document.getElementById('filtroFechaHasta')?.value;
+
+            // Aplica los mismos filtros de pantalla si el usuario tiene una búsqueda activa
+            const datosFiltrados = listaHistorialGlobal.filter(item => {
+                const proy = (item.tipo_proyecto || item.proyecto || '').toUpperCase();
+                const op = (item.nombre_operador || item.personal || '').toUpperCase();
+                const tipo = (item.tipo_movimiento || '').toUpperCase();
+                const ubi = (item.ubicacion_destino || item.ubicacion_origen || '').toUpperCase();
+
+                const coincideTexto = !textoFiltro || proy.includes(textoFiltro) || op.includes(textoFiltro) || tipo.includes(textoFiltro) || ubi.includes(textoFiltro);
+
+                let fechaItem = '';
+                if (item.fecha_hora) {
+                    const d = new Date(item.fecha_hora);
+                    fechaItem = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : String(item.fecha_hora).split('T')[0];
+                }
+
+                const coincideDesde = !fDesde || (fechaItem && fechaItem >= fDesde);
+                const coincideHasta = !fHasta || (fechaItem && fechaItem <= fHasta);
+
+                return coincideTexto && coincideDesde && coincideHasta;
+            });
+
+            if (datosFiltrados.length === 0) {
+                alert("No se encontraron movimientos con los filtros aplicados.");
+                return;
+            }
+
+            let filasHTML = '';
+
+            datosFiltrados.forEach(item => {
+                const esSalida = (item.tipo_movimiento || '').toUpperCase() === 'SALIDA';
+                const colorMov = esSalida ? '#dc2626' : '#059669';
+
+                let ubicacionLimpia = (item.ubicacion_destino || item.ubicacion_origen || 'N/A')
+                    .replace(/RACK\s+R/gi, 'RACK ')
+                    .replace(/Nivel:\s*N/gi, 'Nivel ')
+                    .replace(/Pos:\s*/gi, 'Posición ');
+
+                let fProc = item.fecha_proceso ? String(item.fecha_proceso).split('T')[0] : 'N/A';
+                let fReg = 'Reciente';
+                if (item.fecha_hora) {
+                    const d = new Date(item.fecha_hora);
+                    fReg = !isNaN(d.getTime()) 
+                        ? d.toLocaleString('es-MX', { timeZone: 'America/Mexico_City' }) 
+                        : String(item.fecha_hora);
+                }
+
+                filasHTML += `
+                    <tr>
+                        <td style="text-align: center; font-weight: bold;">#${item.id || item.id_movimiento || 'KPA'}</td>
+                        <td style="text-align: center; font-weight: bold; font-size: 11pt;">${(item.tipo_proyecto || item.proyecto || 'EXP').toUpperCase()}</td>
+                        <td style="text-align: center; font-weight: bold; color: ${colorMov};">${item.tipo_movimiento || 'ENTRADA'}</td>
+                        <td style="text-align: center; font-weight: bold; color: #d97706; font-size: 12pt;">${item.piezas || 0} pzas</td>
+                        <td style="text-align: center;">${item.nombre_operador || item.personal || 'Operador KPA'}</td>
+                        <td style="text-align: center; color: #0284c7;">${ubicacionLimpia}</td>
+                        <td style="text-align: center; color: #059669; font-weight: bold;">${fProc}</td>
+                        <td style="text-align: center;">${fReg}</td>
+                    </tr>
+                `;
+            });
+
+            const contenidoExcel = `
+                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+                <head>
+                    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+                    <!--[if gte mso 9]>
+                    <xml>
+                    <x:ExcelWorkbook>
+                        <x:ExcelWorksheets>
+                            <x:ExcelWorksheet>
+                                <x:Name>Historial_Movimientos</x:Name>
+                                <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+                            </x:ExcelWorksheet>
+                        </x:ExcelWorksheets>
+                    </x:ExcelWorkbook>
+                    </xml>
+                    <![endif]-->
+                    <style>
+                        table { border-collapse: collapse; width: 100%; font-family: Calibri, Arial, sans-serif; }
+                        th { background-color: #0a1c42; color: #ffffff; font-weight: bold; text-align: center; padding: 12px 18px; border: 1px solid #1e293b; font-size: 11pt; }
+                        td { border: 1px solid #cbd5e1; padding: 10px 16px; font-size: 10pt; vertical-align: middle; mso-number-format: "\\@"; }
+                    </style>
+                </head>
+                <body>
+                    <table>
+                        <tr>
+                            <td colspan="8" style="text-align: center; font-size: 16pt; font-weight: bold; color: #0a1c42; padding: 15px; border: none;">
+                                KPA PACKAGING & HANDLING SOLUTIONS — HISTORIAL GENERAL DE MOVIMIENTOS
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="8" style="text-align: center; font-size: 10pt; color: #64748b; padding-bottom: 15px; border: none;">
+                                Planta Polígono de Buenavista • Fecha de reporte: ${hoy} • Usuario: ${usuarioActual.nombre || 'Administrador'}
+                            </td>
+                        </tr>
+                        <thead>
+                            <tr>
+                                <th>FOLIO ID</th>
+                                <th>PROYECTO / MATERIAL</th>
+                                <th>TIPO MOVIMIENTO</th>
+                                <th>PIEZAS</th>
+                                <th>OPERADOR</th>
+                                <th>UBICACIÓN Y TRAYECTO</th>
+                                <th>FECHA DE PROCESO</th>
+                                <th>FECHA Y HORA REGISTRO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${filasHTML}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+
+            descargarArchivoExcel(contenidoExcel, `Historial_Movimientos_KPA_${hoy}.xls`);
+        }
+
+        // Función auxiliar de descarga para el navegador
+        function descargarArchivoExcel(htmlString, nombreArchivo) {
+            const blob = new Blob([htmlString], { type: 'application/vnd.ms-excel;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            const hoy = new Date().toISOString().split('T')[0];
-            a.download = `Inventario_WIP_KPA_${hoy}.csv`;
+            a.download = nombreArchivo;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 300);
         }
         
         
