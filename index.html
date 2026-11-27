@@ -2048,6 +2048,8 @@ document.addEventListener('click', (e) => {
        
     async function registrarMovimiento(e) {
             e.preventDefault();
+
+            
             
             // --- 1. PROYECTO Y COMPONENTE (FORMATO PROYECTO-COMPONENTE) ---
             const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCase();
@@ -2073,12 +2075,11 @@ document.addEventListener('click', (e) => {
             const esSinRacks = esLote6 || esPiso;
             const notaEspecial = document.getElementById('inputNotaLote6')?.value.trim() || (esPiso ? 'PISO SUELO' : 'PISO GENERAL');
             
-            // --- 3. DETECCIÓN DE PROCEDENCIA / ORIGEN ---
-            const procedencia = document.getElementById('origenProcedencia')?.value || 'PRODUCCION';
-            const vieneDeLote6 = procedencia === 'LOTE 6';
-            const vieneDePiso = procedencia === 'PISO';
+                       // --- 3. DETECCIÓN DE PROCEDENCIA / ORIGEN ---
+            const procedenciaRaw = document.getElementById('origenProcedencia')?.value || 'PRODUCCION';
+            const vieneDeLote6 = procedenciaRaw.includes('LOTE 6');
+            const vieneDePiso = procedenciaRaw.includes('PISO');
             const vieneDeSuelo = vieneDeLote6 || vieneDePiso;
-
             // --- 4. CANDADO DE SEGURIDAD EN SALIDAS ---
             if (tipoMovimientoSeleccionado === 'SALIDA') {
                 const cantSalida = parseInt(piezas, 10);
@@ -2120,7 +2121,7 @@ document.addEventListener('click', (e) => {
                 piezas: piezas,
                 fecha_proceso: fechaProceso,
                 procedencia_origen: procedencia,
-                rack_origen: vieneDeSuelo ? procedencia : (document.getElementById('rackOrigen')?.value || 'N/A'),
+                rack_origen: vieneDeSuelo ? (vieneDePiso ? 'PISO' : 'LOTE 6') : (document.getElementById('rackOrigen')?.value || 'N/A'),
                 nivel_origen: vieneDeSuelo ? 'SUELO' : (document.getElementById('nivelOrigen')?.value || 'N/A'),
                 lado_origen: vieneDeSuelo ? 'SUELO' : (document.getElementById('ladoOrigen')?.value || 'N/A'),
                 apilado_origen: vieneDeSuelo ? '1' : (document.getElementById('apiladoOrigen')?.value || 'N/A'),
@@ -2174,17 +2175,17 @@ document.addEventListener('click', (e) => {
                 if (vistaPrevia) vistaPrevia.style.display = 'none';
                 const inputNota = document.getElementById('inputNotaLote6');
                 if (inputNota) inputNota.value = '';
-                document.getElementById('inputFechaProceso').value = new Date().toISOString().split('T')[0];
+                           document.getElementById('inputFechaProceso').value = new Date().toISOString().split('T')[0];
 
                 setTimeout(() => { mensaje.textContent = ''; }, 3500);
-            } catch (err) {
-                mensaje.style.color = 'var(--danger)';
-                mensaje.textContent = 'Error al guardar el movimiento.';
-            }
-        }
 
+            } catch (err) {
+                console.error("Error al guardar:", err);
+                mensaje.style.color = 'var(--danger)';
+                mensaje.textContent = 'Error al guardar el movimiento. Revisa la consola.';
+            }
+        }    
     
-        
         
 
         
