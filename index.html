@@ -1494,7 +1494,7 @@
                             }
                         }
 
-                       const simbolo = claseColor === 'slot-rojo' ? 'Alerta' : '';
+                       const simbolo = claseColor === 'slot-rojo' ? 'Lleno' : '';
                         htmlSlots += `<div class="slot-celda ${claseColor}" title="Nivel ${nivel} - Lado ${lado}" style="display: flex; align-items: center; justify-content: center; font-size: 10px; color: white;">${simbolo}</div>`;
                     });
                 });
@@ -2733,7 +2733,7 @@ document.addEventListener('click', (e) => {
         
          // MOTOR DE IA//
         
-        function sugerirUbicacionIA() {
+                function sugerirUbicacionIA() {
             const proyectoInput = (document.getElementById('proyectoInput').value || '').trim().toUpperCase();
             const piezasInput = parseInt(document.getElementById('inputPiezas').value, 10) || 0;
             const compSel = (document.getElementById('selectComponente')?.value || '').toUpperCase();
@@ -2747,13 +2747,13 @@ document.addEventListener('click', (e) => {
                 return;
             }
 
-            // 1. RECOLECCIÓN DE DATOS: Mapear los 19 racks (4 niveles x 2 lados)
+            // 1. MAPA DE OCUPACIÓN FÍSICA
             const mapaOcupacion = {};
             for (let r = 1; r <= 19; r++) {
                 mapaOcupacion[r] = {
                     totalTarimas: 0,
                     proyectos: new Set(),
-                    bahias: {} // 'Nivel-Lado'
+                    bahias: {} 
                 };
                 for (let n = 1; n <= 4; n++) {
                     mapaOcupacion[r].bahias[`${n}-IZQUIERDO`] = { ocupada: false, lleno: false, items: [] };
@@ -2763,12 +2763,10 @@ document.addEventListener('click', (e) => {
 
             // Llenamos el mapa con el inventario actual
             (listaInventarioGlobal || []).forEach(item => {
-                //  LA IA NUNCA SUGIERE PISO NI TOMA EN CUENTA MATERIAL FUERA DE RACKS
                 const rRaw = String(item.rack || '').toUpperCase();
                 const ubiRaw = String(item.ubicacion_destino || '').toUpperCase();
-                if (rRaw === 'PISO' || rRaw === 'LOTE 6' || ubiRaw.includes('PISO') || ubiRaw.includes('LOTE 6')) {
-                    return; // Brinca el material de suelo; la IA solo calcula Racks 1-19
-                }
+                if (rRaw === 'PISO' || rRaw === 'LOTE 6' || ubiRaw.includes('PISO') || ubiRaw.includes('LOTE 6')) return;
+                
                 let rNum = null;
                 if (item.rack && item.rack !== 'N/A') {
                     rNum = parseInt(String(item.rack).replace(/\D/g, ''), 10);
@@ -2805,75 +2803,77 @@ document.addEventListener('click', (e) => {
                 }
             });
 
-            // 2. MOTOR DE DECISIÓN DE IA
+            // 2. MOTOR DIFUSO (Puntuaciones)
             let mejorRack = null;
             let mejorNivel = null;
             let mejorLado = null;
+            let mejorPuntuacion = -1;
             let razonIA = "";
 
-            // CRITERIO A: CONSOLIDACIÓN DE LOTE (¿Dónde está el mismo proyecto?)
-            const racksConMismoProyecto = Object.keys(mapaOcupacion)
-                .map(Number)
-                .filter(r => mapaOcupacion[r].proyectos.has(proyectoInput));
+            const esPiezaChica = compSel.includes('REJILLA') || compSel.includes('SEPARADOR') || compSel.includes('INSERTO');
+            const esCargaPesada = esPiezaChica ? (piezasInput >= 800) : (piezasInput >= 120);
 
-            if (racksConMismoProyecto.length > 0) {
-                // Buscamos espacio libre en esos mismos racks para no separar el lote
-                for (let r of racksConMismoProyecto) {
-                    for (let n = 1; n <= 4; n++) {
-                        for (let lado of ['IZQUIERDO', 'DERECHO']) {
-                            const bahia = mapaOcupacion[r].bahias[`${n}-${lado}`];
-                            // Si está libre o si tiene espacio (no lleno)
-                            if (!bahia.lleno) {
-                                mejorRack = r;
-                                mejorNivel = n;
-                                mejorLado = lado;
-                                razonIA = `Consolidación de Lote: Se detectó material activo de <strong>${proyectoInput}</strong> en el RACK ${r}. Se asigna a este mismo rack para agilizar la preparación de pedidos y evitar dispersión de piezas.`;
-                                break;
+            for (let r = 1; r <= 19; r++) {
+                let puntuacionRack = 0;
+                let razonesRack = [];
+
+                // REGLA 1: Consolidación (Si ya hay de este proyecto, sumamos muchos puntos)
+                if (mapaOcupacion[r].proyectos.has(proyectoInput)) {
+                    puntuacionRack += 100; 
+                    razonesRack.push("ya tiene este material");
+                }
+
+                // REGLA 2: Ocupación (Mientras más vacío esté, más puntos para balancear)
+                if (mapaOcupacion[r].totalTarimas === 0) {
+                    puntuacionRack += 50;
+                } else if (mapaOcupacion[r].totalTarimas < 4) {
+                    puntuacionRack += 30;
+                } else if (mapaOcupacion[r].totalTarimas > 10) {
+                    puntuacionRack -= 50; // Castigamos si está muy lleno
+                }
+
+                // Evaluar bahías (Niveles y Lados) en este rack
+                for (let n = 1; n <= 4; n++) {
+                    for (let lado of ['IZQUIERDO', 'DERECHO']) {
+                        const bahia = mapaOcupacion[r].bahias[`${n}-${lado}`];
+                        
+                        // Si la bahía está llena, no la consideramos
+                        if (bahia.lleno) continue;
+
+                        let puntuacionBahia = puntuacionRack;
+                        let razonBahia = [...razonesRack];
+
+                        // REGLA 3: Ergonomía Física
+                        if (bahia.ocupada) {
+                            puntuacionBahia += 10; // Bonificación por rellenar un hueco a medias
+                        } else {
+                            // Si está completamente vacía, evaluamos peso y altura
+                            if (esCargaPesada) {
+                                if (n === 1) { puntuacionBahia += 40; razonBahia.push("nivel de piso ideal para peso"); }
+                                else if (n === 2) { puntuacionBahia += 20; }
+                                else { puntuacionBahia -= 20; }
+                            } else {
+                                if (n === 2 || n === 3) { puntuacionBahia += 30; razonBahia.push("altura ergonómica"); }
+                                else if (n === 4) { puntuacionBahia += 10; }
                             }
                         }
-                        if (mejorRack) break;
-                    }
-                    if (mejorRack) break;
-                }
-            }
 
-            // CRITERIO B: SI NO HAY LOTE PREVIO -> BALANCEO DE PASILLOS & ERGONOMÍA DE MÁSTIL
-            if (!mejorRack) {
-                // Ordenamos racks por menor ocupación para distribuir el tráfico
-                const racksOrdenadosPorMenosCarga = Object.keys(mapaOcupacion)
-                    .map(Number)
-                    .sort((a, b) => mapaOcupacion[a].totalTarimas - mapaOcupacion[b].totalTarimas);
+                        // REGLA 4: Fuzzy Learning (Simulación de historial)
+                        if (lado === 'DERECHO') puntuacionBahia += 5; 
 
-                mejorRack = racksOrdenadosPorMenosCarga[0];
-
-                // Si son muchas piezas (>75 pzas), la IA prefiere Piso (Nivel 1) por seguridad y peso
-                // Si es rejilla/separador aguanta hasta 800 pzas; si es manga/charola/tapa, con 120 ya es pesada
-                        const esPiezaChica = compSel.includes('REJILLA') || compSel.includes('SEPARADOR') || compSel.includes('INSERTO');
-                        const esCargaPesada = esPiezaChica ? (piezasInput >= 800) : (piezasInput >= 120);
-
-                        // Si es pesada prioriza Piso (Nivel 1), si es ligera Nivel 2 o 3
-                        const ordenNiveles = esCargaPesada ? [1, 2, 3, 4] : [2, 3, 1, 4];
-
-                for (let n of ordenNiveles) {
-                    for (let lado of ['IZQUIERDO', 'DERECHO']) {
-                        const bahia = mapaOcupacion[mejorRack].bahias[`${n}-${lado}`];
-                        if (!bahia.ocupada) {
+                        // Guardar la mejor opción encontrada hasta ahora
+                        if (puntuacionBahia > mejorPuntuacion) {
+                            mejorPuntuacion = puntuacionBahia;
+                            mejorRack = r;
                             mejorNivel = n;
                             mejorLado = lado;
-                            break;
+                            razonIA = razonBahia.length > 0 ? `Se eligió por: ${razonBahia.join(', ')}.` : "Es la mejor opción disponible según el flujo actual.";
                         }
                     }
-                    if (mejorNivel) break;
-                }
-
-                if (esCargaPesada) {
-                    razonIA = ` Tarima pesada (${piezasInput.toLocaleString('es-MX')} pzas de ${compSel || 'material'}): mejor en piso por seguridad.`;
-                } else {
-                    razonIA = ` Es el rack con más espacio disponible .`;
                 }
             }
 
-            // 3. APLICAR VALORES AUTOMÁTICAMENTE EN LOS SELECTS
+            // 3. APLICAR VALORES AUTOMÁTICAMENTE
             if (mejorRack && mejorNivel && mejorLado) {
                 const selectRack = document.getElementById('rackDestino');
                 const selectNivel = document.getElementById('nivelDestino');
@@ -2882,6 +2882,9 @@ document.addEventListener('click', (e) => {
                 if (selectRack) selectRack.value = String(mejorRack);
                 if (selectNivel) selectNivel.value = String(mejorNivel);
                 if (selectLado) selectLado.value = mejorLado;
+                
+                // Forzamos a que se muestren los detalles del rack
+                if (typeof verificarDestinoLote6 === 'function') verificarDestinoLote6(); 
 
                 // Mostramos la tarjeta de explicación
                 cajaSugerencia.style.display = 'block';
@@ -2889,7 +2892,7 @@ document.addEventListener('click', (e) => {
                 tituloSugerencia.textContent = `RACK ${mejorRack} • ${nombreNivelLegible} • LADO ${mejorLado}`;
                 explicacion.innerHTML = razonIA;
 
-                // Animación visual de confirmación en los selects
+                // Animación visual
                 [selectRack, selectNivel, selectLado].forEach(el => {
                     if (el) {
                         el.style.borderColor = '#a855f7';
@@ -3242,7 +3245,7 @@ document.addEventListener('click', (e) => {
                     <tr>
                         <td><strong style="color: var(--kpa-cyan); font-size: 14px;">${(item.proyecto || 'EXP').toUpperCase()}</strong></td>
                         <td><strong style="color: var(--warning); font-size: 15px;">${item.piezas || 0} pzas</strong></td>
-                        <td><span style="color: #cbd5e1;">📍 ${referencia}</span></td>
+                        <td><span style="color: #cbd5e1;"> ${referencia}</span></td>
                         <td>${item.personal || item.nombre_operador || 'Operador'}</td>
                         <td>
                             <div><strong>Reg:</strong> ${fReg}</div>
