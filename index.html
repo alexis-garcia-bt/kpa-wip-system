@@ -2046,12 +2046,10 @@ document.addEventListener('click', (e) => {
 });
 
        
-    async function registrarMovimiento(e) {
+            async function registrarMovimiento(e) {
             e.preventDefault();
-
             
-            
-            // --- 1. PROYECTO Y COMPONENTE (FORMATO PROYECTO-COMPONENTE) ---
+            // --- 1. PROYECTO Y COMPONENTE ---
             const proyBase = document.getElementById('proyectoInput').value.trim().toUpperCase();
             const compSel = document.getElementById('selectComponente')?.value || '';
             const compOtro = (document.getElementById('inputComponenteOtro')?.value || '').trim().toUpperCase();
@@ -2068,18 +2066,19 @@ document.addEventListener('click', (e) => {
                 ? 'AMBOS (IZQ Y DER - MANGA LARGA) [LLENO AL TOPE]' 
                 : `${document.getElementById('ladoDestino')?.value || 'IZQUIERDO'}${etiquetaLlenado}`;
 
-            // --- 2. DETECCIÓN DE DESTINO (RACKS VS LOTE 6 VS PISO) ---
+            // --- 2. DETECCIÓN DE DESTINO ---
             const selectDestinoVal = document.getElementById('rackDestino')?.value || '';
             const esLote6 = selectDestinoVal === 'LOTE 6';
             const esPiso = selectDestinoVal === 'PISO';
             const esSinRacks = esLote6 || esPiso;
-            const notaEspecial = document.getElementById('inputNotaLote6')?.value.trim() || (esPiso ? 'PISO SUELO' : 'PISO GENERAL');
+            const notaEspecial = document.getElementById('inputNotaLote6')?.value.trim() || (esPiso ? 'PISO SUELO' : 'LOTE 6');
             
-                       // --- 3. DETECCIÓN DE PROCEDENCIA / ORIGEN ---
+            // --- 3. DETECCIÓN DE PROCEDENCIA / ORIGEN ---
             const procedenciaRaw = document.getElementById('origenProcedencia')?.value || 'PRODUCCION';
             const vieneDeLote6 = procedenciaRaw.includes('LOTE 6');
             const vieneDePiso = procedenciaRaw.includes('PISO');
             const vieneDeSuelo = vieneDeLote6 || vieneDePiso;
+
             // --- 4. CANDADO DE SEGURIDAD EN SALIDAS ---
             if (tipoMovimientoSeleccionado === 'SALIDA') {
                 const cantSalida = parseInt(piezas, 10);
@@ -2093,11 +2092,12 @@ document.addEventListener('click', (e) => {
                 const loteEncontrado = listaInventarioGlobal.find(item => {
                     const coincideProy = (item.proyecto || '').toUpperCase().trim() === proyBuscado;
                     const rackItem = (item.rack || '').toUpperCase().replace('RACK', '').replace('R', '').trim();
-                    return coincideProy && (!rackOrigenSel || rackItem === rackOrigenSel);
+                    const origenLimpio = String(rackOrigenSel).toUpperCase().replace('RACK', '').replace('R', '').trim();
+                    return coincideProy && (!origenLimpio || rackItem === origenLimpio);
                 });
 
                 if (!loteEncontrado) {
-                    alert(` STOCK NO ENCONTRADO:\n\nNo hay registro de inventario activo para "${proyBuscado}" en el origen seleccionado.`);
+                    alert(`STOCK NO ENCONTRADO:\n\nNo hay registro de inventario activo para "${proyBuscado}" en el origen "${rackOrigenSel}".\n\nVerifica que el proyecto esté escrito exactamente igual.`);
                     return;
                 }
 
@@ -2120,19 +2120,19 @@ document.addEventListener('click', (e) => {
                 proyecto: proyecto,
                 piezas: piezas,
                 fecha_proceso: fechaProceso,
-                procedencia_origen: procedencia,
+                procedencia_origen: procedenciaRaw,
                 rack_origen: vieneDeSuelo ? (vieneDePiso ? 'PISO' : 'LOTE 6') : (document.getElementById('rackOrigen')?.value || 'N/A'),
                 nivel_origen: vieneDeSuelo ? 'SUELO' : (document.getElementById('nivelOrigen')?.value || 'N/A'),
                 lado_origen: vieneDeSuelo ? 'SUELO' : (document.getElementById('ladoOrigen')?.value || 'N/A'),
                 apilado_origen: vieneDeSuelo ? '1' : (document.getElementById('apiladoOrigen')?.value || 'N/A'),
                 rack_destino: tipoMovimientoSeleccionado === 'SALIDA' 
                     ? (document.getElementById('destinoSalidaSelect')?.value || 'BASURA / SCRAP') 
-                    : (esSinRacks ? (esPiso ? 'PISO' : 'LOTE 6') : selectDestinoVal),
+                    : (esSinRacks ? selectDestinoVal : selectDestinoVal),
                 rack: tipoMovimientoSeleccionado === 'SALIDA' 
                     ? 'N/A' 
-                    : (esSinRacks ? (esPiso ? 'PISO' : 'LOTE 6') : selectDestinoVal),
+                    : (esSinRacks ? selectDestinoVal : selectDestinoVal),
                 nivel_destino: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (esSinRacks ? 'SUELO' : (document.getElementById('nivelDestino')?.value || '1')),
-                lado: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (esSinRacks ? `SUELO (${notaEspecial})` : ladoFinal),
+                lado: tipoMovimientoSeleccionado === 'SALIDA' ? 'N/A' : (esSinRacks ? notaEspecial : ladoFinal),
                 apilado: tipoMovimientoSeleccionado === 'SALIDA' ? '1' : (document.getElementById('apiladoDestino')?.value || '1')
             };
 
@@ -2147,21 +2147,18 @@ document.addEventListener('click', (e) => {
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) throw new Error();
+                if (!response.ok) throw new Error("Error en el servidor al guardar");
                 
                 mensaje.style.color = 'var(--kpa-green)';
                 mensaje.textContent = '¡Movimiento guardado con éxito!';
 
-                // Actualiza en vivo Racks, Lote 6 y Piso
                 await cargarInventarioCompleto();
                 if (typeof cargarLote6 === 'function') await cargarLote6();
                 if (typeof cargarPiso === 'function') await cargarPiso();
                 if (typeof renderizarMapaRacks === 'function') renderizarMapaRacks();
 
-                // Limpia campos del formulario
                 document.getElementById('proyectoInput').value = '';
                 document.getElementById('inputPiezas').value = '';
-                // Resetea el selector de destino a limpio
                 const selectRack = document.getElementById('rackDestino');
                 if (selectRack) {
                     selectRack.value = '';
@@ -2175,16 +2172,15 @@ document.addEventListener('click', (e) => {
                 if (vistaPrevia) vistaPrevia.style.display = 'none';
                 const inputNota = document.getElementById('inputNotaLote6');
                 if (inputNota) inputNota.value = '';
-                           document.getElementById('inputFechaProceso').value = new Date().toISOString().split('T')[0];
+                document.getElementById('inputFechaProceso').value = new Date().toISOString().split('T')[0];
 
                 setTimeout(() => { mensaje.textContent = ''; }, 3500);
-
             } catch (err) {
                 console.error("Error al guardar:", err);
                 mensaje.style.color = 'var(--danger)';
                 mensaje.textContent = 'Error al guardar el movimiento. Revisa la consola.';
             }
-        }    
+        }   
     
         
 
