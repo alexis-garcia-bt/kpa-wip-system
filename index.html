@@ -2917,12 +2917,22 @@ document.addEventListener('click', (e) => {
             const inputNota = document.getElementById('inputNotaLote6');
             const labelNota = document.getElementById('labelNotaLote6');
 
+            // Los dos campos de rack que no deben verse en piso/lote 6
+            const checkManga = document.getElementById('ambosLadosCheck');
+            const bloqueManga = checkManga ? (checkManga.closest('.form-group') || checkManga.parentElement) : null;
+            const bloqueLlenado = document.getElementById('bloqueEstadoLlenado');
+
             if (!selectRack) return;
             const val = selectRack.value;
 
             if (val === 'LOTE 6' || val === 'PISO') {
-                // Es suelo: oculta niveles de rack y muestra la nota
+                // 🛑 ES EN SUELO: OCULTA NIVELES, OCULTA MANGAS Y OCULTA DISPONIBILIDAD DE LADO
                 if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'none';
+                if (bloqueManga) bloqueManga.style.display = 'none';
+                if (bloqueLlenado) bloqueLlenado.style.display = 'none';
+                if (checkManga) checkManga.checked = false;
+
+                // Muestra únicamente la nota de suelo
                 if (bloqueNota) {
                     bloqueNota.style.display = 'block';
                     if (labelNota) {
@@ -2937,15 +2947,19 @@ document.addEventListener('click', (e) => {
                     }
                 }
             } else if (val !== '') {
-                // Es un Rack (1-19): muestra los niveles y oculta la nota
+                // ✅ ES UN RACK (1-19): Muestra niveles, lados, manga y disponibilidad
                 if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'block';
+                if (bloqueManga) bloqueManga.style.display = 'block';
+                if (bloqueLlenado) bloqueLlenado.style.display = 'block';
                 if (bloqueNota) {
                     bloqueNota.style.display = 'none';
                     if (inputNota) inputNota.value = '';
                 }
             } else {
-                // Está en blanco (-- SELECCIONE DESTINO --)
+                // En blanco (-- SELECCIONE DESTINO --)
                 if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'none';
+                if (bloqueManga) bloqueManga.style.display = 'none';
+                if (bloqueLlenado) bloqueLlenado.style.display = 'none';
                 if (bloqueNota) bloqueNota.style.display = 'none';
             }
         }
