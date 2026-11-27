@@ -267,37 +267,46 @@ app.post('/api/movimientos', (req, res) => {
     };
 
     validarExistencia(() => {
-        // 2. ORIGEN: Limpieza de "R" y "N"
-        const procedenciaOrVal = data.procedencia_origen || data.origen || 'PRODUCCIÓN';
-        let ubicacionOrigenVal = procedenciaOrVal;
+                // 2. ORIGEN: Limpieza de "R" y "N"
+        const procedenciaOrVal = (data.procedencia_origen || data.origen || 'PRODUCCIÓN').toUpperCase();
+        let ubicacionOrigenVal = '';
         
-        const rackOrigenRaw = (data.rack_origen || 'N/A').toString().trim();
+        const rackOrigenRaw = (data.rack_origen || 'N/A').toString().toUpperCase().trim();
         const nivelOrigenRaw = (data.nivel_origen || 'N/A').toString().trim();
 
-        if (rackOrigenRaw !== 'N/A' && rackOrigenRaw !== '') {
+        if (rackOrigenRaw === 'PISO' || rackOrigenRaw === 'LOTE 6') {
+            ubicacionOrigenVal = `Procedencia: ${rackOrigenRaw}`;
+        } else if (rackOrigenRaw !== 'N/A' && rackOrigenRaw !== '') {
             const rackOrigenLimpio = rackOrigenRaw.replace(/^RACK\s*/i, '').replace(/^R/i, '').trim();
             const nivelOrigenLimpio = nivelOrigenRaw.replace(/^NIVEL\s*/i, '').replace(/^N/i, '').trim() || '1';
             const ladoOrigen = data.lado_origen || 'IZQUIERDO';
             const posOrigen = data.apilado_origen || '1';
-
             ubicacionOrigenVal = `Retirado de: RACK ${rackOrigenLimpio}, Nivel: ${nivelOrigenLimpio}, Lado: ${ladoOrigen}, Pos: ${posOrigen}`;
         } else {
             ubicacionOrigenVal = `Procedencia: ${procedenciaOrVal}`;
         }
 
-        // 3. DESTINO: Limpieza de "R" y "N"
-        const rackDestinoRaw = (data.rack_destino || data.rackDestino || data.rack || 'N/A').toString().trim();
+                // 3. DESTINO: Limpieza y blindaje para PISO y LOTE 6
+        const rackDestinoRaw = (data.rack_destino || data.rackDestino || data.rack || 'N/A').toString().toUpperCase().trim();
         let rackDestinoFinal = rackDestinoRaw;
         let nivelDestinoFinal = (data.nivel_destino || data.nivelDestino || data.nivel || '1').toString().replace(/^NIVEL\s*/i, '').replace(/^N/i, '').trim();
         let ladoDestinoFinal = data.lado_destino || data.ladoDestino || data.lado || 'IZQUIERDO';
         let posDestinoFinal = data.apilado || data.posicion || data.pos || '1';
 
         let ubicacionDestinoVal = '';
+        
         if (tipoMov === 'SALIDA') {
             ubicacionDestinoVal = `Destino Externo: ${rackDestinoRaw}`;
             rackDestinoFinal = 'N/A'; 
             nivelDestinoFinal = 'N/A';
             ladoDestinoFinal = 'N/A';
+            posDestinoFinal = '1';
+        } else if (rackDestinoRaw === 'PISO' || rackDestinoRaw === 'LOTE 6') {
+            // MAGIA: Guardamos 'PISO' o 'LOTE 6' exacto en la columna rack
+            ubicacionDestinoVal = `${rackDestinoRaw} - Ref: ${data.lado || 'Estiba en suelo'}`;
+            rackDestinoFinal = rackDestinoRaw;
+            nivelDestinoFinal = 'SUELO';
+            ladoDestinoFinal = 'SUELO';
             posDestinoFinal = '1';
         } else if (rackDestinoRaw !== 'N/A' && rackDestinoRaw !== '') {
             const rackLimpio = rackDestinoRaw.replace(/^RACK\s*/i, '').replace(/^R/i, '').trim();
@@ -557,7 +566,7 @@ app.get('/api/sugerencias', (req, res) => {
         desc: item.desc,
         nombre_producto: `${item.desc} [${item.comp}]`
     }));
-
+    
     res.json(respuesta);
 });
 const PUERTO = process.env.PORT || 3000;

@@ -831,6 +831,7 @@
 
         </div> <!-- Cierra tab-operacion -->
 
+
         <!-- PESTAÑA 2: UBICAR MATERIAL & MAPA VISUAL -->
         <div id="tab-ubicar" class="tab-content">
             <div class="card">
@@ -2118,7 +2119,7 @@ document.addEventListener('click', (e) => {
                 piezas: piezas,
                 fecha_proceso: fechaProceso,
                 procedencia_origen: procedencia,
-                rack_origen: vieneDeSuelo ? (vieneDePiso ? 'PISO' : 'LOTE 6') : (document.getElementById('rackOrigen')?.value || 'N/A'),
+                rack_origen: vieneDeSuelo ? procedencia : (document.getElementById('rackOrigen')?.value || 'N/A'),
                 nivel_origen: vieneDeSuelo ? 'SUELO' : (document.getElementById('nivelOrigen')?.value || 'N/A'),
                 lado_origen: vieneDeSuelo ? 'SUELO' : (document.getElementById('ladoOrigen')?.value || 'N/A'),
                 apilado_origen: vieneDeSuelo ? '1' : (document.getElementById('apiladoOrigen')?.value || 'N/A'),
