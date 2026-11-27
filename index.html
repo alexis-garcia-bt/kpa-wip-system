@@ -799,12 +799,12 @@
                                        <script> for(let i=1; i<=10; i++) document.write(`<option value="${i}">POS ${i}</option>`); </script>
                                    </select>
                                </div>
-                               <div class="form-group" style="margin-bottom: 15px;">
-                                   <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; background: var(--bg-input); padding: 14px 18px; border-radius: 12px; border: 1px solid var(--border-color);">
-                                       <input type="checkbox" id="ambosLadosCheck" style="width: 20px; height: 20px; accent-color: var(--kpa-blue);">
-                                       <span>Ocupar ambos lados (Manga)</span>
-                                   </label>
-                               </div>
+                               <div class="form-group" id="bloqueMangaCheck" style="margin-bottom: 15px;">
+                                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; background: var(--bg-input); padding: 14px 18px; border-radius: 12px; border: 1px solid var(--border-color);">
+                                        <input type="checkbox" id="ambosLadosCheck" style="width: 20px; height: 20px; accent-color: var(--kpa-blue);">
+                                        <span>Ocupar ambos lados (Manga)</span>
+                                    </label>
+                                </div>
                                <div class="form-group" id="bloqueEstadoLlenado">
                                    <label for="selectCapacidadLado">Disponibilidad física de este Lado:</label>
                                    <select id="selectCapacidadLado">
@@ -2916,23 +2916,23 @@ document.addEventListener('click', (e) => {
             const bloqueNota = document.getElementById('bloqueNotaLote6');
             const inputNota = document.getElementById('inputNotaLote6');
             const labelNota = document.getElementById('labelNotaLote6');
-
-            // Los dos campos de rack que no deben verse en piso/lote 6
-            const checkManga = document.getElementById('ambosLadosCheck');
-            const bloqueManga = checkManga ? (checkManga.closest('.form-group') || checkManga.parentElement) : null;
             const bloqueLlenado = document.getElementById('bloqueEstadoLlenado');
+            const chkManga = document.getElementById('ambosLadosCheck');
 
             if (!selectRack) return;
             const val = selectRack.value;
 
-            if (val === 'LOTE 6' || val === 'PISO') {
-                // 🛑 ES EN SUELO: OCULTA NIVELES, OCULTA MANGAS Y OCULTA DISPONIBILIDAD DE LADO
-                if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'none';
-                if (bloqueManga) bloqueManga.style.display = 'none';
-                if (bloqueLlenado) bloqueLlenado.style.display = 'none';
-                if (checkManga) checkManga.checked = false;
+            // Busca el contenedor específico de la manga por ID o por etiqueta
+            const contenedorManga = document.getElementById('bloqueMangaCheck') || (chkManga ? chkManga.parentElement.parentElement : null);
 
-                // Muestra únicamente la nota de suelo
+            if (val === 'LOTE 6' || val === 'PISO') {
+                // 🛑 ES SUELO: Oculta detalles de racks, manga y disponibilidad
+                if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'none';
+                if (contenedorManga) contenedorManga.style.display = 'none';
+                if (bloqueLlenado) bloqueLlenado.style.display = 'none';
+                if (chkManga) chkManga.checked = false;
+
+                // Muestra la referencia de suelo
                 if (bloqueNota) {
                     bloqueNota.style.display = 'block';
                     if (labelNota) {
@@ -2947,9 +2947,9 @@ document.addEventListener('click', (e) => {
                     }
                 }
             } else if (val !== '') {
-                // ✅ ES UN RACK (1-19): Muestra niveles, lados, manga y disponibilidad
+                //  ES RACK (1-19): Muestra todo normal
                 if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'block';
-                if (bloqueManga) bloqueManga.style.display = 'block';
+                if (contenedorManga) contenedorManga.style.display = 'block';
                 if (bloqueLlenado) bloqueLlenado.style.display = 'block';
                 if (bloqueNota) {
                     bloqueNota.style.display = 'none';
@@ -2958,11 +2958,13 @@ document.addEventListener('click', (e) => {
             } else {
                 // En blanco (-- SELECCIONE DESTINO --)
                 if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'none';
-                if (bloqueManga) bloqueManga.style.display = 'none';
+                if (contenedorManga) contenedorManga.style.display = 'none';
                 if (bloqueLlenado) bloqueLlenado.style.display = 'none';
                 if (bloqueNota) bloqueNota.style.display = 'none';
+             }
             }
-        }
+            
+                
 
         // 2. Consulta y calcula el inventario de Lote 6
         let listaLote6Global = [];
