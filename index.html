@@ -757,10 +757,10 @@
                             <!-- SELECTOR DESTINO SIEMPRE VISIBLE -->
                             <div class="form-group" style="margin-bottom: 15px;">
                                 <label for="rackDestino" style="display: block; font-weight: bold; margin-bottom: 8px;">Ubicación de Destino / Almacenamiento:</label>
-                                <select id="rackDestino" onchange="verificarDestinoLote6()" required style="width: 100%; padding: 12px; font-size: 14px; border-radius: 10px;">
+                                <select id="rackDestino" onchange="verificarDestinoLote6()"  style="width: 100%; padding: 12px; font-size: 14px; border-radius: 10px;">
                                     <option value="">-- SELECCIONE DESTINO --</option>
-                                    <option value="LOTE 6" style="color: #38bdf8; font-weight: bold;">📦 LOTE 6 (ALMACÉN EN PISO)</option>
-                                    <option value="PISO" style="color: #f59e0b; font-weight: bold;">🚧 PISO TEMPORAL (PASILLO / OVERFLOW)</option>
+                                    <option value="LOTE 6" style="color: #38bdf8; font-weight: bold;"> LOTE 6 (ALMACÉN EN PISO)</option>
+                                    <option value="PISO" style="color: #f59e0b; font-weight: bold;"> PISO TEMPORAL (PASILLO / OVERFLOW)</option>
                                     <optgroup label="RACKS WIP (1 AL 19)">
                                         <script> for(let i=1; i<=19; i++) document.write(`<option value="${i}">RACK ${i}</option>`); </script>
                                     </optgroup>
