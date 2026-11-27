@@ -2733,7 +2733,7 @@ document.addEventListener('click', (e) => {
         
          // MOTOR DE IA//
         
-                        function sugerirUbicacionIA() {
+        function sugerirUbicacionIA() {
             const proyectoInput = (document.getElementById('proyectoInput').value || '').trim().toUpperCase();
             const piezasInput = parseInt(document.getElementById('inputPiezas').value, 10) || 0;
             const compSel = (document.getElementById('selectComponente')?.value || '').toUpperCase();
@@ -2831,9 +2831,9 @@ document.addEventListener('click', (e) => {
             let mejorNivel = null;
             let mejorLado = null;
             let mejorPuntuacion = -1;
-            let razonIA = "";
+                        let razonIA = "";
 
-            const esCargaPesada = piezasInput >= 120; // Regla general de peso
+            const esCargaPesada = piezasInput >= 1000; 
 
             for (let r = 1; r <= 19; r++) {
                 let puntuacionRack = 0;
@@ -2842,7 +2842,7 @@ document.addEventListener('click', (e) => {
                 // Si el rack ya tiene este material, nos ayuda a no regarlo
                 if (mapaOcupacion[r].proyectos.has(proyectoInput)) {
                     puntuacionRack += 100; 
-                    razonesRack.push("consolidar lote existente");
+                    razonesRack.push("ya hay de este material aquí, no lo reguemos");
                 }
 
                 // Balanceo: racks vacíos o con pocas tarimas suman puntos
@@ -2859,30 +2859,26 @@ document.addEventListener('click', (e) => {
                         let puntuacionBahia = puntuacionRack;
                         let razonBahia = [...razonesRack];
 
-                        // =======================================================
-                        // AQUÍ APLICAMOS LA LÓGICA DE ROTACIÓN ABC Y PESO
-                        // =======================================================
-                        if (rotacion === 'A') {
-                            // ROTACIÓN A: Nivel 1 y 2 son los reyes
-                            if (n === 1) { puntuacionBahia += 100; razonBahia.push("Nivel 1 (Piso) para Rotación A"); }
-                            else if (n === 2) { puntuacionBahia += 80; razonBahia.push("Nivel 2 (Cintura) para Rotación A"); }
-                            else { puntuacionBahia -= 50; } // Castigamos niveles altos
+                        
+                        if (esCargaPesada) {
+                            if (n === 1) { 
+                                puntuacionBahia += 150; 
+                                razonBahia.push("la carga viene muy pesada, va aquí abajo "); 
+                            } else { 
+                                puntuacionBahia -= 100; 
+                            }
+                        } else if (rotacion === 'A') {
+                            if (n === 1) { puntuacionBahia += 100; razonBahia.push("es un proyecto que se mueve mucho, lo dejamos a la mano en el piso"); }
+                            else if (n === 2) { puntuacionBahia += 80; razonBahia.push("es un proyecto de alta rotación, aqui va ir"); }
+                            else { puntuacionBahia -= 50; }
                         } else if (rotacion === 'B') {
-                            // ROTACIÓN B: Nivel 2 y 3
-                            if (n === 2 || n === 3) { puntuacionBahia += 70; razonBahia.push("Nivel medio ideal para Rotación B"); }
+                            if (n === 2 || n === 3) { puntuacionBahia += 70; razonBahia.push("rotación media, nivel intermedio es perfecto"); }
                             else if (n === 1) { puntuacionBahia += 30; }
                             else { puntuacionBahia += 10; }
                         } else {
-                            // ROTACIÓN C: Nivel 3 y 4 (al fondo / arriba)
-                            if (n === 4) { puntuacionBahia += 80; razonBahia.push("Nivel 4 para material de baja rotación"); }
+                            if (n === 4) { puntuacionBahia += 80; razonBahia.push("se mueve poco, lo subimos hasta arriba "); }
                             else if (n === 3) { puntuacionBahia += 50; }
                             else { puntuacionBahia -= 30; }
-                        }
-
-                        // Si es pesado, anulamos la rotación y lo forzamos al piso
-                        if (esCargaPesada) {
-                            if (n === 1) { puntuacionBahia += 150; razonBahia.push("peso excesivo, requiere estar a nivel de piso"); }
-                            else { puntuacionBahia -= 100; } // No queremos peso arriba
                         }
 
                         if (puntuacionBahia > mejorPuntuacion) {
@@ -2890,7 +2886,13 @@ document.addEventListener('click', (e) => {
                             mejorRack = r;
                             mejorNivel = n;
                             mejorLado = lado;
-                            razonIA = razonBahia.length > 0 ? `Se eligió por: ${razonBahia.join(', ')}.` : "Es la mejor opción disponible.";
+                            
+                            // Construimos una explicación más natural
+                            if (razonBahia.length > 0) {
+                                razonIA = `Te sugiero este lugar porque ${razonBahia.join(' y ')}.`;
+                            } else {
+                                razonIA = "Es el espacio más libre y seguro que tenemos";
+                            }
                         }
                     }
                 }
