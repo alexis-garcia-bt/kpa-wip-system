@@ -161,7 +161,7 @@
         padding: 12px 14px !important;
         flex-direction: column !important;
         gap: 10px !important;
-        position: static !important; /* Libera pantalla en celulares */
+        position: static !important;
     }
     header h1 { font-size: 18px !important; }
     
@@ -189,24 +189,45 @@
 
     /* 3. Menú de pestañas tipo App (Scroll horizontal deslizable con el dedo) */
     .nav-tabs {
-        padding: 6px 10px !important;
-        gap: 8px !important;
+        padding: 10px 12px !important;
+        gap: 10px !important;
         overflow-x: auto !important;
         white-space: nowrap !important;
         display: flex !important;
         flex-direction: row !important;
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
+        background: #020409;
     }
     .nav-tabs::-webkit-scrollbar { display: none; }
+    
     .tab-btn {
-        padding: 10px 16px !important;
-        font-size: 13px !important;
+        padding: 12px 22px !important;
+        font-size: 14px !important;
         flex: 0 0 auto !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid var(--border-color) !important;
+    }
+    .tab-btn.active {
+        background: rgba(16, 185, 129, 0.15) !important;
+        border-color: var(--kpa-green) !important;
     }
 
-    /* 4. Tarjetas con márgenes amplios (adiós al padding de 40px) */
+    /* 4. Botones de acción (Entrada, Salida, Reubicación) */
+    .action-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 15px !important;
+        margin-bottom: 25px !important;
+    }
+    .action-btn {
+        padding: 22px !important;
+        font-size: 18px !important;
+    }
+
+  
+    /* 5. Tarjetas con márgenes amplios (adiós al padding de 40px) */
     .main-container {
         margin: 15px auto !important;
         padding: 0 10px !important;
