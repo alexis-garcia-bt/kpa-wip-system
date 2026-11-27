@@ -2914,7 +2914,7 @@ document.addEventListener('click', (e) => {
                 alert("Error de conexión con el servidor.");
             }
         }
-        function verificarDestinoLote6() {
+                function verificarDestinoLote6() {
             const selectRack = document.getElementById('rackDestino');
             const bloqueDetallesRack = document.getElementById('detallesRackDestino');
             const bloqueNota = document.getElementById('bloqueNotaLote6');
@@ -2941,7 +2941,8 @@ document.addEventListener('click', (e) => {
                     }
                 }
             } else if (val !== '') {
-                // Rack 1-19: prende niveles y apaga nota
+                // Rack 1-19 (o destino de salida): prende niveles y apaga nota
+                // EL FIX ESTÁ AQUÍ: antes se apagaba sin importar qué.
                 if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'block';
                 if (bloqueNota) {
                     bloqueNota.style.display = 'none';
