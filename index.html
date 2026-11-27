@@ -2580,7 +2580,11 @@ document.addEventListener('click', (e) => {
                 alert('Acceso denegado. Solo el administrador puede registrar personal.');
                 return;
             }
-            const rol = document.getElementById('nuevoRolPersonal').value;
+            
+            // Toma el valor y lo normaliza a 'ADMIN' si seleccionaron Administrador
+            let rol = document.getElementById('nuevoRolPersonal').value;
+            if (rol.toUpperCase().includes('ADMIN')) rol = 'ADMIN';
+
             const nombre = document.getElementById('inputNuevoNombre').value.trim();
             const pin = document.getElementById('inputNuevoPin').value.trim();
 
@@ -2592,19 +2596,21 @@ document.addEventListener('click', (e) => {
                 const res = await fetch(`${API_URL}/api/personal`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ rol, nombre, turno: '1er Turno (07:00 - 15:00)', pin })
+                    body: JSON.stringify({ rol, nombre, turno: 'MATUTINO', pin })
                 });
+
                 if (res.ok) {
                     const data = await res.json();
                     document.getElementById('inputNuevoNombre').value = '';
                     document.getElementById('inputNuevoPin').value = '';
                     status.style.color = 'var(--kpa-green)';
-                    status.textContent = `¡Operador registrado con éxito! Clave de acceso: ${data.pin || nombre.split(' ').pop()}`;
+                    status.textContent = `¡Operador registrado con éxito! PIN de acceso: ${data.pin || pin}`;
                     await cargarPersonalBD();
                     setTimeout(() => { status.textContent = ''; }, 4500);
                 } else {
+                    const errJson = await res.json().catch(() => ({}));
                     status.style.color = 'var(--danger)';
-                    status.textContent = 'Error al registrar en la base de datos.';
+                    status.textContent = `Error: ${errJson.error || 'No se pudo registrar en la base de datos.'}`;
                 }
             } catch (err) {
                 console.error(err);

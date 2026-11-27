@@ -389,6 +389,9 @@ app.get('/api/personal', (req, res) => {
 // ====================================================================
 // GUARDA EN CLEVER CLOUD
 // ====================================================================
+// ====================================================================
+// REGISTRAR OPERADOR (AUTOADAPTABLE A CUALQUIER ESTRUCTURA DE BD)
+// ====================================================================
 app.post('/api/personal', (req, res) => {
     if (!db) return res.status(500).json({ error: 'Base de datos no conectada' });
 
@@ -398,45 +401,112 @@ app.post('/api/personal', (req, res) => {
     }
 
     const nombreLimpio = nombre.toUpperCase().trim();
-    const rolLimpio = rol.toUpperCase().trim();
-    const turnoLimpio = turno || '1er Turno (07:00 - 15:00)';
-    const pinLimpio = pin ? String(pin).trim() : nombreLimpio.split(' ').pop(); // Si no dan PIN, usa su apellido
+    
+    // 1. Normaliza el rol para que no truene si la BD espera 'ADMIN'
+    let rolLimpio = rol.toUpperCase().trim();
+    if (rolLimpio.includes('ADMIN')) rolLimpio = 'ADMIN';
+    else if (rolLimpio.includes('LIDER')) rolLimpio = 'LIDER';
+    else if (rolLimpio.includes('MONTA')) rolLimpio = 'MONTACARGUISTA';
 
-    const sqlConPin = "INSERT INTO operadores (nombre, rol, turno, pin) VALUES (?, ?, ?, ?)";
-    db.query(sqlConPin, [nombreLimpio, rolLimpio, turnoLimpio, pinLimpio], (err, resultado) => {
-        if (err) {
-            // Si la columna 'pin' no existe en tu tabla de MySQL, guarda sin ella para no tronar
-            const sqlSinPin = "INSERT INTO operadores (nombre, rol, turno) VALUES (?, ?, ?)";
-            db.query(sqlSinPin, [nombreLimpio, rolLimpio, turnoLimpio], (err2, res2) => {
-                if (err2) {
-                    console.error("Error al registrar operador:", err2.message);
-                    return res.status(500).json({ error: err2.message });
+    // 2. Normaliza el turno a palabra corta ('MATUTINO') para que no desborde la columna
+    const turnoStr = (turno || '').toUpperCase();
+    const turnoLimpio = turnoStr.includes('2') || turnoStr.includes('VESP') ? 'VESPERTINO'
+                      : turnoStr.includes('3') || turnoStr.includes('NOCT') ? 'NOCTURNO'
+                      : 'MATUTINO';
+
+    const pinLimpio = pin ? String(pin).trim().toUpperCase() : nombreLimpio.split(' ').pop();
+
+    // 3. Inspecciona las columnas reales de la tabla 'operadores' en Clever Cloud
+    db.query("DESCRIBE operadores", (errDesc, cols) => {
+        if (errDesc || !cols || cols.length === 0) {
+            console.error("Error al inspeccionar operadores:", errDesc?.message);
+            // Intento directo si falla el describe
+            const sql = "INSERT INTO operadores (nombre, rol, turno, pin) VALUES (?, ?, ?, ?)";
+            return db.query(sql, [nombreLimpio, rolLimpio, turnoLimpio, pinLimpio], (e, r) => {
+                if (e) return res.status(500).json({ error: e.message });
+                res.json({ success: true, id: r.insertId, pin: pinLimpio });
+            });
+        }
+
+        const colMap = {};
+        cols.forEach(c => colMap[c.Field.toLowerCase()] = c.Field);
+
+        const campos = [];
+        const valores = [];
+
+        // Columna de Nombre (detecta si es 'nombre' o 'nombre_operador')
+        if (colMap['nombre']) { campos.push(colMap['nombre']); valores.push(nombreLimpio); }
+        else if (colMap['nombre_operador']) { campos.push(colMap['nombre_operador']); valores.push(nombreLimpio); }
+
+        // Columna de Rol (detecta si es 'rol' o 'tipo')
+        if (colMap['rol']) { campos.push(colMap['rol']); valores.push(rolLimpio); }
+        else if (colMap['tipo']) { campos.push(colMap['tipo']); valores.push(rolLimpio); }
+
+        // Columna de Turno
+        if (colMap['turno']) { campos.push(colMap['turno']); valores.push(turnoLimpio); }
+
+        // Columna de PIN (detecta si es 'pin', 'password' o 'clave')
+        if (colMap['pin']) { campos.push(colMap['pin']); valores.push(pinLimpio); }
+        else if (colMap['password']) { campos.push(colMap['password']); valores.push(pinLimpio); }
+        else if (colMap['clave']) { campos.push(colMap['clave']); valores.push(pinLimpio); }
+
+        // Verifica si la llave primaria tiene o no AUTO_INCREMENT
+        const colId = colMap['id_operador'] || colMap['id'];
+        const idColObj = cols.find(c => c.Field.toLowerCase() === 'id_operador' || c.Field.toLowerCase() === 'id');
+        const esAutoInc = idColObj && (idColObj.Extra || '').toLowerCase().includes('auto_increment');
+
+        const ejecutarInsercion = (camposFinales, valoresFinales) => {
+            const placeholders = camposFinales.map(() => '?').join(', ');
+            const sqlInsert = `INSERT INTO operadores (${camposFinales.join(', ')}) VALUES (${placeholders})`;
+            db.query(sqlInsert, valoresFinales, (errInsert, resInsert) => {
+                if (errInsert) {
+                    console.error("Error al registrar operador en BD:", errInsert.message);
+                    return res.status(500).json({ error: errInsert.message });
                 }
-                res.json({ success: true, id: res2.insertId, pin: pinLimpio });
+                res.json({ success: true, id: resInsert.insertId, pin: pinLimpio });
+            });
+        };
+
+        if (colId && !esAutoInc) {
+            // Si la tabla no tiene autoincrement, calcula el siguiente ID manualmente
+            db.query(`SELECT COALESCE(MAX(${colId}), 0) + 1 AS siguienteId FROM operadores`, (errMax, filasMax) => {
+                const nextId = (filasMax && filasMax[0] && filasMax[0].siguienteId) ? filasMax[0].siguienteId : 100;
+                campos.unshift(colId);
+                valores.unshift(nextId);
+                ejecutarInsercion(campos, valores);
             });
         } else {
-            res.json({ success: true, id: resultado.insertId, pin: pinLimpio });
+            ejecutarInsercion(campos, valores);
         }
     });
 });
 
 // ====================================================================
-// ELIMINA DE CLEVER CLOUD
+// ELIMINAR OPERADOR (BLINDADO CONTRA COLUMNAS id / id_operador)
 // ====================================================================
 app.delete('/api/personal/:id', (req, res) => {
     if (!db) return res.status(500).json({ error: 'Base de datos no conectada' });
 
     const id = req.params.id;
-    const sql = "DELETE FROM operadores WHERE id_operador = ? OR id = ?";
-    db.query(sql, [id, id], (err, resultado) => {
-        if (err) {
-            console.error("Error al eliminar operador:", err.message);
-            return res.status(500).json({ error: err.message });
+
+    // 1. Intenta borrar por id_operador
+    db.query("DELETE FROM operadores WHERE id_operador = ?", [id], (err1, res1) => {
+        if (!err1 && res1 && res1.affectedRows > 0) {
+            return res.json({ success: true, message: `Operador #${id} eliminado` });
         }
-        res.json({ success: true });
+
+        // 2. Si no encontró o la columna se llama 'id', prueba por id
+        db.query("DELETE FROM operadores WHERE id = ?", [id], (err2, res2) => {
+            if (!err2 && res2 && res2.affectedRows > 0) {
+                return res.json({ success: true, message: `Operador #${id} eliminado` });
+            }
+
+            const detalleError = err1?.message || err2?.message || 'No se encontró el operador en la base de datos';
+            console.error("Error al eliminar operador:", detalleError);
+            return res.status(500).json({ error: detalleError });
+        });
     });
 });
-
 
 
 app.delete('/api/movimientos/:id', (req, res) => {
