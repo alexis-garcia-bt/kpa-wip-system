@@ -2567,8 +2567,10 @@ document.addEventListener('click', (e) => {
                 return;
             }
 
-            // Busca si tiene PIN específico en la base de datos
+                        // Busca si tiene PIN específico en la base de datos
             const operadorObj = listaPersonalGlobal.find(p => p.nombre === nombre);
+            // Si el operador tiene PIN guardado en la BD, ESE es el único válido.
+            // Si no tiene PIN, usamos el apellido como respaldo.
             const apellidoReal = nombre.trim().split(' ').pop().toUpperCase();
             const pinPersonal = operadorObj && operadorObj.pin ? String(operadorObj.pin).trim().toUpperCase() : apellidoReal;
 
@@ -2580,13 +2582,15 @@ document.addEventListener('click', (e) => {
                     }
                 } else {
                     if (passwordIngresada !== pinPersonal) {
-                        alert("PIN de Administrador incorrecto.");
+                        alert("PIN de Administrador incorrecto. Asegúrate de usar la contraseña que registraste.");
                         return;
                     }
                 }
             } else {
-                if (passwordIngresada !== pinPersonal && passwordIngresada !== apellidoReal) {
-                    alert("PIN o contraseña incorrecta.");
+                // Para montacarguistas y líderes, SOLO vale el PIN que se registró.
+                // Quitamos el "|| apellidoReal" para evitar que usen el apellido por error.
+                if (passwordIngresada !== pinPersonal) {
+                    alert("PIN incorrecto. Revisa tu contraseña o pídele al administrador que la actualice.");
                     return;
                 }
             }
@@ -2696,10 +2700,11 @@ document.addEventListener('click', (e) => {
             const soyAlexis = usuarioActual.nombre.toUpperCase().includes('ALEXIS GARCIA');
 
             listaPersonalGlobal.forEach(p => {
-                const apellido = p.nombre.trim().split(' ').pop();
-                const pinReal = p.pin || apellido;
+                                const apellido = p.nombre.trim().split(' ').pop();
+                // Forzamos a que si existe un PIN en la BD, se muestre ese. Si no, el apellido.
+                const pinReal = (p.pin && p.pin.trim() !== '') ? p.pin : apellido;
 
-                // Si eres tú (Alexis), ves el PIN real en amarillo. Si es cualquier otro admin, ve puntitos negros
+                // Si eres tú (Alexis), ves el PIN real en amarillo.
                 const claveVisible = soyAlexis 
                     ? `<span style="color: var(--warning); font-family: monospace; font-weight: bold;">${p.nombre.toUpperCase().includes('ALEXIS GARCIA') ? '1397' : pinReal}</span>` 
                     : `<span style="color: var(--text-muted); letter-spacing: 2px;">••••••••</span>`;
