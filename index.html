@@ -549,9 +549,19 @@
             box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
         }
 
-        .slot-rojo {
+                .slot-rojo {
             background-color: #ef4444 !important; /* LLENO AL TOPE */
             box-shadow: inset 0 0 6px rgba(0,0,0,0.35);
+            position: relative;
+            border: 1px solid #fca5a5;
+            animation: latido 2s infinite; /* Efecto visual de alerta */
+        }
+
+        /* Efecto de pulso para las alertas */
+        @keyframes latido {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
 
 
@@ -1484,7 +1494,8 @@
                             }
                         }
 
-                        htmlSlots += `<div class="slot-celda ${claseColor}" title="Nivel ${nivel} - Lado ${lado}"></div>`;
+                       const simbolo = claseColor === 'slot-rojo' ? 'Alerta' : '';
+                        htmlSlots += `<div class="slot-celda ${claseColor}" title="Nivel ${nivel} - Lado ${lado}" style="display: flex; align-items: center; justify-content: center; font-size: 10px; color: white;">${simbolo}</div>`;
                     });
                 });
 
@@ -2941,8 +2952,7 @@ document.addEventListener('click', (e) => {
                     }
                 }
             } else if (val !== '') {
-                // Rack 1-19 (o destino de salida): prende niveles y apaga nota
-                // EL FIX ESTÁ AQUÍ: antes se apagaba sin importar qué.
+                
                 if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'block';
                 if (bloqueNota) {
                     bloqueNota.style.display = 'none';
