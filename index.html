@@ -760,32 +760,34 @@
                             </div>
                         </div>
 
-                           <label for="rackDestino">Ubicación de Destino / Almacenamiento:</label>
-                           <!-- ESTE SELECTOR SIEMPRE SE QUEDA VISIBLE -->
-                           <select id="rackDestino" onchange="verificarDestinoLote6()" required style="margin-bottom: 15px;">
-                               <option value="">-- SELECCIONE DESTINO (RACK, LOTE 6 O PISO) --</option>
-                               <option value="LOTE 6" style="color: #38bdf8; font-weight: bold;">📦 LOTE 6 (ALMACÉN EN PISO)</option>
-                               <option value="PISO" style="color: #f59e0b; font-weight: bold;">🚧 PISO TEMPORAL (PASILLO / OVERFLOW)</option>
-                               <optgroup label="RACKS WIP (1 AL 19)">
-                                   <script> for(let i=1; i<=19; i++) document.write(`<option value="${i}">RACK ${i}</option>`); </script>
-                               </optgroup>
-                           </select>
+                           <!-- SELECTOR MAESTRO DE DESTINO (SIEMPRE VISIBLE) -->
+                           <div class="form-group" style="margin-bottom: 15px;">
+                               <label for="rackDestino" style="display: block; font-weight: bold; margin-bottom: 8px;">Ubicación de Destino / Almacenamiento:</label>
+                               <select id="rackDestino" onchange="verificarDestinoLote6()" required style="width: 100%; padding: 12px; font-size: 14px; border-radius: 10px;">
+                                   <option value="">-- SELECCIONE DESTINO --</option>
+                                   <option value="LOTE 6" style="color: #38bdf8; font-weight: bold;"> LOTE 6 (ALMACÉN EN PISO)</option>
+                                   <option value="PISO" style="color: #f59e0b; font-weight: bold;"> PISO TEMPORAL (PASILLO / OVERFLOW)</option>
+                                   <optgroup label="RACKS WIP (1 AL 19)">
+                                       <script> for(let i=1; i<=19; i++) document.write(`<option value="${i}">RACK ${i}</option>`); </script>
+                                   </optgroup>
+                               </select>
+                           </div>
 
-                           <!-- CAMPO DE NOTA EN PISO (SOLO SE ABRE EN LOTE 6 O PISO) -->
+                           <!-- REFERENCIA DE SUELO (SOLO EN LOTE 6 O PISO) -->
                            <div id="bloqueNotaLote6" style="display: none; margin-bottom: 15px;">
-                               <label id="labelNotaLote6" for="inputNotaLote6" style="color: var(--kpa-cyan);">Referencia en Suelo (Opcional):</label>
-                               <input type="text" id="inputNotaLote6" placeholder="EJ. JUNTO A LA CORTINA, AL FONDO, FILA 2" oninput="this.value = this.value.toUpperCase()">
+                               <label id="labelNotaLote6" for="inputNotaLote6" style="color: var(--kpa-cyan); font-weight: bold; margin-bottom: 6px; display: block;">Referencia en Suelo (Opcional):</label>
+                               <input type="text" id="inputNotaLote6" placeholder="EJ. FRENTE AL RACK 4, JUNTO AL PORTÓN" oninput="this.value = this.value.toUpperCase()">
                            </div>
 
                            <!-- DETALLES EXCLUSIVOS DE RACKS (NIVEL, LADO, MANGA) -->
-                           <div id="detallesRackDestino" style="display: none;">
+                           <div id="detallesRackDestino" style="display: none; margin-bottom: 15px;">
                                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                                    <select id="nivelDestino">
                                        <option value="">NIVEL DESTINO (1-4)</option>
-                                       <option value="1">Nivel 1 (Piso)</option>
+                                       <option value="1">Nivel 1 </option>
                                        <option value="2">Nivel 2</option>
                                        <option value="3">Nivel 3</option>
-                                       <option value="4">Nivel 4 (Alto)</option>
+                                       <option value="4">Nivel 4 </option>
                                    </select>
                                </div>
                                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
@@ -800,13 +802,13 @@
                                    </select>
                                </div>
                                <div class="form-group" id="bloqueMangaCheck" style="margin-bottom: 15px;">
-                                    <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; background: var(--bg-input); padding: 14px 18px; border-radius: 12px; border: 1px solid var(--border-color);">
-                                        <input type="checkbox" id="ambosLadosCheck" style="width: 20px; height: 20px; accent-color: var(--kpa-blue);">
-                                        <span>Ocupar ambos lados (Manga)</span>
-                                    </label>
-                                </div>
+                                   <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; background: var(--bg-input); padding: 14px 18px; border-radius: 12px; border: 1px solid var(--border-color);">
+                                       <input type="checkbox" id="ambosLadosCheck" style="width: 20px; height: 20px; accent-color: var(--kpa-blue);">
+                                       <span>Ocupar ambos lados (Manga)</span>
+                                   </label>
+                               </div>
                                <div class="form-group" id="bloqueEstadoLlenado">
-                                   <label for="selectCapacidadLado">Disponibilidad física de este Lado:</label>
+                                   <label for="selectCapacidadLado">Disponibilidad de este Lado:</label>
                                    <select id="selectCapacidadLado">
                                        <option value="ESPACIO"> TIENE ESPACIO (Aún cabe otra tarima en este lado)</option>
                                        <option value="LLENO"> LLENO AL TOPE (Ya no cabe nada más en este lado)</option>
@@ -2916,23 +2918,13 @@ document.addEventListener('click', (e) => {
             const bloqueNota = document.getElementById('bloqueNotaLote6');
             const inputNota = document.getElementById('inputNotaLote6');
             const labelNota = document.getElementById('labelNotaLote6');
-            const bloqueLlenado = document.getElementById('bloqueEstadoLlenado');
-            const chkManga = document.getElementById('ambosLadosCheck');
 
             if (!selectRack) return;
             const val = selectRack.value;
 
-            // Busca el contenedor específico de la manga por ID o por etiqueta
-            const contenedorManga = document.getElementById('bloqueMangaCheck') || (chkManga ? chkManga.parentElement.parentElement : null);
-
             if (val === 'LOTE 6' || val === 'PISO') {
-                // 🛑 ES SUELO: Oculta detalles de racks, manga y disponibilidad
+                // Suelo: apaga niveles de rack y prende la nota
                 if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'none';
-                if (contenedorManga) contenedorManga.style.display = 'none';
-                if (bloqueLlenado) bloqueLlenado.style.display = 'none';
-                if (chkManga) chkManga.checked = false;
-
-                // Muestra la referencia de suelo
                 if (bloqueNota) {
                     bloqueNota.style.display = 'block';
                     if (labelNota) {
@@ -2947,23 +2939,18 @@ document.addEventListener('click', (e) => {
                     }
                 }
             } else if (val !== '') {
-                //  ES RACK (1-19): Muestra todo normal
+                // Rack 1-19: prende niveles y apaga nota
                 if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'block';
-                if (contenedorManga) contenedorManga.style.display = 'block';
-                if (bloqueLlenado) bloqueLlenado.style.display = 'block';
                 if (bloqueNota) {
                     bloqueNota.style.display = 'none';
                     if (inputNota) inputNota.value = '';
                 }
             } else {
-                // En blanco (-- SELECCIONE DESTINO --)
+                // En blanco
                 if (bloqueDetallesRack) bloqueDetallesRack.style.display = 'none';
-                if (contenedorManga) contenedorManga.style.display = 'none';
-                if (bloqueLlenado) bloqueLlenado.style.display = 'none';
                 if (bloqueNota) bloqueNota.style.display = 'none';
-             }
             }
-            
+        }
                 
 
         // 2. Consulta y calcula el inventario de Lote 6
